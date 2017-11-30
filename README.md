@@ -86,7 +86,7 @@ Assign a list to each folloing variable to provide extra key mappings.
 | g:NETRParentDir     | Change to parent directory                                           | ['h',`'<left>'`]       |
 | g:NETRToggleExpand  | Toggle expand current directory under cursor                         | [`'<space>'`]          |
 | g:NETRBookmarkSet   | Bookmark current directory, pending for single character             | ['m']                  |
-| g:NETRBookmarkGo    | Jump to bookmark, pending for single character                       | ["'"]                  |
+| g:NETRBookmarkGo    | Jump to bookmark, pending for single character                       | [`"'"`]                |
 | g:NETREdit          | Enter edit mode to rename file/directory names                       | ['i']                  |
 | g:NETRSave          | Leave edit mode to save changes made in edit mode                    | [`'<Esc>'`]            |
 | g:NETRTogglePick    | Pick the current entry for further copy/cut                          | ['v','V']              |
