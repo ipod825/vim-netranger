@@ -82,13 +82,13 @@ Assign a list to each folloing variable to provide extra key mappings.
 
 | Variable            | Description                                                          | Default                |
 | :------------       | :--------------                                                      | :----------------      |
-| g:NETROpen          | Change directory/open file                                           | ['l','<right>','<cr>'] |
-| g:NETRParentDir     | Change to parent directory                                           | ['h','<left>']         |
-| g:NETRToggleExpand  | Toggle expand current directory under cursor                         | ['<space>']            |
+| g:NETROpen          | Change directory/open file                                           | ['l',`'<right>'`,`'<cr>'`] |
+| g:NETRParentDir     | Change to parent directory                                           | ['h',`'<left>'`]       |
+| g:NETRToggleExpand  | Toggle expand current directory under cursor                         | [`'<space>'`]          |
 | g:NETRBookmarkSet   | Bookmark current directory, pending for single character             | ['m']                  |
 | g:NETRBookmarkGo    | Jump to bookmark, pending for single character                       | ["'"]                  |
 | g:NETREdit          | Enter edit mode to rename file/directory names                       | ['i']                  |
-| g:NETRSave          | Leave edit mode to save changes made in edit mode                    | ['<Esc>']              |
+| g:NETRSave          | Leave edit mode to save changes made in edit mode                    | [`'<Esc>'`]            |
 | g:NETRTogglePick    | Pick the current entry for further copy/cut                          | ['v','V']              |
 | g:NETRCut           | Cut all picked entries                                               | ['x','d']              |
 | g:NETRCopy          | Copy all picked entries                                              | ['y']                  |
@@ -107,6 +107,6 @@ let g:g:NETRBookmarkGo = ["m"]
 
 ### Variables
 | Variable          | Description                                              | Default                |
-| -------------     | :-------------:                                          | ----------------:      |
+| :------------     | :--------------                                          | :----------------      |
 | g:NETRIgnore      | File patterns (bash wild card) to ignore (not displaying)| []                     |
 | g:NETRRootDir     | Directory for storing remote cache and bookmark file     | ['$HOME/.netranger/']  |
