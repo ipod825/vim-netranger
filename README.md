@@ -1,7 +1,7 @@
 vim-netranger
 =============
 
-__Note__ Some features describe below is still in progress.
+__Note__ Some features described below are still in progress.
 
 Vim-netranger is a ranger-like system/cloud storage explorer for Vim. It brings together the best of Vim, [ranger](https://github.com/ranger/ranger), and [rclone](https://rclone.org/):
 
@@ -81,7 +81,7 @@ vim-netranger requires Neovim. You should install neovim's Python3 api with pip:
 Assign a list to each folloing variable to provide extra key mappings.
 
 | Variable            | Description                                                          | Default                |
-| :-----------:       | :-------------:                                                      | ----------------:      |
+| :------------       | :--------------                                                      | :----------------      |
 | g:NETROpen          | Change directory/open file                                           | ['l','<right>','<cr>'] |
 | g:NETRParentDir     | Change to parent directory                                           | ['h','<left>']         |
 | g:NETRToggleExpand  | Toggle expand current directory under cursor                         | ['<space>']            |
