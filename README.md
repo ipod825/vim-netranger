@@ -79,8 +79,9 @@ vim-netranger requires Neovim. You should install neovim's Python3 api with pip:
 ## Customization
 ### Key mappings:
 Assign a list to each folloing variable to provide extra key mappings.
+
 | Variable            | Description                                                          | Default                |
-| -------------       | :-------------:                                                      | ----------------:      |
+| :-----------:       | :-------------:                                                      | ----------------:      |
 | g:NETROpen          | Change directory/open file                                           | ['l','<right>','<cr>'] |
 | g:NETRParentDir     | Change to parent directory                                           | ['h','<left>']         |
 | g:NETRToggleExpand  | Toggle expand current directory under cursor                         | ['<space>']            |
@@ -95,6 +96,7 @@ Assign a list to each folloing variable to provide extra key mappings.
 | g:NETRCopySingle    | Copy the current entry. Equivalent to `vy`                           | ['yy']                 |
 | g:NETRPaste         | Paste all cut/copied entries                                         | ['p']                  |
 | g:NETRTogglePinRoot | Pin current directory as "root", such that you can't go one level up | ['gp']                 |
+    
 
 Assign a list to `g:NETRDefaultMapSkip` to ignore default mappings. For example, if you want to switch the mappings for `g:NETRBookmarkSet`, `g:NETRBookmarkGo`, you'll put the following in your `.vimrc`:
 ```vim
