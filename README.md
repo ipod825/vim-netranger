@@ -1,8 +1,6 @@
 vim-netranger
 =============
 
-__Note__ Some features described below are still in progress.
-
 Vim-netranger is a ranger-like system/cloud storage explorer for Vim. It brings together the best of Vim, [ranger](https://github.com/ranger/ranger), and [rclone](https://rclone.org/):
 
 1. Against Vim (netrw):
@@ -65,20 +63,23 @@ vim-netranger requires Neovim. You should install neovim's Python3 api with pip:
 4. If only one file is to be copied/cut, you can simply press `yy` (copy) or `dd` (cut). The current file will be marked. You can then continue `yy`,  `dd` other lines. I personally think this is more convenient then using `v`.
 
 ### File Deletion
+In progress
 
 ### Sort
+In progress
 
 ### Bookmark
+In progress
 
 ### Remote storage
 1. Run `NETRListRemotes` command to open a `vim-netranger` buffer showing all configured remote storage.
 2. If `rclone` is not in your `PATH`, on first time running `NETRListRemotes`. It will be automatically downloaded and installed.
 3. Remote files are downloaded on demand and cached in `g:NETRRootDir/cache`. Other than that, it's just like browsing local files.
-
+__Note__ Remote reading is done now. Writing is still in progress.
 
 ## Customization
 ### Key mappings:
-Assign a list to each folloing variable to provide extra key mappings.
+Assign a list to each of the folloing variables to provide extra key mappings.
 
 | Variable            | Description                                                          | Default                |
 | :------------       | :--------------                                                      | :----------------      |
