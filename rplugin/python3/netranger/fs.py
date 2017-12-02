@@ -51,6 +51,14 @@ class FS(object):
         log('cp -r "{}" "{}"'.format(src, dst))
         Shell.run('cp -r "{}" "{}"'.format(src, dst))
 
+    def rm(self, target):
+        log('rm -r {}'.format(target))
+        Shell.run('rm -r {}'.format(target))
+
+    def rmf(self, target):
+        log('rm -rf {}'.format(target))
+        Shell.run('rm -r {}'.format(target))
+
 
 class RcloneFile(object):
     def __init__(self, lpath, path):

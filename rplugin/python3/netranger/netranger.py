@@ -468,7 +468,26 @@ class NetRangerBuf(object):
         self.render()
 
     def NETRDelete(self):
-        pass
+        for i in self.picked_lines:
+            self.fs.rm(self.curPage.nodes[i].fullpath)
+        self.picked_lines = []
+        self.refresh_page()
+        self.render()
+
+    def NETRDeleteSingle(self):
+        self.picked_lines.append(self.curPage.clineNo)
+        self.NETRDelete()
+
+    def NETRForceDelete(self):
+        for i in self.picked_lines:
+            self.fs.rmf(self.curPage.nodes[i].fullpath)
+        self.picked_lines = []
+        self.refresh_page()
+        self.render()
+
+    def NETRForceDeleteSingle(self):
+        self.picked_lines.append(self.curPage.clineNo)
+        self.NETRForceDelete()
 
     def NETRUndo(self):
         pass

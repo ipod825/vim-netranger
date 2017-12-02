@@ -65,7 +65,6 @@ def do_test(fn, wipe_on_done=True):
     nvim.command('tabe {}'.format(test_root))
     fn()
     if wipe_on_done:
-        print('bwipeout')
         nvim.command('bwipeout')
 
     os.chdir(old_cwd)
@@ -131,6 +130,13 @@ def test_pickCutCopyPaste():
     assert_highlight('file', background=False, ind=1)
 
 
+def test_delete():
+    nvim.input('vD')
+    assert_fs(lambda: Shell.run('ls').split()[0]=='dir2')
+    nvim.input('XX')
+    assert_fs(lambda: Shell.run('ls')=='')
+
+
 if __name__ == '__main__':
     nvim = attach('socket', path='/tmp/nvim')
     ori_timeoutlen = nvim.options['timeoutlen']
@@ -138,8 +144,11 @@ if __name__ == '__main__':
 
     try:
         # do_test(dummy,False)
-        do_test(test_navigation)
-        do_test(test_edit)
-        do_test(test_pickCutCopyPaste, False)
+        # do_test(test_navigation)
+        # do_test(test_edit)
+        # do_test(test_pickCutCopyPaste)
+        do_test(test_delete)
+    except Exception as e:
+        print(e)
     finally:
         nvim.options['timeoutlen'] = ori_timeoutlen

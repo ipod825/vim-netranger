@@ -54,16 +54,18 @@ vim-netranger requires Neovim. You should install neovim's Python3 api with pip:
 2. Note that in this mode, you can't delete file by deleting lines (you can't add file either).
 3. After you are done, back into normal mode (i.e. press `<Esc>` or whatever mapping you prefer), then press `<Esc>` again. All file will be renamed as you've modified.
 
-### File Selection/Copy/Cut/Paste
+### File Selection/Copy/Cut/Paste/Deletion
 1. Press `v` or `V` to select a file for further processing. You can select multiple files and then do one of the following
     * Press `y` to copy all selected files
     * Press `x` or `d` to cut all selected files
-2. Note that if you leave the directory before pressing `y`,`x` or `d`, your selection will be lost.
-3. Then go to the target directory, press `p` to paste all cut/copied files/directories.
-4. If only one file is to be copied/cut, you can simply press `yy` (copy) or `dd` (cut). The current file will be marked. You can then continue `yy`,  `dd` other lines. I personally think this is more convenient then using `v`.
+    * Press `D` to delete (`rm -r`) all selected files
+    * Press `X` to force delete (i.e. `rm -rf`) all selected files
 
-### File Deletion
-In progress
+2. Note that if you leave the directory before pressing any aforementioned keys, your selection will be lost.
+3. For `y`, `x`, `d`, go to the target directory, press `p` to paste all cut/copied files/directories.
+4. If only one file is to be cut/copy, you can simply press `yy` (copy) or `dd` (cut). The current file will be marked. You can then continue `yy`,  `dd` other lines. I personally think this is more convenient then using `v`.
+5. Similarly, if only one file is to be (force) deleted, you can simply press `DD` or `XX`.
+
 
 ### Sort
 In progress
@@ -84,24 +86,27 @@ __Note__ Remote reading is done now. Writing is still in progress.
 ### Key mappings:
 Assign a list to each of the folloing variables to provide extra key mappings.
 
-| Variable            | Description                                                          | Default                |
-| :------------       | :--------------                                                      | :----------------      |
-| g:NETROpen          | Change directory/open file                                           | ['l',`'<right>'`]      |
-| g:NETRParentDir     | Change to parent directory                                           | ['h',`'<left>'`]       |
-| g:NETRToggleExpand  | Toggle expand current directory under cursor                         | [`'<space>'`]          |
-| g:NETRVimCD         | Changing vim's current directory                                     | [`'<cr>'`]             |
-| g:NETRBookmarkSet   | Bookmark current directory, pending for single character             | ['m']                  |
-| g:NETRBookmarkGo    | Jump to bookmark, pending for single character                       | [`"'"`]                |
-| g:NETREdit          | Enter edit mode to rename file/directory names                       | ['i']                  |
-| g:NETRSave          | Leave edit mode to save changes made in edit mode                    | [`'<Esc>'`]            |
-| g:NETRTogglePick    | Pick the current entry for further copy/cut                          | ['v','V']              |
-| g:NETRCut           | Cut all picked entries                                               | ['x','d']              |
-| g:NETRCopy          | Copy all picked entries                                              | ['y']                  |
-| g:NETRCutSingle     | Cut the current entry. Equivalent to `vd`                            | ['dd']                 |
-| g:NETRCopySingle    | Copy the current entry. Equivalent to `vy`                           | ['yy']                 |
-| g:NETRPaste         | Paste all cut/copied entries                                         | ['p']                  |
-| g:NETRTogglePinRoot | Pin current directory as "root", such that you can't go one level up | ['zp']                 |
-    
+| Variable                | Description                                                          | Default           |
+| :------------           | :--------------                                                      | :---------------- |
+| g:NETROpen              | Change directory/open file                                           | ['l',`'<right>'`] |
+| g:NETRParentDir         | Change to parent directory                                           | ['h',`'<left>'`]  |
+| g:NETRToggleExpand      | Toggle expand current directory under cursor                         | [`'<space>'`]     |
+| g:NETRVimCD             | Changing vim's current directory                                     | [`'<cr>'`]        |
+| g:NETREdit              | Enter edit mode to rename file/directory names                       | ['i']             |
+| g:NETRSave              | Leave edit mode to save changes made in edit mode                    | [`'<Esc>'`]       |
+| g:NETRTogglePick        | Pick the current entry for further copy/cut                          | ['v','V']         |
+| g:NETRCut               | Cut all picked entries                                               | ['x','d']         |
+| g:NETRCopy              | Copy all picked entries                                              | ['y']             |
+| g:NETRCutSingle         | Cut the current entry. Equivalent to `vd`                            | ['dd']            |
+| g:NETRCopySingle        | Copy the current entry. Equivalent to `vy`                           | ['yy']            |
+| g:NETRPaste             | Paste all cut/copied entries                                         | ['p']             |
+| g:NETRTogglePinRoot     | Pin current directory as "root", such that you can't go one level up | ['zp']            |
+| g:NETRDelete            | Delete all picked entries                                            | ['D']             |
+| g:NETRDeleteSingle      | Delete the current entry. Equivalent to `vD`                         | ['DD']            |
+| g:NETRForceDelete       | Force delete all picked entries                                      | ['X']             |
+| g:NETRForceDeleteSingle | Force delete the current entry. Equivalent to `vX`                   | ['XX']            |
+| g:NETRBookmarkSet       | Bookmark current directory, pending for single character             | ['m']             |
+| g:NETRBookmarkGo        | Jump to bookmark, pending for single character                       | [`"'"`]           |
 
 Assign a list to `g:NETRDefaultMapSkip` to ignore default mappings. For example, if you want to switch the mappings for `g:NETRBookmarkSet`, `g:NETRBookmarkGo`, you'll put the following in your `.vimrc`:
 ```vim
