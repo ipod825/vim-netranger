@@ -9,6 +9,15 @@ def log(*msg):
         f.write(' '.join([str(m) for m in msg])+"\n")
 
 
+def VimErrorMsg(vim, exception):
+    if hasattr(exception, 'output'):
+        msg = exception.output.decode('utf-8')
+    else:
+        msg = str(exception)
+
+    vim.command('echohl ErrorMsg | echo "{}" | echohl None '.format(msg.replace('"','\\"')))
+
+
 def spawnDaemon(func):
     # do the UNIX double-fork magic, see Stevens' "Advanced
     # Programming in the UNIX Environment" for details (ISBN 0201563177)
@@ -41,9 +50,11 @@ def spawnDaemon(func):
 
 
 class Shell():
+    CmdError = subprocess.CalledProcessError
+
     @classmethod
     def run(cls, cmd):
-        return subprocess.check_output(cmd, shell=True).decode('utf-8')
+        return subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode('utf-8')
 
     @classmethod
     def spawn(cls, cmd):

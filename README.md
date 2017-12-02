@@ -1,4 +1,4 @@
-vim-netranger
+Gvim-netranger
 =============
 
 Vim-netranger is a ranger-like system/cloud storage explorer for Vim. It brings together the best of Vim, [ranger](https://github.com/ranger/ranger), and [rclone](https://rclone.org/):
@@ -46,7 +46,7 @@ vim-netranger requires Neovim. You should install neovim's Python3 api with pip:
 1. Press `l` to change directory/open file for the current directory/file under the cursor.
 2. Press `h` to jump to the parent directory.
 3. Press `<Space>` to toggle expand current directory under cursor.
-4. Press `gp` to (toggle) pin current directory as the project root, which means you can't use `h` to jump to the parent directory. I think it might be useful when developing a project.
+4. Press `<Cr>` to set vim's cwd to the directory of the file under cursor. This is very useful if you've expanded a directory and want to open an nvim terminal to run a script in the subdirectory. 
 5. Type `:NETRCD dir/you/want/to/go` to navigate to where you want. Though I don't think you would want to do this very often.
 
 ### File Rename
@@ -71,6 +71,9 @@ In progress
 ### Bookmark
 In progress
 
+### Misc
+1. Press `zp` to (toggle) pin current directory as the project root, which means you can't use `h` to jump to the parent directory. I think it might be useful when developing a project.
+
 ### Remote storage
 1. Run `NETRListRemotes` command to open a `vim-netranger` buffer showing all configured remote storage.
 2. If `rclone` is not in your `PATH`, on first time running `NETRListRemotes`. It will be automatically downloaded and installed.
@@ -83,9 +86,10 @@ Assign a list to each of the folloing variables to provide extra key mappings.
 
 | Variable            | Description                                                          | Default                |
 | :------------       | :--------------                                                      | :----------------      |
-| g:NETROpen          | Change directory/open file                                           | ['l',`'<right>'`,`'<cr>'`] |
+| g:NETROpen          | Change directory/open file                                           | ['l',`'<right>'`]      |
 | g:NETRParentDir     | Change to parent directory                                           | ['h',`'<left>'`]       |
 | g:NETRToggleExpand  | Toggle expand current directory under cursor                         | [`'<space>'`]          |
+| g:NETRVimCD         | Changing vim's current directory                                     | [`'<cr>'`]             |
 | g:NETRBookmarkSet   | Bookmark current directory, pending for single character             | ['m']                  |
 | g:NETRBookmarkGo    | Jump to bookmark, pending for single character                       | [`"'"`]                |
 | g:NETREdit          | Enter edit mode to rename file/directory names                       | ['i']                  |
@@ -96,7 +100,7 @@ Assign a list to each of the folloing variables to provide extra key mappings.
 | g:NETRCutSingle     | Cut the current entry. Equivalent to `vd`                            | ['dd']                 |
 | g:NETRCopySingle    | Copy the current entry. Equivalent to `vy`                           | ['yy']                 |
 | g:NETRPaste         | Paste all cut/copied entries                                         | ['p']                  |
-| g:NETRTogglePinRoot | Pin current directory as "root", such that you can't go one level up | ['gp']                 |
+| g:NETRTogglePinRoot | Pin current directory as "root", such that you can't go one level up | ['zp']                 |
     
 
 Assign a list to `g:NETRDefaultMapSkip` to ignore default mappings. For example, if you want to switch the mappings for `g:NETRBookmarkSet`, `g:NETRBookmarkGo`, you'll put the following in your `.vimrc`:
@@ -107,7 +111,9 @@ let g:g:NETRBookmarkGo = ["m"]
 ```
 
 ### Variables
-| Variable          | Description                                              | Default                |
-| :------------     | :--------------                                          | :----------------      |
-| g:NETRIgnore      | File patterns (bash wild card) to ignore (not displaying)| []                     |
-| g:NETRRootDir     | Directory for storing remote cache and bookmark file     | ['$HOME/.netranger/']  |
+| Variable             | Description                                               | Default               |
+| :------------        | :--------------                                           | :----------------     |
+| g:NETRIgnore         | File patterns (bash wild card) to ignore (not displaying) | []                    |
+| g:NETRRootDir        | Directory for storing remote cache and bookmark file      | ['$HOME/.netranger/'] |
+| g:NETRTabAutoToFirst | Automatically move new netranger tab to the first tab     | v:false               |
+

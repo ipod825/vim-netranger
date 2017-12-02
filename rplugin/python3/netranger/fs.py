@@ -2,24 +2,38 @@ import os
 from netranger.util import Shell
 from netranger.util import log
 import shutil
-import errno
 
 log('')
 
 
 class FS(object):
-    def ls(self, dirname):
+    def ls(self, dirname, show_hidden=False):
         assert os.path.isdir(dirname)
-        return os.listdir(dirname)
+        ori_cwd = os.getcwd()
+        os.chdir(dirname)
+        os.listdir(dirname)
+        dirs = []
+        files = []
+        for f in os.listdir(os.getcwd()):
+            if not show_hidden and f[0]=='.':
+                continue
+            if os.path.isdir(f):
+                dirs.append(f)
+            else:
+                files.append(f)
+        dirs = sorted(dirs)
+        files = sorted(files)
+        os.chdir(ori_cwd)
+        return dirs + files
 
     def parent_dir(self, cwd):
         return os.path.abspath(os.path.join(cwd, os.pardir))
 
     def ftype(self, fname):
+        if os.path.islink(fname):
+            catlog = 'link'
         if os.path.isdir(fname):
             catlog = 'dir'
-        elif os.path.islink(fname):
-            catlog = 'link'
         elif os.access(fname, os.X_OK):
             catlog = 'exe'
         else:
@@ -116,10 +130,10 @@ class RClone(object):
         return len(self.root_dir.child)>0
 
     def ftype(self, fname):
-        if os.path.isdir(fname):
-            catlog = 'dir'
-        elif os.path.islink(fname):
+        if os.path.islink(fname):
             catlog = 'link'
+        elif os.path.isdir(fname):
+            catlog = 'dir'
         elif os.access(fname, os.X_OK):
             catlog = 'exe'
         else:

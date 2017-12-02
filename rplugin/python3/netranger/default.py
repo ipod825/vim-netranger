@@ -1,21 +1,23 @@
 import os
 keymap = {
     # should all be in small case for NETRDefaultMapSkip feature
-    'NETROpen': ['l','<right>','<cr>'],
+    'NETROpen': ['l','<right>'],
     'NETRParentDir': ['h','<left>'],
     'NETRToggleExpand': ['<Space>', 'o'],
+    'NETRVimCD': ['<cr>'],
     'NETREdit': ['i'],
     'NETRSave': ['<Esc>'],
     'NETRTogglePick': ['v','V'],
     'NETRCut': ['x','d'],
     'NETRCopy': ['y'],
-    'NETRDelete': ['D'],
-    'NETRForceDelete': ['fD'],
     'NETRCutSingle': ['dd'],
     'NETRCopySingle': ["yy"],
-    'NETRDeleteSingle': ['DD'],
     'NETRPaste': ['p'],
-    'NETRTogglePinRoot': ["gp"],
+    'NETRDelete': ['D'],
+    'NETRForceDelete': ['fD'],
+    'NETRDeleteSingle': ['DD'],
+    'NETRTogglePinRoot': ["zp"],
+    'NETRToggleShowHidden': ["zh"],
     'NETRBookmarkSet': ['m'],
     'NETRBookmarkGo': ["'"],
 }
@@ -37,6 +39,7 @@ root_dir = os.path.expanduser('~/.netranger/')
 variables = {
     'NETRIgnore': [],
     'NETRDefaultMapSkip': [],
+    'NETRTabAutoToFirst': False,
     'NETRHiCWD': 'yellow',
     'NETRRootDir': root_dir,
     'NETRBookmark': root_dir+'bookmark',
