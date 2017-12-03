@@ -33,6 +33,10 @@ def assert_highlight(expected, background=True, ind=None):
     assert m.group(1) == expected, 'expected: "{}", real: "{}"'.format(expected, m.group(1))
 
 
+def assert_num_contenr_line(numLine):
+    assert numLine == len(nvim.current.buffer)-1
+
+
 def assert_fs(fn):
     succ = False
     trial = 0
@@ -60,6 +64,7 @@ def do_test(fn, wipe_on_done=True):
     Shell.mkdir(os.path.join(test_root, 'dir/subdir/subsubdir'))
     Shell.mkdir(os.path.join(test_root, 'dir/subdir2'))
     Shell.run('touch {}/dir/a'.format(test_root))
+    Shell.run('touch {}/.a'.format(test_root))
     Shell.mkdir(os.path.join(test_root, 'dir2/'))
 
     nvim.command('tabe {}'.format(test_root))
@@ -169,6 +174,12 @@ def test_misc():
     nvim.input('zph')
     assert_content('dir')
 
+    nvim.input('zh')
+    assert_content('.a', ind=2)
+
+    nvim.input('zh')
+    assert_num_contenr_line(2)
+
 
 if __name__ == '__main__':
     nvim = attach('socket', path='/tmp/nvim')
@@ -181,8 +192,8 @@ if __name__ == '__main__':
         # do_test(test_edit)
         # do_test(test_pickCutCopyPaste)
         # do_test(test_delete)
-        do_test(test_bookmark)
-        # do_test(test_misc)
+        # do_test(test_bookmark)
+        do_test(test_misc)
     except Exception as e:
         print(e)
     finally:

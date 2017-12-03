@@ -390,6 +390,11 @@ class NetRangerBuf(object):
         else:
             self.pinnedRoot = self.cwd
 
+    def NETRToggleShowHidden(self):
+        self.fs.toggle_show_hidden()
+        self.pages = {}
+        self.refresh_page()
+
     def NETRTogglePick(self):
         res = self.curNode.toggle_pick()
         if res == Node.ToggleOpRes.ON:

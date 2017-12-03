@@ -7,7 +7,13 @@ log('')
 
 
 class FS(object):
-    def ls(self, dirname, show_hidden=False):
+    def __init__(self, show_hidden=False):
+        self.show_hidden = show_hidden
+
+    def toggle_show_hidden(self):
+        self.show_hidden = not self.show_hidden
+
+    def ls(self, dirname):
         assert os.path.isdir(dirname)
         ori_cwd = os.getcwd()
         os.chdir(dirname)
@@ -15,7 +21,7 @@ class FS(object):
         dirs = []
         files = []
         for f in os.listdir(os.getcwd()):
-            if not show_hidden and f[0]=='.':
+            if not self.show_hidden and f[0]=='.':
                 continue
             if os.path.isdir(f):
                 dirs.append(f)
@@ -57,11 +63,14 @@ class FS(object):
         Shell.run('rm -r {}'.format(target))
 
 
-class RcloneFile(object):
-    def __init__(self, lpath, path):
+class RcloneFile(FS):
+    def __init__(self, lpath, path, show_hidden=False):
+        FS.__init__(self, show_hidden)
+
         self.lpath = lpath
         self.path = path
         self.downloaded = False
+
         with open(lpath, "w") as f:
             f.write("")
 

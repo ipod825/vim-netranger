@@ -77,6 +77,7 @@ In progress
 
 ### Misc
 1. Press `zp` to (toggle) pin current directory as the project root, which means you can't use `h` to jump to the parent directory. I think it might be useful when developing a project.
+2. Press `zh` to (toggle) show hidden files.
 
 ### Remote storage
 1. Run `NETRListRemotes` command to open a `vim-netranger` buffer showing all configured remote storage.
@@ -88,28 +89,29 @@ __Note__ Remote reading is done now. Writing is still in progress.
 ### Key mappings:
 Assign a list to each of the folloing variables to provide extra key mappings.
 
-| Variable                | Description                                                          | Default           |
-| :------------           | :--------------                                                      | :---------------- |
-| g:NETROpen              | Change directory/open file                                           | ['l',`'<right>'`] |
-| g:NETRParentDir         | Change to parent directory                                           | ['h',`'<left>'`]  |
-| g:NETRToggleExpand      | Toggle expand current directory under cursor                         | [`'<space>'`]     |
-| g:NETRVimCD             | Changing vim's current directory                                     | [`'<cr>'`]        |
-| g:NETREdit              | Enter edit mode to rename file/directory names                       | ['i']             |
-| g:NETRSave              | Leave edit mode to save changes made in edit mode                    | [`'<Esc>'`]       |
-| g:NETRTogglePick        | Pick the current entry for further copy/cut                          | ['v','V']         |
-| g:NETRCut               | Cut all picked entries                                               | ['x','d']         |
-| g:NETRCopy              | Copy all picked entries                                              | ['y']             |
-| g:NETRCutSingle         | Cut the current entry. Equivalent to `vd`                            | ['dd']            |
-| g:NETRCopySingle        | Copy the current entry. Equivalent to `vy`                           | ['yy']            |
-| g:NETRPaste             | Paste all cut/copied entries                                         | ['p']             |
-| g:NETRTogglePinRoot     | Pin current directory as "root", such that you can't go one level up | ['zp']            |
-| g:NETRDelete            | Delete all picked entries                                            | ['D']             |
-| g:NETRDeleteSingle      | Delete the current entry. Equivalent to `vD`                         | ['DD']            |
-| g:NETRForceDelete       | Force delete all picked entries                                      | ['X']             |
-| g:NETRForceDeleteSingle | Force delete the current entry. Equivalent to `vX`                   | ['XX']            |
-| g:NETRBookmarkSet       | Bookmark current directory, pending for single character             | ['m']             |
-| g:NETRBookmarkGo        | Jump to bookmark, pending for single character                       | [`"'"`]           |
-| g:NETRBookmarkEdit      | Open bookmark file to edit                                           | [`em`]            |
+| Variable                | Description                                              | Default           |
+| :------------           | :--------------                                          | :---------------- |
+| g:NETROpen              | Change directory/open file                               | ['l',`'<right>'`] |
+| g:NETRParentDir         | Change to parent directory                               | ['h',`'<left>'`]  |
+| g:NETRToggleExpand      | Toggle expand current directory under cursor             | [`'<space>'`]     |
+| g:NETRVimCD             | Changing vim's current directory                         | [`'<cr>'`]        |
+| g:NETREdit              | Enter edit mode to rename file/directory names           | ['i']             |
+| g:NETRSave              | Leave edit mode to save changes made in edit mode        | [`'<Esc>'`]       |
+| g:NETRTogglePick        | Pick the current entry for further copy/cut              | ['v','V']         |
+| g:NETRCut               | Cut all picked entries                                   | ['x','d']         |
+| g:NETRCopy              | Copy all picked entries                                  | ['y']             |
+| g:NETRCutSingle         | Cut the current entry. Equivalent to `vd`                | ['dd']            |
+| g:NETRCopySingle        | Copy the current entry. Equivalent to `vy`               | ['yy']            |
+| g:NETRPaste             | Paste all cut/copied entries                             | ['p']             |
+| g:NETRTogglePinRoot     | (Toggle) Pin current directory as "root"                 | ['zp']            |
+| g:NETRToggleShowHidden  | (Toggle) Show hidden files                               | ['zh']            |
+| g:NETRDelete            | Delete all picked entries                                | ['D']             |
+| g:NETRDeleteSingle      | Delete the current entry. Equivalent to `vD`             | ['DD']            |
+| g:NETRForceDelete       | Force delete all picked entries                          | ['X']             |
+| g:NETRForceDeleteSingle | Force delete the current entry. Equivalent to `vX`       | ['XX']            |
+| g:NETRBookmarkSet       | Bookmark current directory, pending for single character | ['m']             |
+| g:NETRBookmarkGo        | Jump to bookmark, pending for single character           | [`"'"`]           |
+| g:NETRBookmarkEdit      | Open bookmark file to edit                               | [`em`]            |
 
 Assign a list to `g:NETRDefaultMapSkip` to ignore default mappings. For example, if you want to switch the mappings for `g:NETRBookmarkSet`, `g:NETRBookmarkGo`, you'll put the following in your `.vimrc`:
 ```vim
