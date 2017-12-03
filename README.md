@@ -1,4 +1,4 @@
-Gvim-netranger
+vim-netranger
 =============
 
 Vim-netranger is a ranger-like system/cloud storage explorer for Vim. It brings together the best of Vim, [ranger](https://github.com/ranger/ranger), and [rclone](https://rclone.org/):
@@ -52,7 +52,7 @@ vim-netranger requires Neovim. You should install neovim's Python3 api with pip:
 ### File Rename
 1. Press `i` to enter edit mode. You can freely modify any file/directory name in this mode.
 2. Note that in this mode, you can't delete file by deleting lines (you can't add file either).
-3. After you are done, back into normal mode (i.e. press `<Esc>` or whatever mapping you prefer), then press `<Esc>` again. All file will be renamed as you've modified.
+3. After you are done, back into normal mode (i.e. press `<Esc>` or whatever mapping you prefer), then press `<Esc>` again. All files will be renamed as you've modified.
 
 ### File Selection/Copy/Cut/Paste/Deletion
 1. Press `v` or `V` to select a file for further processing. You can select multiple files and then do one of the following

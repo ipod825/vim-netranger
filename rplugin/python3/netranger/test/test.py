@@ -89,6 +89,11 @@ def test_navigation():
     nvim.input(' ')
     assert_content('dir2', ind=1)
 
+    nvim.input('j'+chr(13))
+    assert os.path.basename(nvim.command_output('pwd')) == 'dir2'
+    nvim.input('k 3j'+chr(13))
+    assert os.path.basename(nvim.command_output('pwd')) == 'dir'
+
 
 def test_edit():
     nvim.input('iz')
@@ -137,6 +142,11 @@ def test_delete():
     assert_fs(lambda: Shell.run('ls')=='')
 
 
+def test_misc():
+    nvim.input('zph')
+    assert_content('dir')
+
+
 if __name__ == '__main__':
     nvim = attach('socket', path='/tmp/nvim')
     ori_timeoutlen = nvim.options['timeoutlen']
@@ -144,10 +154,11 @@ if __name__ == '__main__':
 
     try:
         # do_test(dummy,False)
-        # do_test(test_navigation)
+        # do_test(test_navigation, False)
         # do_test(test_edit)
         # do_test(test_pickCutCopyPaste)
-        do_test(test_delete)
+        # do_test(test_delete)
+        do_test(test_misc)
     except Exception as e:
         print(e)
     finally:
