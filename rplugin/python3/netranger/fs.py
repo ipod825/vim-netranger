@@ -48,15 +48,12 @@ class FS(object):
             src = src+'/'
         if os.path.isdir(dst) and dst[-1]!='/':
             dst = dst+'/'
-        log('cp -r "{}" "{}"'.format(src, dst))
         Shell.run('cp -r "{}" "{}"'.format(src, dst))
 
     def rm(self, target):
-        log('rm -r {}'.format(target))
         Shell.run('rm -r {}'.format(target))
 
     def rmf(self, target):
-        log('rm -rf {}'.format(target))
         Shell.run('rm -r {}'.format(target))
 
 
@@ -164,7 +161,6 @@ class RClone(object):
         self.getNode(fname).download()
 
     def parent_dir(self, cwd):
-        log('fuck')
         log(cwd, len(cwd), self.rplen-1)
         if len(cwd) == self.rplen-1:
             return cwd
@@ -176,8 +172,8 @@ class RClone(object):
         import zipfile
 
         def getUserInput(vim, hint, default=''):
-            vim.command('let g:NETRInputReg=input("{}: ", "{}")'.format(hint, default))
-            return vim.vars['NETRInputReg']
+            vim.command('let g:_NETRRegister=input("{}: ", "{}")'.format(hint, default))
+            return vim.vars['_NETRRegister']
 
         if Shell.isinPATH('rclone'):
             return True

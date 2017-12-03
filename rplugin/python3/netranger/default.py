@@ -21,6 +21,7 @@ keymap = {
     'NETRToggleShowHidden': ['zh'],
     'NETRBookmarkSet': ['m'],
     'NETRBookmarkGo': ["'"],
+    'NETRBookmarkEdit': ["em"],
 }
 
 color = {
@@ -43,6 +44,7 @@ variables = {
     'NETRTabAutoToFirst': False,
     'NETRHiCWD': 'yellow',
     'NETRRootDir': root_dir,
-    'NETRBookmark': root_dir+'bookmark',
+    'NETRBookmarkFile': root_dir+'bookmark',
     'NETRCacheDir': root_dir+'cache',
+    '_NETRRegister': '',  # internal use only
 }

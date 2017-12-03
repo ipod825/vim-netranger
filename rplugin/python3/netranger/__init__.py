@@ -29,17 +29,9 @@ class Main(object):
     def on_cursormoved(self, bufnum):
         self.ranger.on_cursormoved(int(bufnum))
 
-    @neovim.function('NETRInvokeMap', sync=True)
+    @neovim.function('_NETRInvokeMap', sync=True)
     def NETRInvokeMap(self, args):
         self.ranger.invoke_map(args[0])
-
-    @neovim.function('_NETRBookmarkSet', sync=True)
-    def _NETRBookmarkSet(self, args):
-        self.ranger._NETRBookmarkSet(args[0])
-
-    @neovim.command("NETRCD", range='', nargs='*', sync=True)
-    def NETRCD(self, args, range):
-        self.ranger.cd(args[0])
 
     @neovim.command("NETRListRemotes", range='', nargs='*', sync=True)
     def NETRListRemotes(self, args, range):

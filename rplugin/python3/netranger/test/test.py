@@ -142,6 +142,29 @@ def test_delete():
     assert_fs(lambda: Shell.run('ls')=='')
 
 
+def test_bookmark():
+    bookmarkfile = default.variables['NETRBookmarkFile']
+    copy = '{}/{}bak'.format(os.path.dirname(bookmarkfile), os.path.basename(bookmarkfile))
+
+    if os.path.isfile(bookmarkfile):
+        Shell.run('mv {} {}'.format(bookmarkfile, copy))
+
+    Shell.run('rm -f {}'.format(bookmarkfile))
+
+    nvim.input('mal')
+    nvim.input("'a")
+    assert_content('dir')
+
+    nvim.input('lemjrb')
+    nvim.command('exit')
+    nvim.input("'b")
+    assert_content('dir')
+
+    Shell.run('rm -f {}'.format(bookmarkfile))
+    if os.path.isfile(copy):
+        Shell.run('mv {} {}'.format(copy, bookmarkfile))
+
+
 def test_misc():
     nvim.input('zph')
     assert_content('dir')
@@ -153,12 +176,13 @@ if __name__ == '__main__':
     nvim.options['timeoutlen'] = 1
 
     try:
-        # do_test(dummy,False)
+        do_test(dummy,False)
         # do_test(test_navigation, False)
         # do_test(test_edit)
         # do_test(test_pickCutCopyPaste)
         # do_test(test_delete)
-        do_test(test_misc)
+        do_test(test_bookmark)
+        # do_test(test_misc)
     except Exception as e:
         print(e)
     finally:

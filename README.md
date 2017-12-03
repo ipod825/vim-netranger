@@ -47,7 +47,6 @@ vim-netranger requires Neovim. You should install neovim's Python3 api with pip:
 2. Press `h` to jump to the parent directory.
 3. Press `<Space>` to toggle expand current directory under cursor.
 4. Press `<Cr>` to set vim's cwd to the directory of the file under cursor. This is very useful if you've expanded a directory and want to open an nvim terminal to run a script in the subdirectory. 
-5. Type `:NETRCD dir/you/want/to/go` to navigate to where you want. Though I don't think you would want to do this very often.
 
 ### File Rename
 1. Press `i` to enter edit mode. You can freely modify any file/directory name in this mode.
@@ -66,11 +65,13 @@ vim-netranger requires Neovim. You should install neovim's Python3 api with pip:
 4. If only one file is to be cut/copy, you can simply press `yy` (copy) or `dd` (cut). The current file will be marked. You can then continue `yy`,  `dd` other lines. I personally think this is more convenient then using `v`.
 5. Similarly, if only one file is to be (force) deleted, you can simply press `DD` or `XX`.
 
+### Bookmark
+1. Press `m` to open the bookmark UI. You'll see the current bookmarks you have. Press [azAZ] (any letters) to bookmark the current directory.
+2. Press `'` to open the bookmark UI again. You'll see that previous entered character appears there. Press the correct character to navigate to the directory you want to go.
+3. Press `em` to edit the bookmark with vim. On saving the file, your bookmarks will be updated automatically.
+
 
 ### Sort
-In progress
-
-### Bookmark
 In progress
 
 ### Misc
@@ -107,6 +108,7 @@ Assign a list to each of the folloing variables to provide extra key mappings.
 | g:NETRForceDeleteSingle | Force delete the current entry. Equivalent to `vX`                   | ['XX']            |
 | g:NETRBookmarkSet       | Bookmark current directory, pending for single character             | ['m']             |
 | g:NETRBookmarkGo        | Jump to bookmark, pending for single character                       | [`"'"`]           |
+| g:NETRBookmarkEdit      | Open bookmark file to edit                                           | [`em`]            |
 
 Assign a list to `g:NETRDefaultMapSkip` to ignore default mappings. For example, if you want to switch the mappings for `g:NETRBookmarkSet`, `g:NETRBookmarkGo`, you'll put the following in your `.vimrc`:
 ```vim

@@ -1,11 +1,11 @@
 import os
 import fnmatch
 from neovim.api.nvim import NvimError
-import string
 from netranger.fs import FS, RClone
 from netranger.util import log, VimErrorMsg
 from netranger import default
 from netranger.colortbl import colortbl
+from netranger.ui import BookMarkUI
 from enum import Enum
 
 log('')
@@ -218,14 +218,11 @@ class Page(object):
             curBuf[:] = self.highlight_content
             return False
         else:
-            log('fuck')
-            log('node#: {}'.format(len(self.nodes)))
             for i, line in enumerate(curBuf):
                 line = line.strip()
                 if not self.nodes[i].isHeader and line != self.nodes[i].name:
                     oripath = self.nodes[i].rename(line)
                     self.fs.mv(oripath, self.nodes[i].fullpath)
-            log('node#: {}'.format(len(self.nodes)))
             curBuf[:] = self.highlight_content
             return True
 
@@ -256,7 +253,7 @@ class NetRangerBuf(object):
     def map_keys(self):
         for fn, keys in self.keymaps.items():
             for k in keys:
-                self.vim.command("nnoremap <buffer> {} :call NETRInvokeMap('{}')<CR>".format(k, fn))
+                self.vim.command("nnoremap <buffer> {} :call _NETRInvokeMap('{}')<CR>".format(k, fn))
 
     def setBufOption(self):
         self.vim.command('setlocal filetype=netranger')
@@ -292,7 +289,6 @@ class NetRangerBuf(object):
         return self.curPage.curNode
 
     def set_cwd(self, cwd, isParentOfPrev=False):
-        log('set_cwd')
         self.finalizeCutCopy()
 
         if cwd not in self.pages:
@@ -346,7 +342,6 @@ class NetRangerBuf(object):
             self.vim.command('tab drop {}'.format(fullpath))
 
     def NETRParentDir(self):
-        log('ParentDir')
         if self.cwd == self.pinnedRoot:
             return
         pdir = self.fs.parent_dir(self.cwd)
@@ -392,11 +387,6 @@ class NetRangerBuf(object):
         else:
             self.pinnedRoot = self.cwd
 
-    def NETRBookmarkSet(self):
-        if self.bookmark is None:
-            self.bookmark = BookMarkBuf(self.vim)
-        self.bookmark.set(self.cwd)
-
     def NETRTogglePick(self):
         res = self.curNode.toggle_pick()
         if res == Node.ToggleOpRes.ON:
@@ -424,7 +414,6 @@ class NetRangerBuf(object):
         self._cutcopy('copy', self.copy_lines)
 
     def finalizeCutCopy(self):
-        log('finalizeCutCopy')
         if self.cwd is None:
             return
 
@@ -501,77 +490,6 @@ class NetRangerBuf(object):
         self.NETRCopy()
 
 
-class BookMarkBuf(object):
-    def __init__(self, vim):
-        self.valid_mark = string.ascii_lowercase + string.ascii_uppercase
-        self.vim = vim
-        self.set_buf = None
-        self.bookmarks = {}
-        self.path_to_mark = None
-        if os.path.isfile(self.vim.vars['NETRBookmark']):
-            with open(self.vim.vars['NETRBookmark'], 'r') as f:
-                for line in f:
-                    kp = line.split(':')
-                    if(len(kp)==2):
-                        self.bookmarks[kp[0].strip()] = kp[1].strip()
-
-    def on_vimleavepre(self):
-        # if self.bookmarks:
-        with open(self.vim.vars['NETRBookmark'], 'w+') as f:
-            f.writelines(['{}:{}\n'.format(k, p) for k,p in self.bookmarks.items()])
-
-    def set(self, path):
-        if self.set_buf is None or not self.set_buf.valid:
-            self.init_set_buf()
-        else:
-            self.vim.command('belowright {}sb'.format(self.set_buf.number))
-        self.path_to_mark = path
-
-    def init_set_buf(self):
-        self.vim.command('belowright new')
-
-        for ch in self.valid_mark:
-            self.vim.command('nnoremap <buffer> {} :quit<cr>:call _NETRBookmarkSet("{}") <cr>'.format(ch, ch))
-
-        self.set_buf = self.vim.current.buffer
-
-        self.set_buf[:] = ['{}:{}'.format(k, p) for k,p in self.bookmarks.items()]
-        self.set_buf_common_option()
-
-    def _set(self, mark):
-        if mark not in self.valid_mark:
-            self.vim.command('echo "Only a-zA-Z are valid mark!!"')
-            return
-        self.set_buf.options['modifiable'] = True
-        if mark in self.bookmarks:
-            for i, line in enumerate(self.set_buf):
-                if len(line)>0 and line[0] == mark:
-                    self.set_buf[i] = '{}:{}'.format(mark, self.path_to_mark)
-                    break
-        else:
-            self.set_buf.append('{}:{}'.format(mark, self.path_to_mark))
-        self.set_buf.options['modifiable'] = False
-        self.bookmarks[mark] = self.path_to_mark
-
-    def set_buf_common_option(self):
-        self.vim.command('setlocal noswapfile')
-        self.vim.command('setlocal foldmethod=manual')
-        self.vim.command('setlocal foldcolumn=0')
-        self.vim.command('setlocal nofoldenable')
-        self.vim.command('setlocal nobuflisted')
-        self.vim.command('setlocal nospell')
-        self.vim.command('setlocal buftype=nofile')
-        self.vim.command('setlocal bufhidden=hide')
-
-    def go(self):
-        self.vim.command('belowright split new')
-        self.set_buf_common_option()
-        self.vim.current.buffer[:] = ['{}:{}'.format(k, p) for k,p in self.bookmarks.items()]
-
-        for k, path in self.bookmarks.items():
-            self.vim.command('nnoremap <buffer> {} :q<cr>:NETRCD {}<cr>'.format(k, path))
-
-
 class Netranger(object):
     def __init__(self, vim):
         self.vim = vim
@@ -585,6 +503,8 @@ class Netranger(object):
         self.rclone = None
         self.bookmark = None
         self.isEditing = False
+        self.onuiquit = None
+        self.onuiquitargs = None
 
     def initVimVariables(self):
         for k,v in default.variables.items():
@@ -616,6 +536,16 @@ class Netranger(object):
                     self.bufs[bufnum] = NetRangerBuf(self.vim, self.keymaps, os.path.abspath(bufname), self.rclone)
                 else:
                     self.bufs[bufnum] = NetRangerBuf(self.vim, self.keymaps, os.path.abspath(bufname), FS())
+        else:
+            if self.onuiquit is not None:
+                if type(self.onuiquit) is str:
+                    getattr(self.curBuf, self.onuiquit)(self.vim.vars['_NETRRegister'])
+                else:
+                    self.onuiquit(self.vim.vars['_NETRRegister'])
+                self.onuiquit = None
+
+    def pend_onuiquit(self, fn):
+        self.onuiquit = fn
 
     def on_cursormoved(self, bufnum):
         if bufnum in self.bufs:
@@ -639,15 +569,27 @@ class Netranger(object):
 
     def invoke_map(self, fn):
         log('invoke_map', fn)
-        getattr(self.curBuf, fn)()
+        if hasattr(self, fn):
+            getattr(self, fn)()
+        else:
+            getattr(self.curBuf, fn)()
 
     def _NETRBookmarkSet(self, mark):
         self.bookmark._set(mark)
 
-    def NETRBookmarkGo(self):
+    def _BookMarkDo(self, fn, *args):
         if self.bookmark is None:
-            self.bookmark = BookMarkBuf(self.vim)
-        self.bookmark.go()
+            self.bookmark = BookMarkUI(self.vim, self)
+        getattr(self.bookmark, fn)(*args)
+
+    def NETRBookmarkSet(self):
+        self._BookMarkDo('set', self.curBuf.cwd)
+
+    def NETRBookmarkGo(self):
+        self._BookMarkDo('go')
+
+    def NETRBookmarkEdit(self):
+        self._BookMarkDo('edit')
 
     def valid_rclone_or_install(self):
         if self.rclone is not None:
