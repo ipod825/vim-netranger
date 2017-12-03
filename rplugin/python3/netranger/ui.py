@@ -7,7 +7,7 @@ log('')
 
 class UI(object):
     def map_key_reg(self, key, regval):
-        self.vim.command("nnoremap <buffer> {} :let g:_NETRRegister='{}' <cr> :quit <cr>".format(key, regval))
+        self.vim.command("nnoremap <buffer> {} :let g:_NETRRegister=['{}'] <cr> :quit <cr>".format(key, regval))
 
 
 class BookMarkUI(UI):
@@ -31,7 +31,7 @@ class BookMarkUI(UI):
 
         self.load_bookmarks()
 
-    def load_bookmarks(self, *args):
+    def load_bookmarks(self):
         self.mark_dict = {}
         if os.path.isfile(self.vim.vars['NETRBookmarkFile']):
             with open(self.vim.vars['NETRBookmarkFile'], 'r') as f:
@@ -77,7 +77,7 @@ class BookMarkUI(UI):
         else:
             self.vim.command('belowright {}sb'.format(self.set_buf.number))
         self.path_to_mark = path
-        self.netranger.pend_onuiquit(self._set)
+        self.netranger.pend_onuiquit(self._set, 1)
 
     def _set(self, mark):
         if mark == '':
@@ -86,9 +86,17 @@ class BookMarkUI(UI):
             self.vim.command('echo "Only a-zA-Z are valid mark!!"')
             return
         self.set_buf.options['modifiable'] = True
+        log(self.path_to_mark)
+        log(self.mark_dict.values())
+        log(self.path_to_mark in self.mark_dict.values())
         if mark in self.mark_dict:
             for i, line in enumerate(self.set_buf):
                 if len(line)>0 and line[0] == mark:
+                    self.set_buf[i] = '{}:{}'.format(mark, self.path_to_mark)
+                    break
+        elif self.path_to_mark in self.mark_dict.values():
+            for i, line in enumerate(self.set_buf):
+                if len(line)>0 and line[2:] == self.path_to_mark:
                     self.set_buf[i] = '{}:{}'.format(mark, self.path_to_mark)
                     break
         else:
@@ -105,7 +113,7 @@ class BookMarkUI(UI):
             self.init_go_buf()
         else:
             self.vim.command('belowright {}sb'.format(self.go_buf.number))
-        self.netranger.pend_onuiquit('set_cwd')
+        self.netranger.pend_onuiquit('set_cwd', 1)
 
     def edit(self):
         self.vim.command('belowright split {}'.format(self.vim.vars['NETRBookmarkFile']))

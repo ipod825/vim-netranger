@@ -68,7 +68,8 @@ vim-netranger requires Neovim. You should install neovim's Python3 api with pip:
 ### Bookmark
 1. Press `m` to open the bookmark UI. You'll see the current bookmarks you have. Press [azAZ] (any letters) to bookmark the current directory.
 2. Press `'` to open the bookmark UI again. You'll see that previous entered character appears there. Press the correct character to navigate to the directory you want to go.
-3. Press `em` to edit the bookmark with vim. On saving the file, your bookmarks will be updated automatically.
+3. Press `em` to edit the bookmark with vim. On saving (e.g. `:x`)the file, your bookmarks will be updated automatically.
+4. Note that you can use `:q` to quit the bookmark ui to abort the aforementioned operation. 
 
 
 ### Sort
@@ -114,7 +115,7 @@ Assign a list to `g:NETRDefaultMapSkip` to ignore default mappings. For example,
 ```vim
 let g:NETRDefaultMapSkip = ['m',"'"]
 let g:NETRBookmarkSet = ["'"]
-let g:g:NETRBookmarkGo = ["m"]
+let g:NETRBookmarkGo = ["m"]
 ```
 
 ### Variables

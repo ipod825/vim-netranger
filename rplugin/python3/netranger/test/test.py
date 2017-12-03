@@ -176,8 +176,8 @@ if __name__ == '__main__':
     nvim.options['timeoutlen'] = 1
 
     try:
-        do_test(dummy,False)
-        # do_test(test_navigation, False)
+        # do_test(dummy,False)
+        # do_test(test_navigation)
         # do_test(test_edit)
         # do_test(test_pickCutCopyPaste)
         # do_test(test_delete)

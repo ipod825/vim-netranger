@@ -46,5 +46,5 @@ variables = {
     'NETRRootDir': root_dir,
     'NETRBookmarkFile': root_dir+'bookmark',
     'NETRCacheDir': root_dir+'cache',
-    '_NETRRegister': '',  # internal use only
+    '_NETRRegister': [],  # internal use only
 }

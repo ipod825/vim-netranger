@@ -8,6 +8,7 @@ from netranger.colortbl import colortbl
 from netranger.ui import BookMarkUI
 from enum import Enum
 
+
 log('')
 
 
@@ -289,6 +290,8 @@ class NetRangerBuf(object):
         return self.curPage.curNode
 
     def set_cwd(self, cwd, isParentOfPrev=False):
+        if not os.path.isdir(cwd):
+            return
         self.finalizeCutCopy()
 
         if cwd not in self.pages:
@@ -504,7 +507,7 @@ class Netranger(object):
         self.bookmark = None
         self.isEditing = False
         self.onuiquit = None
-        self.onuiquitargs = None
+        self.onuiquitNumArgs = 0
 
     def initVimVariables(self):
         for k,v in default.variables.items():
@@ -538,14 +541,18 @@ class Netranger(object):
                     self.bufs[bufnum] = NetRangerBuf(self.vim, self.keymaps, os.path.abspath(bufname), FS())
         else:
             if self.onuiquit is not None:
-                if type(self.onuiquit) is str:
-                    getattr(self.curBuf, self.onuiquit)(self.vim.vars['_NETRRegister'])
-                else:
-                    self.onuiquit(self.vim.vars['_NETRRegister'])
+                if len(self.vim.vars['_NETRRegister']) == self.onuiquitNumArgs:
+                    if type(self.onuiquit) is str:
+                        getattr(self.curBuf, self.onuiquit)(*self.vim.vars['_NETRRegister'])
+                    else:
+                        self.onuiquit(*self.vim.vars['_NETRRegister'])
                 self.onuiquit = None
+                self.vim.vars['_NETRRegister'] = []
+                self.onuiquitNumArgs = 0
 
-    def pend_onuiquit(self, fn):
+    def pend_onuiquit(self, fn, numArgs=0):
         self.onuiquit = fn
+        self.onuiquitNumArgs = numArgs
 
     def on_cursormoved(self, bufnum):
         if bufnum in self.bufs:
