@@ -112,7 +112,7 @@ Assign a list to each of the folloing variables to provide extra key mappings.
 | g:NETRForceDeleteSingle | Force delete the current entry. Equivalent to `vX`       | ['XX']            |
 | g:NETRBookmarkSet       | Bookmark current directory, pending for single character | ['m']             |
 | g:NETRBookmarkGo        | Jump to bookmark, pending for single character           | [`"'"`]           |
-| g:NETRBookmarkEdit      | Open bookmark file to edit                               | [`em`]            |
+| g:NETRBookmarkEdit      | Open bookmark file to edit                               | ['em']            |
 
 Assign a list to `g:NETRDefaultMapSkip` to ignore default mappings. For example, if you want to switch the mappings for `g:NETRBookmarkSet`, `g:NETRBookmarkGo`, you'll put the following in your `.vimrc`:
 ```vim
