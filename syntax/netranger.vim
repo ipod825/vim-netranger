@@ -4,8 +4,8 @@ endif
 
 let b:current_syntax = "netranger"
 
-syn match ansiSuppress conceal contained	'\e\[[0-9;]*m'
-hi def link ansiSuppress Conceal 
+syn match ansiSuppress conceal contained '\e\[[0-9;]*m'
+hi def link ansiSuppress Conceal
 
 let c = 0
 while c < 256

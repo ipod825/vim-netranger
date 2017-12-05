@@ -520,6 +520,7 @@ class Netranger(object):
         self.isEditing = False
         self.onuiquit = None
         self.onuiquitNumArgs = 0
+        Shell.mkdir(default.variables['NETRRootDir'])
         self.rifle = Rifle(self.vim, self.vim.vars['NETRRifleFile'])
 
     def initVimVariables(self):
