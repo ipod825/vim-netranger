@@ -93,6 +93,7 @@ class RcloneDir(object):
 
         if path is None:
             remotes = Shell.run('rclone listremotes').split(':\n')
+            log(remotes)
             for remote in remotes:
                 if len(remote)==0:
                     continue

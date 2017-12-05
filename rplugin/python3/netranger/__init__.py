@@ -1,5 +1,7 @@
 import neovim
 from netranger.netranger import Netranger
+from netranger.util import Shell
+from netranger import default
 
 
 def log(msg):
@@ -11,6 +13,7 @@ def log(msg):
 class Main(object):
     def __init__(self, vim):
         self.vim = vim
+        Shell.mkdir(default.variables['NETRRootDir'])
         self.ranger = Netranger(vim)
 
     @neovim.autocmd('BufEnter', pattern='*', eval='expand("<abuf>")', sync=True)

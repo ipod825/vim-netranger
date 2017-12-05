@@ -54,7 +54,7 @@ class Shell():
 
     @classmethod
     def run(cls, cmd):
-        return subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode('utf-8')
+        return subprocess.check_output(cmd, shell=True).decode('utf-8')
 
     @classmethod
     def spawn(cls, cmd):

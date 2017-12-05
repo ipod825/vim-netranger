@@ -616,7 +616,7 @@ class Netranger(object):
         if self.rclone.has_remote:
             self.vim.command('tabe ' + self.vim.vars['NETRCacheDir'])
         else:
-            self.vim.command("There's no remote now. Run 'rclone config' in a terminal to setup remotes")
+            VimErrorMsg(self.vim, "There's no remote now. Run 'rclone config' in a terminal to setup remotes")
 
     def cd(self, dst):
         if not self.isInNETRBuf:
