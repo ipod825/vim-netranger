@@ -370,6 +370,7 @@ class NetRangerBuf(object):
             cmd = self.rifle.decide_open_cmd(fullpath)
             if not cmd:
                 self.vim.command('tab drop {}'.format(fullpath))
+                self.vim.command('normal! "<Esc>"')
             else:
                 Shell.spawn('{} {}'.format(cmd, fullpath))
 
