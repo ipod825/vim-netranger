@@ -17,10 +17,9 @@ class FS(object):
         assert os.path.isdir(dirname)
         ori_cwd = os.getcwd()
         os.chdir(dirname)
-        os.listdir(dirname)
         dirs = []
         files = []
-        for f in os.listdir(os.getcwd()):
+        for f in os.listdir(dirname):
             if not self.show_hidden and f[0]=='.':
                 continue
             if os.path.isdir(f):
