@@ -91,7 +91,7 @@ __Note__ Remote reading is done now. Writing is still in progress.
 
 ## Customization
 ### Key mappings:
-1. Assign a list to each of the the variables to provide extra key mappings. For maintaining issue, please press `?` in a vim-range buffer to check variables and their key bindings.
+1. Assign a list to each of the variables to provide extra key mappings. For maintaining issue, please press `?` in a vim-ranger buffer to check variables and their key bindings.
 2. Assign a list to `g:NETRDefaultMapSkip` to ignore default mappings. For example, if you want to switch the mappings for `g:NETRBookmarkSet`, `g:NETRBookmarkGo`, you'll put the following in your `.vimrc`:
 ```vim
 let g:NETRDefaultMapSkip = ['m',"'"]
