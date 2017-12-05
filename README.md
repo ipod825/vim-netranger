@@ -43,6 +43,9 @@ vim-netranger requires Neovim. You should install neovim's Python3 api with pip:
 1. vim a directory
 2. Inside vim, use edit commands (e.g. `vsplit`, `edit`, `tabedit`) to edit a directory. Just like `netrw`.
 
+### Help
+1. Press `?` to see current key bindings
+
 ### Navigation
 1. Press `l` to change directory/open file for the current directory/file under the cursor.
 2. Press `h` to jump to the parent directory.
@@ -88,33 +91,8 @@ __Note__ Remote reading is done now. Writing is still in progress.
 
 ## Customization
 ### Key mappings:
-Assign a list to each of the folloing variables to provide extra key mappings.
-
-| Variable                | Description                                              | Default           |
-| :------------           | :--------------                                          | :---------------- |
-| g:NETROpen              | Change directory/open file                               | ['l',`'<right>'`] |
-| g:NETRParentDir         | Change to parent directory                               | ['h',`'<left>'`]  |
-| g:NETRToggleExpand      | Toggle expand current directory under cursor             | [`'<space>'`]     |
-| g:NETRVimCD             | Changing vim's current directory                         | [`'<cr>'`]        |
-| g:NETREdit              | Enter edit mode to rename file/directory names           | ['i']             |
-| g:NETRSave              | Leave edit mode to save changes made in edit mode        | [`'<Esc>'`]       |
-| g:NETRTogglePick        | Pick the current entry for further copy/cut              | ['v','V']         |
-| g:NETRCut               | Cut all picked entries                                   | ['x','d']         |
-| g:NETRCopy              | Copy all picked entries                                  | ['y']             |
-| g:NETRCutSingle         | Cut the current entry. Equivalent to `vd`                | ['dd']            |
-| g:NETRCopySingle        | Copy the current entry. Equivalent to `vy`               | ['yy']            |
-| g:NETRPaste             | Paste all cut/copied entries                             | ['p']             |
-| g:NETRTogglePinRoot     | (Toggle) Pin current directory as "root"                 | ['zp']            |
-| g:NETRToggleShowHidden  | (Toggle) Show hidden files                               | ['zh']            |
-| g:NETRDelete            | Delete all picked entries                                | ['D']             |
-| g:NETRDeleteSingle      | Delete the current entry. Equivalent to `vD`             | ['DD']            |
-| g:NETRForceDelete       | Force delete all picked entries                          | ['X']             |
-| g:NETRForceDeleteSingle | Force delete the current entry. Equivalent to `vX`       | ['XX']            |
-| g:NETRBookmarkSet       | Bookmark current directory, pending for single character | ['m']             |
-| g:NETRBookmarkGo        | Jump to bookmark, pending for single character           | [`"'"`]           |
-| g:NETRBookmarkEdit      | Open bookmark file to edit                               | ['em']            |
-
-Assign a list to `g:NETRDefaultMapSkip` to ignore default mappings. For example, if you want to switch the mappings for `g:NETRBookmarkSet`, `g:NETRBookmarkGo`, you'll put the following in your `.vimrc`:
+1. Assign a list to each of the the variables to provide extra key mappings. For maintaining issue, please press `?` in a vim-range buffer to check variables and their key bindings.
+2. Assign a list to `g:NETRDefaultMapSkip` to ignore default mappings. For example, if you want to switch the mappings for `g:NETRBookmarkSet`, `g:NETRBookmarkGo`, you'll put the following in your `.vimrc`:
 ```vim
 let g:NETRDefaultMapSkip = ['m',"'"]
 let g:NETRBookmarkSet = ["'"]

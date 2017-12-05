@@ -6,20 +6,65 @@ log('')
 
 
 class UI(object):
+    def __init__(self, vim):
+        self.bufs = {}
+        self.vim = vim
+
     def map_key_reg(self, key, regval):
         self.vim.command("nnoremap <buffer> {} :let g:_NETRRegister=['{}'] <cr> :quit <cr>".format(key, regval))
+
+    def buf_valid(self, name='default'):
+        return name in self.bufs and self.bufs[name].valid
+
+    def del_buf(self, name):
+        if name in self.bufs:
+            del self.bufs[name]
+
+    def show(self, name='default'):
+        self.vim.command('belowright {}sb'.format(self.bufs[name].number))
+
+    def create_buf(self, content, mappings=None, name='default'):
+        self.vim.command('belowright new')
+        self.set_buf_common_option()
+        new_buf = self.vim.current.buffer
+        self.bufs[name] = new_buf
+
+        if mappings is not None:
+            for k, v in mappings:
+                self.map_key_reg(k, v)
+
+        new_buf.options['modifiable'] = True
+        new_buf[:] = content
+        new_buf.options['modifiable'] = False
+
+    def set_buf_common_option(self, modifiable=False):
+        self.vim.command('setlocal noswapfile')
+        self.vim.command('setlocal foldmethod=manual')
+        self.vim.command('setlocal foldcolumn=0')
+        self.vim.command('setlocal nofoldenable')
+        self.vim.command('setlocal nobuflisted')
+        self.vim.command('setlocal nospell')
+        self.vim.command('setlocal buftype=nofile')
+        self.vim.command('setlocal bufhidden=hide')
+        self.vim.command('setlocal nomodifiable')
+
+
+class HelpUI(UI):
+    def __init__(self, vim, keymap_doc):
+        UI.__init__(self, vim)
+        for fn, (keys, desc) in keymap_doc.items():
+            log(fn, ','.join(keys), desc)
+
+        self.create_buf(content=['{:<25} {:<10} {}'.format(fn, ','.join(keys), desc) for fn, (keys, desc) in keymap_doc.items()])
 
 
 class BookMarkUI(UI):
     def __init__(self, vim, netranger):
+        UI.__init__(self, vim)
         self.valid_mark = string.ascii_lowercase + string.ascii_uppercase
-        self.vim = vim
         self.netranger = netranger
-        self.set_buf = None
-        self.go_buf = None
         self.mark_dict = {}
         self.path_to_mark = None
-        self.go_buf_out_dated = False
 
         # This is to avoid a bug that I can't solve.
         # If bookmark file is initially empty. The first time
@@ -40,42 +85,13 @@ class BookMarkUI(UI):
                     if(len(kp)==2):
                         self.mark_dict[kp[0].strip()] = kp[1].strip()
 
-    def init_set_buf(self):
-        self.vim.command('belowright new')
-
-        for ch in self.valid_mark:
-            self.map_key_reg(ch, ch)
-
-        self.set_buf = self.vim.current.buffer
-
-        self.set_buf[:] = ['{}:{}'.format(k, p) for k,p in self.mark_dict.items()]
-        self.set_buf_common_option()
-        self.set_buf_out_dated = False
-
-    def init_go_buf(self):
-        self.vim.command('belowright split new')
-        self.set_buf_common_option()
-        self.vim.current.buffer[:] = ['{}:{}'.format(k, p) for k,p in self.mark_dict.items()]
-
-        for k, path in self.mark_dict.items():
-            self.map_key_reg(k, path)
-        self.go_buf_out_dated = False
-
-    def set_buf_common_option(self):
-        self.vim.command('setlocal noswapfile')
-        self.vim.command('setlocal foldmethod=manual')
-        self.vim.command('setlocal foldcolumn=0')
-        self.vim.command('setlocal nofoldenable')
-        self.vim.command('setlocal nobuflisted')
-        self.vim.command('setlocal nospell')
-        self.vim.command('setlocal buftype=nofile')
-        self.vim.command('setlocal bufhidden=hide')
-
     def set(self, path):
-        if self.set_buf is None or not self.set_buf.valid:
-            self.init_set_buf()
+        if not self.buf_valid('set'):
+            self.create_buf(mappings=zip(self.valid_mark, self.valid_mark),
+                            content=['{}:{}'.format(k, p) for k,p in self.mark_dict.items()],
+                            name='set')
         else:
-            self.vim.command('belowright {}sb'.format(self.set_buf.number))
+            self.show('set')
         self.path_to_mark = path
         self.netranger.pend_onuiquit(self._set, 1)
 
@@ -85,38 +101,41 @@ class BookMarkUI(UI):
         if mark not in self.valid_mark:
             self.vim.command('echo "Only a-zA-Z are valid mark!!"')
             return
-        self.set_buf.options['modifiable'] = True
-        log(self.path_to_mark)
-        log(self.mark_dict.values())
-        log(self.path_to_mark in self.mark_dict.values())
+        set_buf = self.bufs['set']
+        set_buf.options['modifiable'] = True
+        log(mark)
+        log(self.mark_dict)
         if mark in self.mark_dict:
-            for i, line in enumerate(self.set_buf):
+            for i, line in enumerate(set_buf):
                 if len(line)>0 and line[0] == mark:
-                    self.set_buf[i] = '{}:{}'.format(mark, self.path_to_mark)
+                    set_buf[i] = '{}:{}'.format(mark, self.path_to_mark)
                     break
         elif self.path_to_mark in self.mark_dict.values():
-            for i, line in enumerate(self.set_buf):
+            for i, line in enumerate(set_buf):
                 if len(line)>0 and line[2:] == self.path_to_mark:
-                    self.set_buf[i] = '{}:{}'.format(mark, self.path_to_mark)
+                    set_buf[i] = '{}:{}'.format(mark, self.path_to_mark)
                     break
         else:
-            self.set_buf.append('{}:{}'.format(mark, self.path_to_mark))
-        self.set_buf.options['modifiable'] = False
+            set_buf.append('{}:{}'.format(mark, self.path_to_mark))
+        set_buf.options['modifiable'] = False
         self.mark_dict[mark] = self.path_to_mark
-        self.go_buf_out_dated = True
+        self.del_buf('go')
         with open(self.vim.vars['NETRBookmarkFile'], 'w') as f:
             for k, p in self.mark_dict.items():
                 f.write('{}:{}\n'.format(k,p))
 
     def go(self):
-        if self.go_buf is None or not self.go_buf.valid or self.go_buf_out_dated:
-            self.init_go_buf()
+        if not self.buf_valid('go'):
+            self.create_buf(mappings=self.mark_dict.items(),
+                            content=['{}:{}'.format(k, p) for k,p in self.mark_dict.items()],
+                            name='go')
         else:
-            self.vim.command('belowright {}sb'.format(self.go_buf.number))
+            self.show('go')
         self.netranger.pend_onuiquit('set_cwd', 1)
 
     def edit(self):
         self.vim.command('belowright split {}'.format(self.vim.vars['NETRBookmarkFile']))
         self.vim.command('setlocal bufhidden=wipe')
-        self.go_buf_out_dated = True
+        self.del_buf('set')
+        self.del_buf('go')
         self.netranger.pend_onuiquit(self.load_bookmarks)

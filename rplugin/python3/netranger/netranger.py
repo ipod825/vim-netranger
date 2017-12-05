@@ -5,7 +5,7 @@ from netranger.fs import FS, RClone
 from netranger.util import log, VimErrorMsg
 from netranger import default
 from netranger.colortbl import colortbl
-from netranger.ui import BookMarkUI
+from netranger.ui import BookMarkUI, HelpUI
 from enum import Enum
 
 
@@ -509,7 +509,8 @@ class Netranger(object):
         self.initVimVariables()
         self.initKeymaps()
         self.rclone = None
-        self.bookmark = None
+        self.bookmarkUI = None
+        self.helpUI = None
         self.isEditing = False
         self.onuiquit = None
         self.onuiquitNumArgs = 0
@@ -521,11 +522,13 @@ class Netranger(object):
 
     def initKeymaps(self):
         self.keymaps = {}
+        self.keymap_doc = {}
         skip = [k.lower() for k in self.vim.vars['NETRDefaultMapSkip']]
-        for fn, keys in default.keymap.items():
+        for fn, (keys, desc) in default.keymap.items():
             user_keys = self.vim.vars.get(fn, [])
             user_keys += [k for k in keys if k not in skip]
             self.keymaps[fn] = user_keys
+            self.keymap_doc[fn] = (keys, desc)
 
     def on_bufenter(self, bufnum):
         if bufnum not in self.bufs:
@@ -587,12 +590,12 @@ class Netranger(object):
             getattr(self.curBuf, fn)()
 
     def _NETRBookmarkSet(self, mark):
-        self.bookmark._set(mark)
+        self.bookmarkUI._set(mark)
 
     def _BookMarkDo(self, fn, *args):
-        if self.bookmark is None:
-            self.bookmark = BookMarkUI(self.vim, self)
-        getattr(self.bookmark, fn)(*args)
+        if self.bookmarkUI is None:
+            self.bookmarkUI = BookMarkUI(self.vim, self)
+        getattr(self.bookmarkUI, fn)(*args)
 
     def NETRBookmarkSet(self):
         self._BookMarkDo('set', self.curBuf.cwd)
@@ -602,6 +605,12 @@ class Netranger(object):
 
     def NETRBookmarkEdit(self):
         self._BookMarkDo('edit')
+
+    def NETRBookmarkHelp(self):
+        if self.helpUI is None:
+            self.helpUI = HelpUI(self.vim, self.keymap_doc)
+        else:
+            self.helpUI.show()
 
     def valid_rclone_or_install(self):
         if self.rclone is not None:
