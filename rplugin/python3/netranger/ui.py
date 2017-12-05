@@ -52,8 +52,6 @@ class UI(object):
 class HelpUI(UI):
     def __init__(self, vim, keymap_doc):
         UI.__init__(self, vim)
-        for fn, (keys, desc) in keymap_doc.items():
-            log(fn, ','.join(keys), desc)
 
         self.create_buf(content=['{:<25} {:<10} {}'.format(fn, ','.join(keys), desc) for fn, (keys, desc) in keymap_doc.items()])
 
@@ -103,8 +101,7 @@ class BookMarkUI(UI):
             return
         set_buf = self.bufs['set']
         set_buf.options['modifiable'] = True
-        log(mark)
-        log(self.mark_dict)
+
         if mark in self.mark_dict:
             for i, line in enumerate(set_buf):
                 if len(line)>0 and line[0] == mark:

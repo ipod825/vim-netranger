@@ -6,7 +6,7 @@ Vim-netranger is a ranger-like system/cloud storage explorer for Vim. It brings 
 
 1. Against Vim (netrw):
     - Better rendering
-    - Open file with extern program
+    - Open files with extern programs (see [Rifle](#rifle))
     - Supports various cloud storages (via rclone)
 2. Against ranger:
     - No `sudo` required
@@ -74,6 +74,10 @@ vim-netranger requires Neovim. You should install neovim's Python3 api with pip:
 2. Press `'` to open the bookmark UI again. You'll see that previous entered character appears there. Press the correct character to navigate to the directory you want to go.
 3. Press `em` to edit the bookmark with vim. On saving (e.g. `:x`)the file, your bookmarks will be updated automatically.
 4. Note that you can use `:q` to quit the bookmark ui to abort the aforementioned operation. 
+
+### Rifle
+1. Rifle is a config file ranger used to open files with external program. vim-netranger mimics its syntax and behavior.
+2. If you don't have a `rifle.config` file in `g:NETRRootDir` (default to `$HOME/.netranger/`), vim-netranger will copy a default one to that directory. You can simply modify the default `rifle.config` to serve your need.
 
 
 ### Sort

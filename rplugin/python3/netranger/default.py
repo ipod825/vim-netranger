@@ -46,6 +46,7 @@ variables = {
     'NETRHiCWD': 'yellow',
     'NETRRootDir': root_dir,
     'NETRBookmarkFile': root_dir+'bookmark',
+    'NETRRifleFile': root_dir+'rifle.conf',
     'NETRCacheDir': root_dir+'cache',
     '_NETRRegister': [],  # internal use only
 }

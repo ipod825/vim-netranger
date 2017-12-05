@@ -2,10 +2,11 @@ import os
 import fnmatch
 from neovim.api.nvim import NvimError
 from netranger.fs import FS, RClone
-from netranger.util import log, VimErrorMsg
+from netranger.util import log, VimErrorMsg, Shell
 from netranger import default
 from netranger.colortbl import colortbl
 from netranger.ui import BookMarkUI, HelpUI
+from netranger.rifle import Rifle
 from enum import Enum
 
 
@@ -229,9 +230,10 @@ class Page(object):
 
 
 class NetRangerBuf(object):
-    def __init__(self, vim, keymaps, cwd, fs):
+    def __init__(self, vim, keymaps, cwd, fs, rifle):
         self.vim = vim
         self.fs = fs
+        self.rifle = rifle
         self.keymaps = keymaps
 
         self.pages = {}
@@ -342,7 +344,11 @@ class NetRangerBuf(object):
         else:
             if type(self.fs) is RClone:
                 self.fs.download(fullpath)
-            self.vim.command('tab drop {}'.format(fullpath))
+            cmd = self.rifle.decide_open_cmd(fullpath)
+            if not cmd:
+                self.vim.command('tab drop {}'.format(fullpath))
+            else:
+                Shell.spawn('{} {}'.format(cmd, fullpath))
 
     def NETRParentDir(self):
         if self.cwd == self.pinnedRoot:
@@ -514,6 +520,7 @@ class Netranger(object):
         self.isEditing = False
         self.onuiquit = None
         self.onuiquitNumArgs = 0
+        self.rifle = Rifle(self.vim, self.vim.vars['NETRRifleFile'])
 
     def initVimVariables(self):
         for k,v in default.variables.items():
@@ -544,9 +551,9 @@ class Netranger(object):
                 self.vim.command('setlocal buftype=nofile')
 
                 if(bufname.startswith(self.vim.vars['NETRCacheDir'])):
-                    self.bufs[bufnum] = NetRangerBuf(self.vim, self.keymaps, os.path.abspath(bufname), self.rclone)
+                    self.bufs[bufnum] = NetRangerBuf(self.vim, self.keymaps, os.path.abspath(bufname), self.rclone, self.rifle)
                 else:
-                    self.bufs[bufnum] = NetRangerBuf(self.vim, self.keymaps, os.path.abspath(bufname), FS())
+                    self.bufs[bufnum] = NetRangerBuf(self.vim, self.keymaps, os.path.abspath(bufname), FS(), self.rifle)
         else:
             if self.onuiquit is not None:
                 if len(self.vim.vars['_NETRRegister']) == self.onuiquitNumArgs:
