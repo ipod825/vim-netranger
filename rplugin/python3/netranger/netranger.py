@@ -122,6 +122,7 @@ class Page(object):
         self.nodes.insert(0, Node(self.cwd, self.vim.vars['NETRHiCWD']))
         self.initClineNo(prevcwd)
         self.nodes[self.clineNo].cursor_on()
+        self.mtime = Shell.mtime(cwd)
 
     def createNodes(self, cwd, level=0):
         nodes = []
@@ -184,6 +185,10 @@ class Page(object):
     @property
     def plain_content(self):
         return [n.name for n in self.nodes]
+
+    @property
+    def is_dirty(self):
+        return Shell.mtime(self.cwd) > self.mtime
 
     def find_next_ind(self, ind, pred):
         beg_node = self.nodes[ind]
@@ -283,6 +288,12 @@ class NetRangerBuf(object):
         self.vim.command('setlocal nomodifiable')
         self.render_lock = False
 
+    def update_dirty_pages(self):
+        log('update')
+        dirty_page_wds = [wd for wd, page in self.pages.items() if page.is_dirty]
+        for wd in dirty_page_wds:
+            self.refresh_page(wd)
+
     @property
     def curPage(self):
         return self.pages[self.cwd]
@@ -295,6 +306,9 @@ class NetRangerBuf(object):
         if not os.path.isdir(cwd):
             return
         self.finalizeCutCopy()
+
+        if cwd in self.pages and self.pages[cwd].is_dirty:
+            self.refresh_page(cwd)
 
         if cwd not in self.pages:
             if isParentOfPrev:
@@ -323,9 +337,18 @@ class NetRangerBuf(object):
             except NvimError:
                 ind = ind + 1
 
-    def refresh_page(self):
-        self.pages[self.cwd] = Page(self.vim, self.cwd, self.fs)
-        self.render()
+    def refresh_page(self, wd=None):
+        if wd is None:
+            wd = self.cwd
+
+        if wd == self.cwd:
+            log('update cwd {}'.format(self.cwd))
+            self.pages[wd] = Page(self.vim, wd, self.fs)
+            self.render()
+        else:
+            log('update {}'.format(wd))
+            self.pages[wd] = None
+            del self.pages[wd]
 
     def on_cursormoved(self):
         if self.isEditing:
@@ -351,6 +374,9 @@ class NetRangerBuf(object):
                 Shell.spawn('{} {}'.format(cmd, fullpath))
 
     def NETRParentDir(self):
+        log('open cwd: ', self.cwd)
+        log(self.pages)
+
         if self.cwd == self.pinnedRoot:
             return
         pdir = self.fs.parent_dir(self.cwd)
@@ -466,7 +492,7 @@ class NetRangerBuf(object):
         self.copy_lines = []
         if self.source_page_wd is not None:
             del self.pages[self.source_page_wd]
-        self.source_page_wd = None
+        self.refresh_page(self.source_page_wd)
         self.refresh_page()
         self.render()
 
@@ -562,6 +588,7 @@ class Netranger(object):
                 else:
                     self.bufs[bufnum] = NetRangerBuf(self.vim, self.keymaps, os.path.abspath(bufname), FS(), self.rifle)
         else:
+            self.curBuf.update_dirty_pages()
             if self.onuiquit is not None:
                 if len(self.vim.vars['_NETRRegister']) == self.onuiquitNumArgs:
                     if type(self.onuiquit) is str:

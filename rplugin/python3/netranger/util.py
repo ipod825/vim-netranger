@@ -57,6 +57,18 @@ class Shell():
         return subprocess.check_output(cmd, shell=True).decode('utf-8')
 
     @classmethod
+    def touch(cls, name):
+        Shell.run('touch ' + name)
+
+    @classmethod
+    def rm(cls, name):
+        Shell.run('rm ' + name)
+
+    @classmethod
+    def mtime(cls, fname):
+        return os.stat(fname).st_mtime
+
+    @classmethod
     def spawn(cls, cmd):
         spawnDaemon(lambda: subprocess.check_output(cmd.split(' ')).decode('utf-8'))
 

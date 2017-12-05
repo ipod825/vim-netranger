@@ -33,8 +33,8 @@ def assert_highlight(expected, background=True, ind=None):
     assert m.group(1) == expected, 'expected: "{}", real: "{}"'.format(expected, m.group(1))
 
 
-def assert_num_contenr_line(numLine):
-    assert numLine == len(nvim.current.buffer)-1
+def assert_num_content_line(numLine):
+    assert numLine == len(nvim.current.buffer)-1, 'expected line #: {}, real line #: {}'.format(numLine, len(nvim.current.buffer)-1)
 
 
 def assert_fs(fn):
@@ -147,6 +147,18 @@ def test_delete():
     assert_fs(lambda: Shell.run('ls')=='')
 
 
+def test_detect_fs_change():
+    Shell.touch('newfile')
+    nvim.command('split new')
+    nvim.command('quit')
+    assert_num_content_line(3)
+
+    nvim.input('l')
+    Shell.rm('newfile')
+    nvim.input('h')
+    assert_num_content_line(2)
+
+
 def test_bookmark():
     bookmarkfile = default.variables['NETRBookmarkFile']
     copy = '{}/{}bak'.format(os.path.dirname(bookmarkfile), os.path.basename(bookmarkfile))
@@ -178,7 +190,7 @@ def test_misc():
     assert_content('.a', ind=2)
 
     nvim.input('zh')
-    assert_num_contenr_line(2)
+    assert_num_content_line(2)
 
 
 if __name__ == '__main__':
@@ -193,7 +205,8 @@ if __name__ == '__main__':
         # do_test(test_pickCutCopyPaste)
         # do_test(test_delete)
         # do_test(test_bookmark)
-        do_test(test_misc)
+        # do_test(test_misc)
+        do_test(test_detect_fs_change)
     except Exception as e:
         print(e)
     finally:
