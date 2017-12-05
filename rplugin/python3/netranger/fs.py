@@ -171,7 +171,6 @@ class RClone(object):
         self.getNode(fname).download()
 
     def parent_dir(self, cwd):
-        log(cwd, len(cwd), self.rplen-1)
         if len(cwd) == self.rplen-1:
             return cwd
         return os.path.abspath(os.path.join(cwd, os.pardir))

@@ -43,11 +43,8 @@ class Rifle(object):
 
                 tests = []
                 for test in sp[0].strip().split(','):
-                    log('test', test)
                     testSp = [e for e in test.split(' ') if e!='']
-                    log('testSp', testSp)
                     tests.append(globals()[testSp[0]](testSp[1]))
-                    log('tests', tests)
                 command = sp[1].strip()
                 self.rules.append((tests, command))
 

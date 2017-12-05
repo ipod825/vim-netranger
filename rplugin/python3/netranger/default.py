@@ -1,12 +1,12 @@
 import os
 keymap = {
-    # should all be in small case for NETRDefaultMapSkip feature
+    # non-printable characters (e.g. <cr>) should be in small case for NETRDefaultMapSkip feature
     'NETROpen': (['l','<right>'], "Change directory/open file under cursor"),
     'NETRParentDir': (['h','<left>'], "Change to parent directory"),
-    'NETRToggleExpand': (['<Space>', 'o'], "Toggle expand current directory under cursor"),
+    'NETRToggleExpand': (['<space>', 'o'], "Toggle expand current directory under cursor"),
     'NETRVimCD': (['<cr>'], "Changing vim's pwd to the directory of the entry under cursor"),
     'NETREdit': (['i'], "Enter edit mode to rename file/directory names"),
-    'NETRSave': (['<Esc>'], "Leave edit mode to save changes made in edit mode"),
+    'NETRSave': (['<esc>'], "Leave edit mode to save changes made in edit mode"),
     'NETRTogglePick': (['v','V'], "Pick the current entry for further copy/cut"),
     'NETRCut': (['x','d'], "Cut all picked entries"),
     'NETRCopy': (['y'], "Copy the current entry."),
@@ -37,7 +37,6 @@ color = {
 }
 
 
-# TODO
 root_dir = os.path.expanduser('~/.netranger/')
 variables = {
     'NETRIgnore': [],
