@@ -109,5 +109,5 @@ let g:NETRBookmarkGo = ["m"]
 | g:NETRIgnore         | File patterns (bash wild card) to ignore (not displaying) | []                    |
 | g:NETRRootDir        | Directory for storing remote cache and bookmark file      | ['$HOME/.netranger/'] |
 | g:NETRTabAutoToFirst | Automatically move new netranger tab to the first tab     | v:false               |
-| g:NETROpenInBUffer   | Open files in current buffer instead of a new tab         | v:false               |
+| g:NETROpenInBuffer   | Open files in current buffer instead of a new tab         | v:false               |
 
