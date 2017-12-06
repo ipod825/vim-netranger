@@ -368,9 +368,12 @@ class NetRangerBuf(object):
             if type(self.fs) is RClone:
                 self.fs.download(fullpath)
             cmd = self.rifle.decide_open_cmd(fullpath)
+            # TODO: fix white space in fullpath issue
             if not cmd:
-                self.vim.command('tab drop {}'.format(fullpath))
-                self.vim.command('normal! "<Esc>"')
+                if self.vim.vars['NETROpenInBuffer']:
+                    self.vim.command('edit {}'.format(fullpath))
+                else:
+                    self.vim.command('tab drop {}'.format(fullpath))
             else:
                 Shell.spawn('{} {}'.format(cmd, fullpath))
 

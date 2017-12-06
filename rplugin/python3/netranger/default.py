@@ -40,6 +40,7 @@ color = {
 root_dir = os.path.expanduser('~/.netranger/')
 variables = {
     'NETRIgnore': [],
+    'NETROpenInBuffer': False,
     'NETRDefaultMapSkip': [],
     'NETRTabAutoToFirst': False,
     'NETRHiCWD': 'yellow',
