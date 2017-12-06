@@ -6,6 +6,13 @@ from neovim import attach
 import re
 import time
 
+Cr = chr(13)
+
+
+def avoid_freeze():
+    # Somehow, I need to enter Cr at sometime, otherwise it will print "Press ENTER or type command to continue"
+    nvim.input(Cr)
+
 
 def assert_content(expected, level=0, ind=None):
     time.sleep(0.01)
@@ -94,9 +101,9 @@ def test_navigation():
     nvim.input(' ')
     assert_content('dir2', ind=1)
 
-    nvim.input('j'+chr(13))
+    nvim.input('j'+Cr)
     assert os.path.basename(nvim.command_output('pwd')) == 'dir2'
-    nvim.input('k 3j'+chr(13))
+    nvim.input('k 3j'+Cr)
     assert os.path.basename(nvim.command_output('pwd')) == 'dir'
 
 
@@ -144,6 +151,7 @@ def test_delete():
     nvim.input('vD')
     assert_fs(lambda: Shell.run('ls').split()[0]=='dir2')
     nvim.input('XX')
+    avoid_freeze()
     assert_fs(lambda: Shell.run('ls')=='')
 
 
@@ -187,27 +195,24 @@ def test_misc():
     assert_content('dir')
 
     nvim.input('zh')
+    avoid_freeze()
     assert_content('.a', ind=2)
 
     nvim.input('zh')
+    avoid_freeze()
     assert_num_content_line(2)
 
 
 if __name__ == '__main__':
-    nvim = attach('socket', path='/tmp/nvim')
+    nvim = attach('socket', path='/tmp/netrangertest')
     ori_timeoutlen = nvim.options['timeoutlen']
     nvim.options['timeoutlen'] = 1
 
-    try:
-        # do_test(dummy,False)
-        # do_test(test_navigation)
-        # do_test(test_edit)
-        # do_test(test_pickCutCopyPaste)
-        # do_test(test_delete)
-        # do_test(test_bookmark)
-        # do_test(test_misc)
-        do_test(test_detect_fs_change)
-    except Exception as e:
-        print(e)
-    finally:
-        nvim.options['timeoutlen'] = ori_timeoutlen
+    do_test(test_navigation)
+    do_test(test_edit)
+    do_test(test_pickCutCopyPaste)
+    do_test(test_delete)
+    do_test(test_bookmark)
+    do_test(test_misc)
+    do_test(test_detect_fs_change)
+    nvim.options['timeoutlen'] = ori_timeoutlen
