@@ -497,6 +497,7 @@ class NetRangerBuf(object):
         if self.source_page_wd is not None:
             del self.pages[self.source_page_wd]
         self.refresh_page(self.source_page_wd)
+        self.source_page_wd = None
         self.refresh_page()
         self.render()
 
