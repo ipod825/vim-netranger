@@ -2,7 +2,7 @@ import os
 import fnmatch
 from neovim.api.nvim import NvimError
 from netranger.fs import FS, RClone
-from netranger.util import log, VimErrorMsg, Shell
+from netranger.util import log, VimIO, Shell
 from netranger import default
 from netranger.colortbl import colortbl
 from netranger.ui import BookMarkUI, HelpUI
@@ -223,7 +223,7 @@ class Page(object):
         curBuf = self.vim.current.buffer
         if len(self.nodes) != len(curBuf):
             curBuf[:] = self.highlight_content
-            return False
+            VimIO.ErrorMsg('Edit mode can not add/delete files!')
         else:
             for i, line in enumerate(curBuf):
                 line = line.strip()
@@ -231,7 +231,6 @@ class Page(object):
                     oripath = self.nodes[i].rename(line)
                     self.fs.mv(oripath, self.nodes[i].fullpath)
             curBuf[:] = self.highlight_content
-            return True
 
 
 class NetRangerBuf(object):
@@ -378,9 +377,6 @@ class NetRangerBuf(object):
                 Shell.spawn('{} {}'.format(cmd, fullpath))
 
     def NETRParentDir(self):
-        log('open cwd: ', self.cwd)
-        log(self.pages)
-
         if self.cwd == self.pinnedRoot:
             return
         pdir = self.fs.parent_dir(self.cwd)
@@ -412,13 +408,11 @@ class NetRangerBuf(object):
     def NETRSave(self):
         if not self.isEditing:
             return
-        succ = self.curPage.rename_nodes_from_content()
+        self.curPage.rename_nodes_from_content()
         self.refresh_page()
         self.map_keys()
         self.isEditing = False
         self.vim.command('setlocal nomodifiable')
-        if not succ:
-            VimErrorMsg(self.vim, 'Edit mode can not add/delete files!')
 
     def NETRTogglePinRoot(self):
         if self.pinnedRoot is not None:
@@ -441,7 +435,7 @@ class NetRangerBuf(object):
 
     def _cutcopy(self, op, oplines):
         if self.source_page_wd is not None:
-            VimErrorMsg(self.vim, 'Paste before {} again!'.format(op))
+            VimIO.ErrorMsg('Paste before {} again!'.format(op))
             return
 
         for l in self.picked_lines:
@@ -488,7 +482,7 @@ class NetRangerBuf(object):
             for path in self.copy_path:
                 self.fs.cp(path, self.cwd)
         except Exception as e:
-            VimErrorMsg(self.vim, e)
+            VimIO.ErrorMsg(e)
 
         self.cut_path = []
         self.copy_path = []
@@ -540,6 +534,7 @@ class Netranger(object):
         self.vim = vim
         self.inited = False
         self.bufs = {}
+        VimIO.init(self.vim)
 
     def init(self):
         self.inited = True
@@ -635,9 +630,6 @@ class Netranger(object):
         else:
             getattr(self.curBuf, fn)()
 
-    def _NETRBookmarkSet(self, mark):
-        self.bookmarkUI._set(mark)
-
     def _BookMarkDo(self, fn, *args):
         if self.bookmarkUI is None:
             self.bookmarkUI = BookMarkUI(self.vim, self)
@@ -671,17 +663,4 @@ class Netranger(object):
         if self.rclone.has_remote:
             self.vim.command('tabe ' + self.vim.vars['NETRCacheDir'])
         else:
-            VimErrorMsg(self.vim, "There's no remote now. Run 'rclone config' in a terminal to setup remotes")
-
-    def cd(self, dst):
-        if not self.isInNETRBuf:
-            self.vim.command('Only applicable in a netranger buffer.')
-        else:
-            if dst=='~':
-                DST = os.path.expanduser('~')
-            else:
-                DST = os.path.abspath(dst)
-            if not os.path.isdir(DST):
-                self.vim.command('echo "Error: {} is not a directory"'.format(dst))
-            else:
-                self.curBuf.set_cwd(DST)
+            VimIO.ErrorMsg("There's no remote now. Run 'rclone config' in a terminal to setup remotes")

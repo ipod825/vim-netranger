@@ -1,6 +1,6 @@
 import os
 from netranger.util import Shell
-from netranger.util import log
+from netranger.util import log, VimIO
 import shutil
 
 log('')
@@ -179,14 +179,10 @@ class RClone(object):
         import platform
         import zipfile
 
-        def getUserInput(vim, hint, default=''):
-            vim.command('let g:_NETRRegister=input("{}: ", "{}")'.format(hint, default))
-            return vim.vars['_NETRRegister']
-
         if Shell.isinPATH('rclone'):
             return True
         else:
-            rclone_dir = getUserInput(vim, 'Rclone not in PATH. Install it at (modify/enter)', os.path.expanduser('~/rclone'))
+            rclone_dir = VimIO.userInput('Rclone not in PATH. Install it at (modify/enter)', os.path.expanduser('~/rclone'))
             Shell.mkdir(rclone_dir)
 
             system = platform.system().lower()
@@ -210,7 +206,8 @@ class RClone(object):
             zip_ref.close()
             os.remove(zip_fname)
 
-            shellrc = getUserInput(vim, 'Update PATH in (leave blank to set manually later)', Shell.shellrc())
-            with open(shellrc, 'a') as f:
-                f.write('PATH={}:$PATH\n'.format(rclone_dir))
+            shellrc = VimIO.userInput('Update PATH in (leave blank to set manually later)', Shell.shellrc())
+            if len(shellrc)>0:
+                with open(shellrc, 'a') as f:
+                    f.write('PATH={}:$PATH\n'.format(rclone_dir))
             os.environ['PATH'] += ':' + rclone_dir

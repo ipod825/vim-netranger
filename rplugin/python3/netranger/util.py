@@ -4,18 +4,30 @@ import subprocess
 import sys
 
 
+import tempfile
 def log(*msg):
-    with open("/tmp/netlog", 'a') as f:
+    with open(os.path.join(tempfile.gettempdir(), "netlog"), 'a') as f:
         f.write(' '.join([str(m) for m in msg])+"\n")
 
 
-def VimErrorMsg(vim, exception):
-    if hasattr(exception, 'output'):
-        msg = exception.output.decode('utf-8')
-    else:
-        msg = str(exception)
+class VimIO(object):
+    vim = None
 
-    vim.command('echohl ErrorMsg | echo "{}" | echohl None '.format(msg.replace('"','\\"')))
+    @classmethod
+    def init(cls, vim):
+        VimIO.vim = vim
+
+    def ErrorMsg(exception):
+        if hasattr(exception, 'output'):
+            msg = exception.output.decode('utf-8')
+        else:
+            msg = str(exception)
+
+        VimIO.vim.command('echohl ErrorMsg | echo "{}" | echohl None '.format(msg.replace('"','\\"')))
+
+    def userInput(hint, default=''):
+        VimIO.vim.command('let g:_NETRRegister=input("{}: ", "{}")'.format(hint, default))
+        return VimIO.vim.vars['_NETRRegister']
 
 
 def spawnDaemon(func):
