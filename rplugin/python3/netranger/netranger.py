@@ -8,6 +8,7 @@ from netranger.colortbl import colortbl
 from netranger.ui import BookMarkUI, HelpUI
 from netranger.rifle import Rifle
 from enum import Enum
+from collections import defaultdict
 
 
 log('')
@@ -22,6 +23,7 @@ class Node(object):
         self.set_highlight(highlight)
         self.level = level
         self.state = Node.State.NORMAL
+        self.valid = True
 
     def set_highlight(self, highlight, cursor_on=False):
         if type(highlight) is str:
@@ -102,7 +104,7 @@ class EntryNode(Node):
         self.state = Node.State.UNDEROP
         self.set_highlight(default.color['copy'])
 
-    def reset_state(self):
+    def reset_highlight(self):
         self.state = Node.State.NORMAL
         self.highlight = self.ori_highlight
 
@@ -113,70 +115,23 @@ class DirNode(EntryNode):
         EntryNode.__init__(self, fullpath, name, ftype, level)
 
 
-class Page(object):
-    def __init__(self, vim, cwd, fs, prevcwd=None):
-        self.vim = vim
-        self.cwd = cwd
-        self.fs = fs
-        self.nodes = self.createNodes(cwd)
-        self.nodes.insert(0, Node(self.cwd, self.vim.vars['NETRHiCWD']))
-        self.initClineNo(prevcwd)
-        self.nodes[self.clineNo].cursor_on()
-        self.mtime = Shell.mtime(cwd)
-
-    def createNodes(self, cwd, level=0):
-        nodes = []
-        for f in self.fs.ls(cwd):
-            shouldIgnore = False
-            for ig in self.vim.vars['NETRIgnore']:
-                if fnmatch.fnmatch(f, ig):
-                    shouldIgnore = True
-                    break
-            if not shouldIgnore:
-                fullpath = os.path.join(cwd, f)
-                if os.path.isdir(fullpath):
-                    nodes.append(DirNode(fullpath, f, self.fs.ftype(fullpath), level=level))
-                else:
-                    nodes.append(EntryNode(fullpath, f, self.fs.ftype(fullpath), level=level))
-        return nodes
-
-    def initClineNo(self, prevcwd=None):
-        self.clineNo = 0
-        if prevcwd is not None:
-            prevcwd = os.path.basename(prevcwd)
-            for i, node in enumerate(self.nodes):
-                if node.name == prevcwd:
-                    self.clineNo = i
-                    break
-        else:
-            for i, node in enumerate(self.nodes):
-                if not node.isHeader:
-                    self.clineNo = i
-                    break
-
-    def refresh_lines(self, lineNos):
-        self.vim.command('setlocal modifiable')
-
-        self.nodes[self.clineNo].cursor_on()
-        if type(lineNos) is list:
-            for l in lineNos:
-                self.vim.current.buffer[l] = self.nodes[l].highlight_content
-        else:
-            self.vim.current.buffer[lineNos] = self.nodes[lineNos].highlight_content
-        self.vim.command('setlocal nomodifiable')
-
-    def setClineNo(self, newLineNo):
-        if newLineNo == self.clineNo:
-            return
-
-        oc = self.clineNo
-        self.nodes[oc].cursor_off()
-        self.clineNo = newLineNo
-        self.refresh_lines([oc, newLineNo])
+class NetRangerBuf(object):
+    header_height = None
 
     @property
-    def curNode(self):
-        return self.nodes[self.clineNo]
+    def first_content_lineNo(self):
+        if NetRangerBuf.header_height is None:
+            i = 0
+            sz = len(self.nodes)
+            while i < sz:
+                if not self.nodes[i].isHeader:
+                    break
+                i = i + 1
+            NetRangerBuf.header_height = i
+        if len(self.nodes) == NetRangerBuf.header_height:
+            return NetRangerBuf.header_height - 1
+        else:
+            return NetRangerBuf.header_height
 
     @property
     def highlight_content(self):
@@ -187,8 +142,246 @@ class Page(object):
         return [n.name for n in self.nodes]
 
     @property
-    def is_dirty(self):
-        return Shell.mtime(self.cwd) > self.mtime
+    def curNode(self):
+        return self.nodes[self.clineNo]
+
+    @property
+    def highlight_outdated(self):
+        return 0 < len(self.highlight_outdated_nodes)
+
+    def __init__(self, vim, wd, fs, rifle):
+        self.vim = vim
+        self.fs = fs
+
+        self.wd = wd
+        self.content_outdated = False
+        self.highlight_outdated_nodes = set()
+        self.expanded_dirs = set()
+
+        self.vim.command('silent file N:{}'.format(os.path.basename(wd)))
+        self.vim.command('lcd ' + wd)
+
+        self.nodes = self.createNodes(self.wd)
+        self.nodes.insert(0, Node(Shell.abbrevuser(wd), self.vim.vars['NETRHiCWD']))
+        self.clineNo = self.first_content_lineNo
+        self.nodes[self.clineNo].cursor_on()
+        self.mtime = fs.mtime(wd)
+        self.render()
+
+    def createNodes(self, wd, level=0):
+        nodes = []
+        for f in self.fs.ls(wd):
+            if self.shouldIgnore(f):
+                continue
+            node = self.createNode(wd, f, level)
+            if node:
+                nodes.append(node)
+        return nodes
+
+    def shouldIgnore(self, basename):
+        for ig in self.vim.vars['NETRIgnore']:
+            if fnmatch.fnmatch(basename, ig):
+                return True
+        return False
+
+    def createNode(self, dirname, basename, level):
+        fullpath = os.path.join(dirname, basename)
+        if os.path.isdir(fullpath):
+            return DirNode(fullpath, basename, self.fs.ftype(fullpath), level=level)
+        else:
+            return EntryNode(fullpath, basename, self.fs.ftype(fullpath), level=level)
+
+    def refresh_nodes(self):
+        new_mtime = self.fs.mtime(self.wd)
+        if new_mtime > self.mtime:
+            self.content_outdated = True
+            self.mtime = self.fs.mtime(self.wd)
+        for d in self.expanded_dirs:
+            if not os.path.isdir(d.fullpath):
+                continue
+            if self.fs.mtime(d.fullpath):
+                self.content_outdated = True
+                break
+
+        if not self.content_outdated:
+            return
+        oriNode = self.curNode
+
+        self.content_outdated = False
+        new_nodes = []
+        fs_files = [set(self.fs.ls(self.wd))]
+        for i in range(len(self.nodes)):
+            curNode = self.nodes[i]
+            if curNode.isHeader:
+                new_nodes.append(curNode)
+                continue
+
+            prevNode = self.nodes[i-1]
+            if curNode.level > prevNode.level:
+                fs_files.append(set(self.fs.ls(prevNode.fullpath)))
+            else:
+                fs_files = fs_files[:curNode.level+1]
+
+            if self.shouldIgnore(curNode.name) or curNode.name not in fs_files[-1]:
+                continue
+
+            new_nodes.append(curNode)
+            if curNode.isDir and curNode.expanded:
+                nextInd = self.next_lesseq_level_ind(i)
+                old_names = set([n.name for n in self.nodes[i+1:nextInd+1]])
+                for new_name in self.fs.ls(curNode.fullpath):
+                    if self.shouldIgnore(new_name):
+                        continue
+                    if new_name not in old_names:
+                        new_node = self.createNode(curNode.fullpath, new_name, curNode.level+1)
+                        new_nodes.append(new_node)
+
+        old_names = set([n.name for n in self.nodes])
+        for new_name in self.fs.ls(self.wd):
+            if self.shouldIgnore(new_name):
+                continue
+            if new_name not in old_names:
+                new_node = self.createNode(self.wd, new_name, 0)
+                new_nodes.append(new_node)
+
+        self.nodes = self.sortNodes(new_nodes)
+        self.render()
+        self.setClineNoByNode(oriNode)
+
+    def refresh_highlight(self):
+        if not self.highlight_outdated:
+            return
+        lines = []
+        for i, node in enumerate(self.nodes):
+            if node in self.highlight_outdated_nodes:
+                lines.append(i)
+        self.refresh_lines(lines)
+        self.highlight_outdated_nodes.clear()
+
+    def sortNodes(self, nodes):
+        header_nodes = []
+        sortedNodes = []
+        prefix =''
+        prefixEndInd = [0]
+        for i in range(len(nodes)):
+            curNode = nodes[i]
+            if curNode.isHeader:
+                header_nodes.append(curNode)
+                continue
+
+            prevNode = nodes[i-1]
+            if curNode.level > prevNode.level:
+                prefix += '  {}'.format(prevNode.name)
+                prefixEndInd.append(len(prefix))
+            else:
+                prefixEndInd = prefixEndInd[:curNode.level+1]
+                prefix = prefix[:prefixEndInd[-1]]
+            if curNode.isDir:
+                sortedNodes.append(('{}  {}'.format(prefix, curNode.name), curNode))
+            else:
+                sortedNodes.append(('{} ~{}'.format(prefix, curNode.name), curNode))
+
+        sortedNodes = sorted(sortedNodes, key=lambda x: x[0])
+        sortedNodes = [node[1] for node in sortedNodes]
+
+        return header_nodes + sortedNodes
+
+    def render(self, plain=False):
+        self.vim.command('setlocal modifiable')
+        if plain:
+            self.vim.current.buffer[:] = self.plain_content
+        else:
+            self.vim.current.buffer[:] = self.highlight_content
+        self.vim.command('setlocal nomodifiable')
+        self.vim.command('call cursor({}, 1)'.format(self.clineNo+1))
+
+    def on_cursormoved(self):
+        log('on_cursormoved')
+        lineNo = self.vim.eval("line('.')") - 1
+        self.setClineNo(lineNo)
+
+    def setClineNoByName(self, name):
+        for i, node in enumerate(self.nodes):
+            if node.name == name:
+                self.vim.command('call cursor({}, 1)'.format(i+1))
+                break
+        return False
+
+    def setClineNoByNode(self, node):
+        if node in self.nodes:
+            self.vim.command('call cursor({}, 1)'.format(self.nodes.index(node)+1))
+        else:
+            self.vim.command('call cursor({}, 1)'.format(self.first_content_lineNo + 1))
+
+    def setClineNo(self, newLineNo):
+        if newLineNo == self.clineNo:
+            # ensure clineNo is on
+            self.nodes[newLineNo].cursor_on()
+            self.refresh_lines([newLineNo])
+            return
+
+        oc = self.clineNo
+        self.clineNo = newLineNo
+        if oc < len(self.nodes):
+            self.nodes[oc].cursor_off()
+        self.nodes[newLineNo].cursor_on()
+        self.refresh_lines([oc, newLineNo])
+
+    def refresh_lines(self, lineNos):
+        self.vim.command('setlocal modifiable')
+
+        sz = min(len(self.nodes), len(self.vim.current.buffer))
+        for i in lineNos:
+            if i < sz:
+                self.vim.current.buffer[i] = self.nodes[i].highlight_content
+        self.vim.command('setlocal nomodifiable')
+
+    def refresh_cur_line(self):
+        self.refresh_lines([self.clineNo])
+
+    def ToggleExpand(self):
+        curNode = self.curNode
+        if not curNode.isDir:
+            return
+        if curNode.expanded:
+            self.expanded_dirs.remove(curNode)
+            endInd = self.next_lesseq_level_ind(self.clineNo)
+            self.nodes = self.nodes[:self.clineNo+1] + self.nodes[endInd:]
+        else:
+            self.expanded_dirs.add(curNode)
+            newNodes = self.createNodes(self.curNode.fullpath, curNode.level+1)
+            if len(newNodes)>0:
+                self.nodes = self.nodes[:self.clineNo+1] + newNodes + self.nodes[self.clineNo+1:]
+        curNode.expanded = not curNode.expanded
+        self.render()
+
+    def Save(self):
+        vimBuf = self.vim.current.buffer
+        if len(self.nodes) != len(vimBuf):
+            VimIO.ErrorMsg('Edit mode can not add/delete files!')
+            self.render()
+            return
+
+        oriNode = self.curNode
+        # We need to rename subdirectory/subfiles first, so we rename from bottom nodes to top nodes.
+        for i in range(len(vimBuf)-1, -1, -1):
+            line = vimBuf[i].strip()
+            if not self.nodes[i].isHeader and line != self.nodes[i].name:
+                oripath = self.nodes[i].rename(line)
+                self.fs.mv(oripath, self.nodes[i].fullpath)
+        self.nodes = self.sortNodes(self.nodes)
+        self.render()
+        self.setClineNoByNode(oriNode)
+
+    def Cut(self, nodes):
+        for node in nodes:
+            node.cut()
+        self.highlight_outdated_nodes.update(nodes)
+
+    def Copy(self, nodes):
+        for node in nodes:
+            node.copy()
+        self.highlight_outdated_nodes.update(nodes)
 
     def find_next_ind(self, ind, pred):
         beg_node = self.nodes[ind]
@@ -203,337 +396,25 @@ class Page(object):
     def next_lesseq_level_ind(self, begInd):
         return self.find_next_ind(begInd, lambda beg, new: new.level<=beg.level)
 
-    def next_lesseq_level_name_ind(self, begInd):
-        return self.find_next_ind(begInd, lambda beg, new: new.level<=beg.level and new.name<=beg.name)
 
-    def toggle_expand(self):
-        curNode = self.curNode
-        if not curNode.isDir:
-            return
-        if curNode.expanded:
-            endInd = self.next_lesseq_level_ind(self.clineNo)
-            self.nodes = self.nodes[:self.clineNo+1] + self.nodes[endInd:]
-        else:
-            newNodes = self.createNodes(self.curNode.fullpath, curNode.level+1)
-            if len(newNodes)>0:
-                self.nodes = self.nodes[:self.clineNo+1] + newNodes + self.nodes[self.clineNo+1:]
-        curNode.expanded = not curNode.expanded
-
-    def rename_nodes_from_content(self):
-        curBuf = self.vim.current.buffer
-        if len(self.nodes) != len(curBuf):
-            curBuf[:] = self.highlight_content
-            VimIO.ErrorMsg('Edit mode can not add/delete files!')
-        else:
-            for i, line in enumerate(curBuf):
-                line = line.strip()
-                if not self.nodes[i].isHeader and line != self.nodes[i].name:
-                    oripath = self.nodes[i].rename(line)
-                    self.fs.mv(oripath, self.nodes[i].fullpath)
-            curBuf[:] = self.highlight_content
-
-
-class NetRangerBuf(object):
-    def __init__(self, vim, keymaps, cwd, fs, rifle):
-        self.vim = vim
-        self.fs = fs
-        self.rifle = rifle
-        self.keymaps = keymaps
-
-        self.pages = {}
-        self.picked_lines = []
-        self.cut_lines, self.copy_lines = [], []
-        self.cut_path, self.copy_path = [], []
-        self.render_lock = False
-        self.pinnedRoot = None
-        self.source_page_wd = None
-        self.isEditing = False
-
-        if self.vim.vars['NETRTabAutoToFirst']:
-            self.vim.command('tabmove 0')
-
-        self.cwd = None
-        self.setBufOption()
-        self.map_keys()
-        self.set_cwd(cwd)
-
-    def map_keys(self):
-        for fn, keys in self.keymaps.items():
-            for k in keys:
-                self.vim.command("nnoremap <buffer> {} :call _NETRInvokeMap('{}')<CR>".format(k, fn))
-
-    def setBufOption(self):
-        self.vim.command('setlocal filetype=netranger')
-        self.vim.command('setlocal encoding=utf-8')
-        self.vim.command('setlocal noswapfile')
-        self.vim.command('setlocal nowrap')
-        self.vim.command('setlocal foldmethod=manual')
-        self.vim.command('setlocal foldcolumn=0')
-        self.vim.command('setlocal nofoldenable')
-        self.vim.command('setlocal nobuflisted')
-        self.vim.command('setlocal nospell')
-        self.vim.command('setlocal bufhidden=wipe')
-        self.vim.command('setlocal conceallevel=3')
-        self.vim.command('set concealcursor=nvic')
-        self.vim.command('setlocal nocursorline')
-
-    def render(self):
-        self.render_lock = True
-        self.vim.command('setlocal modifiable')
-
-        self.vim.current.buffer[:] = self.curPage.highlight_content
-        self.vim.command('call cursor({}, 1)'.format(self.curPage.clineNo+1))
-
-        self.vim.command('setlocal nomodifiable')
-        self.render_lock = False
-
-    def update_dirty_pages(self):
-        log('update')
-        dirty_page_wds = [wd for wd, page in self.pages.items() if page.is_dirty]
-        for wd in dirty_page_wds:
-            self.refresh_page(wd)
-
+class Netranger(object):
     @property
-    def curPage(self):
-        return self.pages[self.cwd]
+    def curBuf(self):
+        return self.bufs[self.vim.current.buffer.number]
 
     @property
     def curNode(self):
-        return self.curPage.curNode
+        return self.curBuf.curNode
 
-    def set_cwd(self, cwd, isParentOfPrev=False):
-        if not os.path.isdir(cwd):
-            return
-        self.finalizeCutCopy()
+    @property
+    def cwd(self):
+        return self.curBuf.wd
 
-        if cwd in self.pages and self.pages[cwd].is_dirty:
-            self.refresh_page(cwd)
-
-        if cwd not in self.pages:
-            if isParentOfPrev:
-                page = Page(self.vim, cwd, self.fs, prevcwd=self.cwd)
-            else:
-                page = Page(self.vim, cwd, self.fs)
-            self.pages[cwd] = page
-
-        self.cwd = cwd
-        self.set_buf_name(cwd)
-        self.render()
-        self.vim.command('cd '+cwd)
-
-    def set_buf_name(self, cwd):
-        succ = False
-        ind = 0
-        while not succ:
-            try:
-                if ind == 0:
-                    affix = ''
-                else:
-                    affix = '-'+str(ind)
-                self.vim.command('silent file N:{}{}'.format(
-                    os.path.basename(cwd), affix))
-                succ = True
-            except NvimError:
-                ind = ind + 1
-
-    def refresh_page(self, wd=None):
-        if wd is None:
-            wd = self.cwd
-
-        if wd == self.cwd:
-            log('update cwd {}'.format(self.cwd))
-            self.pages[wd] = Page(self.vim, wd, self.fs)
-            self.render()
-        else:
-            log('update {}'.format(wd))
-            self.pages[wd] = None
-            del self.pages[wd]
-
-    def on_cursormoved(self):
-        if self.isEditing:
-            return
-        if self.render_lock:
-            return
-        lineNo = self.vim.eval("line('.')") - 1
-        self.curPage.setClineNo(lineNo)
-
-    def NETROpen(self):
-        if self.curNode.isHeader:
-            return
-        fullpath = self.curNode.fullpath
-        if self.curNode.isDir:
-            self.set_cwd(fullpath)
-        else:
-            if type(self.fs) is RClone:
-                self.fs.download(fullpath)
-            cmd = self.rifle.decide_open_cmd(fullpath)
-            # TODO: fix white space in fullpath issue
-            if not cmd:
-                if self.vim.vars['NETROpenInBuffer']:
-                    self.vim.command('edit {}'.format(fullpath))
-                else:
-                    self.vim.command('tab drop {}'.format(fullpath))
-            else:
-                Shell.spawn('{} {}'.format(cmd, fullpath))
-
-    def NETRParentDir(self):
-        if self.cwd == self.pinnedRoot:
-            return
-        pdir = self.fs.parent_dir(self.cwd)
-        self.set_cwd(pdir, isParentOfPrev=True)
-
-    def NETRVimCD(self):
-        curName = self.curNode.fullpath
-        if os.path.isdir(curName):
-            self.vim.command('cd {}'.format(curName))
-        else:
-            self.vim.command('cd {}'.format(os.path.dirname(curName)))
-
-    def NETRToggleExpand(self):
-        self.curPage.toggle_expand()
-        self.render()
-
-    def NETREdit(self):
-        self.isEditing = True
-        self.vim.command('startinsert')
-        for fn, keys in self.keymaps.items():
-            if fn == 'NETRSave':
-                continue
-            for k in keys:
-                self.vim.command("nunmap <buffer> {}".format(k))
-        self.vim.command('setlocal modifiable')
-        self.vim.current.buffer[:] = self.curPage.plain_content
-        self.vim.command('echo "Start editing mode."')
-
-    def NETRSave(self):
-        if not self.isEditing:
-            return
-        self.curPage.rename_nodes_from_content()
-        self.refresh_page()
-        self.map_keys()
-        self.isEditing = False
-        self.vim.command('setlocal nomodifiable')
-
-    def NETRTogglePinRoot(self):
-        if self.pinnedRoot is not None:
-            self.pinnedRoot = None
-        else:
-            self.pinnedRoot = self.cwd
-
-    def NETRToggleShowHidden(self):
-        self.fs.toggle_show_hidden()
-        self.pages = {}
-        self.refresh_page()
-
-    def NETRTogglePick(self):
-        res = self.curNode.toggle_pick()
-        if res == Node.ToggleOpRes.ON:
-            self.picked_lines.append(self.curPage.clineNo)
-        elif res == Node.ToggleOpRes.OFF:
-            self.picked_lines.remove(self.curPage.clineNo)
-        self.curPage.refresh_lines(self.curPage.clineNo)
-
-    def _cutcopy(self, op, oplines):
-        if self.source_page_wd is not None:
-            VimIO.ErrorMsg('Paste before {} again!'.format(op))
-            return
-
-        for l in self.picked_lines:
-            getattr(self.curPage.nodes[l], op)()
-        oplines += self.picked_lines
-
-        self.picked_lines = []
-        self.curPage.refresh_lines(self.picked_lines + oplines)
-
-    def NETRCut(self):
-        self._cutcopy('cut', self.cut_lines)
-
-    def NETRCopy(self):
-        self._cutcopy('copy', self.copy_lines)
-
-    def finalizeCutCopy(self):
-        if self.cwd is None:
-            return
-
-        for i in self.picked_lines:
-            self.curPage.nodes[i].reset_state()
-        self.curPage.refresh_lines(self.picked_lines + self.copy_lines)
-        self.picked_lines = []
-
-        for i in self.cut_lines:
-            self.cut_path.append(self.curPage.nodes[i].fullpath)
-        for i in self.copy_lines:
-            self.copy_path.append(self.curPage.nodes[i].fullpath)
-
-        if len(self.cut_lines)>0 or len(self.copy_lines)>0:
-            self.source_page_wd = self.cwd
-
-        self.cut_lines = []
-        self.copy_lines = []
-
-    def NETRPaste(self):
-        if len(self.copy_path)<len(self.copy_lines) or len(self.cut_path)< len(self.cut_lines):
-            self.finalizeCutCopy()
-
-        try:
-            for path in self.cut_path:
-                self.fs.mv(path, self.cwd)
-
-            for path in self.copy_path:
-                self.fs.cp(path, self.cwd)
-        except Exception as e:
-            VimIO.ErrorMsg(e)
-
-        self.cut_path = []
-        self.copy_path = []
-        self.cut_lines = []
-        self.copy_lines = []
-        if self.source_page_wd is not None:
-            del self.pages[self.source_page_wd]
-        self.refresh_page(self.source_page_wd)
-        self.source_page_wd = None
-        self.refresh_page()
-        self.render()
-
-    def NETRDelete(self):
-        for i in self.picked_lines:
-            self.fs.rm(self.curPage.nodes[i].fullpath)
-        self.picked_lines = []
-        self.refresh_page()
-        self.render()
-
-    def NETRDeleteSingle(self):
-        self.picked_lines.append(self.curPage.clineNo)
-        self.NETRDelete()
-
-    def NETRForceDelete(self):
-        for i in self.picked_lines:
-            self.fs.rmf(self.curPage.nodes[i].fullpath)
-        self.picked_lines = []
-        self.refresh_page()
-        self.render()
-
-    def NETRForceDeleteSingle(self):
-        self.picked_lines.append(self.curPage.clineNo)
-        self.NETRForceDelete()
-
-    def NETRUndo(self):
-        pass
-
-    def NETRCutSingle(self):
-        self.picked_lines.append(self.curPage.clineNo)
-        self.NETRCut()
-
-    def NETRCopySingle(self):
-        self.picked_lines.append(self.curPage.clineNo)
-        self.NETRCopy()
-
-
-class Netranger(object):
     def __init__(self, vim):
         self.vim = vim
         self.inited = False
         self.bufs = {}
+        self.wd2bufnum = {}
         VimIO.init(self.vim)
 
     def init(self):
@@ -548,9 +429,23 @@ class Netranger(object):
         self.onuiquitNumArgs = 0
         Shell.mkdir(default.variables['NETRRootDir'])
         self.rifle = Rifle(self.vim, self.vim.vars['NETRRifleFile'])
+        self.fs = FS()
+        self.pinnedRoots = set()
+        self.lock = False
+        ignore_pat = self.vim.vars['NETRIgnore']
+        self.picked_nodes = defaultdict(set)
+        self.cut_nodes, self.copied_nodes= defaultdict(set), defaultdict(set)
+
+        if '.*' not in ignore_pat:
+            ignore_pat.append('.*')
+            self.vim.vars['NETRIgnore'] = ignore_pat
 
     def initVimVariables(self):
         for k,v in default.variables.items():
+            if k not in self.vim.vars:
+                self.vim.vars[k] = v
+
+        for k,v in default.internal_variables.items():
             if k not in self.vim.vars:
                 self.vim.vars[k] = v
 
@@ -558,97 +453,314 @@ class Netranger(object):
         self.keymaps = {}
         self.keymap_doc = {}
         skip = []
-        log(self.vim.vars['NETRDefaultMapSkip'])
         for k in self.vim.vars['NETRDefaultMapSkip']:
-            log(k[0], k[-1])
             if k[0]=='<' and k[-1]=='>':
                 skip = [k.lower()]
-        log(skip)
         for fn, (keys, desc) in default.keymap.items():
             user_keys = self.vim.vars.get(fn, [])
             user_keys += [k for k in keys if k not in skip]
             self.keymaps[fn] = user_keys
             self.keymap_doc[fn] = (keys, desc)
 
+    def map_keys(self):
+        for fn, keys in self.keymaps.items():
+            for k in keys:
+                self.vim.command("nnoremap <buffer> {} :call _NETRInvokeMap('{}')<CR>".format(k, fn))
+
     def on_bufenter(self, bufnum):
-        if bufnum not in self.bufs:
+        if bufnum in self.bufs:
+            self.refresh_curbuf()
+            if self.onuiquit is not None:
+                # If not enough arguments are passed, ignore the pending onuituit, e.g. quit the bookmark go ui without pressing key to specify where to go.
+                if len(self.vim.vars['NETRRegister']) == self.onuiquitNumArgs:
+                    self.onuiquit(*self.vim.vars['NETRRegister'])
+                self.onuiquit = None
+                self.vim.vars['NETRRegister'] = []
+                self.onuiquitNumArgs = 0
+        else:
+            bufname = self.vim.current.buffer.name
+            if len(bufname)>0 and bufname[-1] == '~':
+                bufname = os.path.expanduser('~')
+
+            if not os.path.isdir(bufname):
+                return
 
             if not self.inited:
                 self.init()
 
-            buf = self.vim.current.buffer
-            bufname = buf.name
-            if len(bufname)>0 and bufname[-1] == '~':
-                bufname = os.path.expanduser('~')
-            if(os.path.isdir(bufname)):
-                self.vim.command('setlocal buftype=nofile')
+            if self.buf_existed(bufname):
+                self.show_existing_buf(bufname)
+            else:
+                self.gen_new_buf(bufname)
 
-                if(bufname.startswith(self.vim.vars['NETRCacheDir'])):
-                    self.bufs[bufnum] = NetRangerBuf(self.vim, self.keymaps, os.path.abspath(bufname), self.rclone, self.rifle)
-                else:
-                    self.bufs[bufnum] = NetRangerBuf(self.vim, self.keymaps, os.path.abspath(bufname), FS(), self.rifle)
+    def refresh_curbuf(self):
+        curBuf = self.curBuf
+        curBuf.refresh_nodes()
+        curBuf.refresh_highlight()
+
+    def show_existing_buf(self, bufname):
+        ori_bufnum = self.vim.current.buffer.number
+        existed_bufnum = self.wd2bufnum[bufname]
+        self.vim.command('{}b'.format(existed_bufnum))
+        self.setBufOption()
+        buf = self.bufs[existed_bufnum]
+        self.refresh_curbuf()
+        if ori_bufnum not in self.bufs:
+            self.vim.command('bwipeout {}'.format(ori_bufnum))
+        self.vim.command('call cursor({},1)'.format(buf.clineNo+1))
+
+    def gen_new_buf(self, bufname):
+        bufnum = self.vim.current.buffer.number
+        if(bufname.startswith(self.vim.vars['NETRCacheDir'])):
+            self.bufs[bufnum] = NetRangerBuf(self.vim, os.path.abspath(bufname), self.rclone, self.rifle)
         else:
-            self.curBuf.update_dirty_pages()
-            if self.onuiquit is not None:
-                if len(self.vim.vars['_NETRRegister']) == self.onuiquitNumArgs:
-                    if type(self.onuiquit) is str:
-                        getattr(self.curBuf, self.onuiquit)(*self.vim.vars['_NETRRegister'])
-                    else:
-                        self.onuiquit(*self.vim.vars['_NETRRegister'])
-                self.onuiquit = None
-                self.vim.vars['_NETRRegister'] = []
-                self.onuiquitNumArgs = 0
+            self.bufs[bufnum] = NetRangerBuf(self.vim, os.path.abspath(bufname), self.fs, self.rifle)
+
+        self.map_keys()
+        self.wd2bufnum[bufname] = bufnum
+        self.setBufOption()
+
+    def buf_existed(self, wd):
+        if wd not in self.wd2bufnum:
+            return False
+
+        bufnum = self.wd2bufnum[wd]
+        try:
+            buf = self.vim.buffers[bufnum]
+            return buf.valid
+        except KeyError:
+            del self.wd2bufnum[wd]
+            del self.bufs[bufnum]
+            return False
+
+    def setBufOption(self):
+        self.vim.command('setlocal buftype=nofile')
+        self.vim.command('setlocal filetype=netranger')
+        self.vim.command('setlocal encoding=utf-8')
+        self.vim.command('setlocal noswapfile')
+        self.vim.command('setlocal nowrap')
+        self.vim.command('setlocal foldmethod=manual')
+        self.vim.command('setlocal foldcolumn=0')
+        self.vim.command('setlocal nofoldenable')
+        # self.vim.command('setlocal nobuflisted')
+        self.vim.command('setlocal nospell')
+        self.vim.command('setlocal bufhidden=hide')
+        self.vim.command('setlocal conceallevel=3')
+        self.vim.command('set concealcursor=nvic')
+        self.vim.command('setlocal nocursorline')
+
+    def on_cursormoved(self, bufnum):
+        if bufnum in self.bufs:
+            if self.isEditing:
+                return
+            self.bufs[bufnum].on_cursormoved()
 
     def pend_onuiquit(self, fn, numArgs=0):
         self.onuiquit = fn
         self.onuiquitNumArgs = numArgs
 
-    def on_cursormoved(self, bufnum):
-        if bufnum in self.bufs:
-            self.bufs[bufnum].on_cursormoved()
+    def NETROpen(self):
+        curNode = self.curNode
+        if curNode.isHeader:
+            return
 
-    @property
-    def curBuf(self):
-        return self.bufs[self.vim.current.buffer.number]
+        fullpath = curNode.fullpath
+        if curNode.isDir:
+            self.vim.command('silent edit {}'.format(fullpath))
+        else:
+            if type(self.fs) is RClone:
+                self.fs.download(fullpath)
+            cmd = self.rifle.decide_open_cmd(fullpath)
 
-    @property
-    def curPage(self):
-        return self.curBuf.curPage
+            if cmd:
+                Shell.spawn('{} {}'.format(cmd, fullpath))
+            else:
+                self.vim.command('{} {}'.format(self.vim.vars['NETROpenCmd'], fullpath))
 
-    @property
-    def curNode(self):
-        return self.curPage.curNode
+    def NETRParentDir(self):
+        cwd = self.curBuf.wd
+        if cwd in self.pinnedRoots:
+            return
+        pdir = self.fs.parent_dir(cwd)
+        parent_buf_existed = self.buf_existed(pdir)
+        self.vim.command('silent edit {}'.format(pdir))
+        if not parent_buf_existed:
+            self.curBuf.setClineNoByName(os.path.basename(cwd))
 
-    @property
-    def isInNETRBuf(self):
-        return self.vim.current.buffer.number in self.bufs
+    def NETRVimCD(self):
+        curName = self.curNode.fullpath
+        if os.path.isdir(curName):
+            self.vim.command('lcd {}'.format(curName))
+        else:
+            self.vim.command('lcd {}'.format(os.path.dirname(curName)))
+
+    def NETREdit(self):
+        self.isEditing = True
+        for fn, keys in self.keymaps.items():
+            if fn == 'NETRSave':
+                continue
+            for k in keys:
+                self.vim.command("nunmap <buffer> {}".format(k))
+        self.curBuf.render(plain=True)
+        self.vim.command('setlocal modifiable')
+        self.vim.command('startinsert')
+
+    def NETRToggleExpand(self):
+        self.curBuf.ToggleExpand()
+
+    def NETRSave(self):
+        if not self.isEditing:
+            return
+        self.curBuf.Save()
+        self.map_keys()
+        self.isEditing = False
+        self.vim.command('setlocal nomodifiable')
+
+    def NETRTogglePinRoot(self):
+        cwd = self.cwd
+        if cwd in self.pinnedRoots:
+            self.pinnedRoots.remove(cwd)
+        else:
+            self.pinnedRoots.add(cwd)
+
+    def NETRToggleShowHidden(self):
+        ignore_pat = self.vim.vars['NETRIgnore']
+        if '.*' in ignore_pat:
+            ignore_pat.remove('.*')
+        else:
+            ignore_pat.append('.*')
+        self.vim.vars['NETRIgnore'] = ignore_pat
+        for buf in self.bufs.values():
+            buf.content_outdated = True
+        self.curBuf.refresh_nodes()
 
     def invoke_map(self, fn):
-        log('invoke_map', fn)
         if hasattr(self, fn):
             getattr(self, fn)()
-        else:
-            getattr(self.curBuf, fn)()
 
-    def _BookMarkDo(self, fn, *args):
+    def initBookMarkUI(self):
         if self.bookmarkUI is None:
             self.bookmarkUI = BookMarkUI(self.vim, self)
-        getattr(self.bookmarkUI, fn)(*args)
 
     def NETRBookmarkSet(self):
-        self._BookMarkDo('set', self.curBuf.cwd)
+        self.initBookMarkUI()
+        self.bookmarkUI.set(self.cwd)
 
     def NETRBookmarkGo(self):
-        self._BookMarkDo('go')
+        self.initBookMarkUI()
+        self.bookmarkUI.go()
+
+    def bookmarkgo_onuiquit(self, fullpath):
+        # The redundant ifelse statement (same as in on_bufenter) is due to that on_bufenter is synchronous and hence neseted on_bufenter can't be handled.
+        self.vim.command('silent edit {}'.format(fullpath))
+        if self.buf_existed(fullpath):
+            self.show_existing_buf(fullpath)
+        else:
+            self.gen_new_buf(fullpath)
 
     def NETRBookmarkEdit(self):
-        self._BookMarkDo('edit')
+        self.initBookMarkUI()
+        self.bookmarkUI.edit()
 
-    def NETRBookmarkHelp(self):
+    def NETRHelp(self):
         if self.helpUI is None:
             self.helpUI = HelpUI(self.vim, self.keymap_doc)
         else:
             self.helpUI.show()
+
+    def NETRTogglePick(self):
+        curNode = self.curNode
+        curBuf = self.curBuf
+        res = curNode.toggle_pick()
+        if res == Node.ToggleOpRes.ON:
+            self.picked_nodes[curBuf].add(curNode)
+        elif res == Node.ToggleOpRes.OFF:
+            self.picked_nodes[curBuf].remove(curNode)
+        self.curBuf.refresh_cur_line()
+
+    def NETRCut(self):
+        for buf, nodes in self.picked_nodes.items():
+            buf.Cut(nodes)
+            self.cut_nodes[buf].update(nodes)
+        self.picked_nodes = defaultdict(set)
+        self.curBuf.refresh_highlight()
+
+    def NETRCutSingle(self):
+        curBuf = self.curBuf
+        curNode = self.curNode
+        curBuf.Cut([curNode])
+        self.cut_nodes[curBuf].add(curNode)
+        curBuf.refresh_highlight()
+
+    def NETRCopy(self):
+        for buf, nodes in self.picked_nodes.items():
+            buf.Copy(nodes)
+            self.copied_nodes[buf].update(nodes)
+        self.picked_nodes = defaultdict(set)
+        self.curBuf.refresh_highlight()
+
+    def NETRCopySingle(self):
+        curBuf = self.curBuf
+        curNode = self.curNode
+        curBuf.Copy([curNode])
+        self.copied_nodes[curBuf].add(curNode)
+        curBuf.refresh_highlight()
+
+    def NETRPaste(self):
+        cwd = self.cwd
+        alreday_moved = set()
+        for buf, nodes in self.cut_nodes.items():
+            wd = buf.wd
+            # We need to reset highlight when mv fails.
+            buf.highlight_outdated_nodes.update(nodes)
+            while True:
+                if wd in self.wd2bufnum:
+                    self.bufs[self.wd2bufnum[wd]].content_outdated = True
+                wd = os.path.dirname(wd)
+                if len(wd) == 1:
+                    break
+
+            # We need to mv longer (deeper) file name first
+            nodes = sorted(nodes, key=lambda n: n.fullpath, reverse=True)
+            for node in nodes:
+                node.reset_highlight()
+                if node.fullpath not in alreday_moved:
+                    try:
+                        self.fs.mv(node.fullpath, cwd)
+                    except Exception as e:
+                        VimIO.ErrorMsg(e)
+                    alreday_moved.add(node.fullpath)
+        self.cut_nodes = defaultdict(set)
+
+        for buf, nodes in self.copied_nodes.items():
+            buf.highlight_outdated_nodes.update(nodes)
+            for node in nodes:
+                node.reset_highlight()
+                try:
+                    self.fs.cp(node.fullpath, cwd)
+                except Exception as e:
+                    VimIO.ErrorMsg(e)
+        self.copied_nodes = defaultdict(set)
+        self.curBuf.refresh_nodes()
+        self.curBuf.refresh_highlight()
+
+    def NETRDelete(self, force=False):
+        for buf, nodes in self.picked_nodes.items():
+            buf.content_outdated = True
+            for node in nodes:
+                self.fs.rm(node.fullpath, force)
+        self.curBuf.refresh_nodes()
+        self.picked_nodes = defaultdict(set)
+
+    def NETRDeleteSingle(self, force=False):
+        self.fs.rm(self.curNode.fullpath, force)
+        self.curBuf.refresh_nodes()
+
+    def NETRForceDelete(self):
+        self.NETRDelete(force=True)
+
+    def NETRForceDeleteSingle(self):
+        self.NETRDeleteSingle(force=True)
 
     def valid_rclone_or_install(self):
         if self.rclone is not None:

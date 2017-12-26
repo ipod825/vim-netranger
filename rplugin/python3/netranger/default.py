@@ -22,7 +22,7 @@ keymap = {
     'NETRBookmarkSet': (['m'], "Jump to bookmark, pending for single character"),
     'NETRBookmarkGo': (["'"], "Bookmark current directory, pending for single character"),
     'NETRBookmarkEdit': (["em"], "Open bookmark file to edit"),
-    'NETRBookmarkHelp':(['?'], "Show help message")
+    'NETRHelp':(['?'], "Show help message")
 }
 
 color = {
@@ -40,13 +40,16 @@ color = {
 root_dir = os.path.expanduser('~/.netranger/')
 variables = {
     'NETRIgnore': [],
-    'NETROpenInBuffer': False,
+    'NETROpenCmd': 'tab drop',
     'NETRDefaultMapSkip': [],
-    'NETRTabAutoToFirst': False,
+    'NETRDefaultMapSkip': [],
     'NETRHiCWD': 'yellow',
     'NETRRootDir': root_dir,
     'NETRBookmarkFile': root_dir+'bookmark',
     'NETRRifleFile': root_dir+'rifle.conf',
     'NETRCacheDir': root_dir+'cache',
-    '_NETRRegister': [],  # internal use only
+}
+
+internal_variables = {
+    'NETRRegister': [],
 }

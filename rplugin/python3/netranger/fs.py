@@ -7,21 +7,16 @@ log('')
 
 
 class FS(object):
-    def __init__(self, show_hidden=False):
-        self.show_hidden = show_hidden
-
-    def toggle_show_hidden(self):
-        self.show_hidden = not self.show_hidden
 
     def ls(self, dirname):
+        if not os.access(dirname, os.R_OK):
+            return []
         assert os.path.isdir(dirname)
         ori_cwd = os.getcwd()
         os.chdir(dirname)
         dirs = []
         files = []
         for f in os.listdir(dirname):
-            if not self.show_hidden and f[0]=='.':
-                continue
             if os.path.isdir(f):
                 dirs.append(f)
             else:
@@ -46,6 +41,7 @@ class FS(object):
         return catlog
 
     def mv(self, src, dst):
+        log('mv {} to {}'.format(os.path.basename(src), os.path.basename(dst)))
         shutil.move(src, dst)
 
     def cp(self, src, dst):
@@ -55,16 +51,19 @@ class FS(object):
             dst = dst+'/'
         Shell.run('cp -r "{}" "{}"'.format(src, dst))
 
-    def rm(self, target):
-        Shell.run('rm -r {}'.format(target))
+    def rm(self, target, force=False):
+        if force:
+            Shell.run('rm -rf {}'.format(target))
+        else:
+            Shell.run('rm -r {}'.format(target))
 
-    def rmf(self, target):
-        Shell.run('rm -r {}'.format(target))
+    def mtime(self, fname):
+        return os.stat(fname).st_mtime
 
 
 class RcloneFile(FS):
-    def __init__(self, lpath, path, show_hidden=False):
-        FS.__init__(self, show_hidden)
+    def __init__(self, lpath, path):
+        FS.__init__(self)
 
         self.lpath = lpath
         self.path = path

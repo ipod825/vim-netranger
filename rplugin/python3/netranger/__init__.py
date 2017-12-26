@@ -1,10 +1,6 @@
 import neovim
 from netranger.netranger import Netranger
-
-
-def log(msg):
-    with open("~/netlog", 'a') as f:
-        f.write(msg+"\n")
+from netranger.util import log
 
 
 @neovim.plugin
@@ -17,14 +13,6 @@ class Main(object):
     def on_bufenter(self, bufnum):
         self.ranger.on_bufenter(int(bufnum))
 
-    # @neovim.autocmd('BufLeave', pattern='*', eval='expand("<abuf>")', sync=True)
-    # def on_bufleave(self, bufnum):
-    #     self.ranger.on_bufleave(int(bufnum))
-    #
-    # @neovim.autocmd('BufHidden', pattern='*', eval='expand("<abuf>")', sync=True)
-    # def on_bufhidden(self, bufnum):
-    #     self.ranger.on_bufhidden(int(bufnum))
-
     @neovim.autocmd('CursorMoved', pattern='*', eval='expand("<abuf>")', sync=True)
     def on_cursormoved(self, bufnum):
         self.ranger.on_cursormoved(int(bufnum))
@@ -33,6 +21,6 @@ class Main(object):
     def NETRInvokeMap(self, args):
         self.ranger.invoke_map(args[0])
 
-    @neovim.command("NETRListRemotes", range='', nargs='*', sync=True)
-    def NETRListRemotes(self, args, range):
-        self.ranger.listremotes()
+    # @neovim.command("NETRListRemotes", range='', nargs='*', sync=True)
+    # def NETRListRemotes(self, args, range):
+    #     self.ranger.listremotes()

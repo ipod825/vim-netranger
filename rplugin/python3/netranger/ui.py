@@ -11,7 +11,7 @@ class UI(object):
         self.vim = vim
 
     def map_key_reg(self, key, regval):
-        self.vim.command("nnoremap <buffer> {} :let g:_NETRRegister=['{}'] <cr> :quit <cr>".format(key, regval))
+        self.vim.command("nnoremap <buffer> {} :let g:NETRRegister=['{}'] <cr> :quit <cr>".format(key, regval))
 
     def buf_valid(self, name='default'):
         return name in self.bufs and self.bufs[name].valid
@@ -128,7 +128,7 @@ class BookMarkUI(UI):
                             name='go')
         else:
             self.show('go')
-        self.netranger.pend_onuiquit('set_cwd', 1)
+        self.netranger.pend_onuiquit(self.netranger.bookmarkgo_onuiquit, 1)
 
     def edit(self):
         self.vim.command('belowright split {}'.format(self.vim.vars['NETRBookmarkFile']))

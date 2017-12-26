@@ -5,30 +5,33 @@ from netranger.colortbl import colortbl
 from neovim import attach
 import re
 import time
-
-Cr = chr(13)
-
-
-def avoid_freeze():
-    # Somehow, I need to enter Cr at sometime, otherwise it will print "Press ENTER or type command to continue"
-    nvim.input(Cr)
+import tempfile
 
 
-def assert_content(expected, level=0, ind=None):
-    time.sleep(0.01)
+def assert_content(expected, level=0, ind=None, hi=None):
     if ind is None:
         line = nvim.current.line
     else:
         ind += 1
         line = nvim.current.buffer[ind]
 
-    m = re.search('(\[[0-9;]+m)?(.+)', line)
+    m = re.search('\[38;5;([0-9]+)(;7)?m(.+)', line)
     expected = '  '*level+expected
 
-    assert m.group(2) == expected, 'expected:"{}", real: "{}"'.format(expected, m.group(2))
+    assert m.group(3) == expected, 'expected:"{}", real: "{}"'.format(expected, m.group(3))
+
+    if hi is not None:
+        expected_hi = str(colortbl[default.color[hi]])
+        assert m.group(1) == expected_hi, 'expected_hi: "{}", real_hi: "{}"'.format(expected_hi, m.group(1))
+
+    cLineNo = nvim.eval("line('.')") - 1
+    if ind is None or ind == cLineNo:
+        assert m.group(2) is not None, 'Background highlight mismatch. ind: {}, curLine: {}'.format(ind, cLineNo)
+    else:
+        assert m.group(2) is None,'Background highlight mismatch. ind: {}, curLine: {}'.format(ind, cLineNo)
 
 
-def assert_highlight(expected, background=True, ind=None):
+def assert_highlight(expected, ind=None):
     if ind is None:
         line = nvim.current.line
     else:
@@ -38,26 +41,25 @@ def assert_highlight(expected, background=True, ind=None):
     m = re.search('\[38;5;([0-9]+)(;7)?m', line)
     expected = str(colortbl[default.color[expected]])
     assert m.group(1) == expected, 'expected: "{}", real: "{}"'.format(expected, m.group(1))
+    if ind == nvim.current.buffer.number:
+        assert m.group(2) is not None
+    else:
+        assert m.group(2) is None
 
 
 def assert_num_content_line(numLine):
     assert numLine == len(nvim.current.buffer)-1, 'expected line #: {}, real line #: {}'.format(numLine, len(nvim.current.buffer)-1)
 
 
-def assert_fs(fn):
-    succ = False
-    trial = 0
-    while not succ or trial<10:
-        succ = fn()
-        if not succ:
-            time.sleep(0.05)
-        trial += 1
+def assert_fs(d, expected):
+    real = None
+    for i in range(10):
+        real = Shell.run('ls --group-directories-first '+d).split()
+        if real == expected:
+            return
+        time.sleep(0.05)
 
-    assert fn()
-
-
-def dummy():
-    pass
+    assert real == expected, 'expected: {}, real: {}'.format(expected, real)
 
 
 def do_test(fn, wipe_on_done=True):
@@ -85,86 +87,125 @@ def do_test(fn, wipe_on_done=True):
 
 def test_navigation():
     nvim.input('j')
-    assert_content('dir2')
-
-    assert_highlight('dir')
-    assert_highlight('dir', background=False, ind=0)
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('dir2', ind=1, hi='dir')
 
     nvim.input('kl')
-    assert_content('subdir')
+    assert_content('subdir', ind=0, hi='dir')
 
+    return
     nvim.input('h')
-    assert_content('dir')
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('dir2', ind=1, hi='dir')
 
     nvim.input(' ')
-    assert_content('subdir', level=1, ind=1)
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('subdir', level=1, ind=1, hi='dir')
+    assert_content('dir2', ind=4, hi='dir')
     nvim.input(' ')
-    assert_content('dir2', ind=1)
+    assert_content('dir2', ind=1, hi='dir')
 
-    nvim.input('j'+Cr)
+    nvim.input('j<Cr>')
     assert os.path.basename(nvim.command_output('pwd')) == 'dir2'
-    nvim.input('k 3j'+Cr)
+    nvim.input('k 3j<Cr>')
     assert os.path.basename(nvim.command_output('pwd')) == 'dir'
 
 
 def test_edit():
-    nvim.input('iz')
+    nvim.input(' ')
+    nvim.input('iz<Left><Down>')
+    nvim.input('y<Left><Down>')
+    nvim.input('x<Left><Down>')
+    nvim.input('w')
     nvim.input('')
+    assert_content('dir2', ind=0, hi='dir')
+    assert_content('zdir', ind=1, hi='dir')
+    assert_content('xsubdir2', ind=2, level=1, hi='dir')
+    assert_content('ysubdir', ind=3, level=1, hi='dir')
+    assert_content('wa', ind=4, level=1, hi='file')
 
-    assert_fs(lambda: 'zdir' in Shell.run('ls').split())
-    assert_content('dir2')
+    assert_fs('', ['dir2', 'zdir'])
+    assert_fs('zdir', ['xsubdir2', 'ysubdir', 'wa'])
 
 
 def test_pickCutCopyPaste():
-    nvim.input('v')
-    assert_highlight('pick')
-    nvim.input('j')
-    assert_highlight('pick', background=False, ind=0)
+    nvim.input('vv')
+    nvim.input(' jvjjvjlh')
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('subdir', ind=1, level=1, hi='pick')
+    assert_content('subdir2', ind=2, level=1, hi='dir')
+    assert_content('a', ind=3, level=1, hi='pick')
 
-    nvim.input('lhk')
-    assert_highlight('dir')
+    nvim.input('x')
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('subdir', ind=1, level=1, hi='cut')
+    assert_content('subdir2', ind=2, level=1, hi='dir')
+    assert_content('a', ind=3, level=1, hi='cut')
 
-    nvim.input('l vx')
-    assert_highlight('cut')
+    nvim.input('lp')
+    assert_content('subdir', ind=0, hi='dir')
+    assert_content('a', ind=1, hi='file')
+    assert_fs('dir2', ['subdir', 'a'])
 
-    nvim.input('jjjvy')
-    assert_highlight('copy')
+    nvim.input('hkddkdd')
+    assert_content('dir', ind=0, hi='cut')
+    assert_content('subdir2', ind=1, level=1, hi='cut')
 
-    nvim.input('khl')
-    assert_highlight('cut', ind=0)
-    assert_highlight('copy', ind=3)
+    nvim.input('jjlp')
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('subdir', ind=1, hi='dir')
+    assert_content('subdir2', ind=2, hi='dir')
+    assert_content('a', ind=3, hi='file')
+    assert_fs('dir2', ['dir', 'subdir', 'subdir2', 'a'])
 
-    nvim.input('hjlp')
-    assert_content('subdir')
-    assert_highlight('dir')
-    assert_content('a', ind=1)
-    assert_highlight('file', background=False, ind=1)
+    nvim.input('Gvkkvjyy')
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('subdir', ind=1, hi='pick')
+    assert_content('subdir2', ind=2, hi='copy')
+    assert_content('a', ind=3, hi='pick')
 
-    nvim.input('hkl')
-    assert_content('subdir2')
-    assert_highlight('dir')
-    assert_content('a', ind=1)
-    assert_highlight('file', background=False, ind=1)
+    nvim.input('x')
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('subdir', ind=1, hi='cut')
+    assert_content('subdir2', ind=2, hi='copy')
+    assert_content('a', ind=3, hi='cut')
+
+    nvim.command('wincmd v')
+    nvim.command('wincmd l')
+    nvim.input('hp')
+    assert_content('dir2', ind=0, hi='dir')
+    assert_content('subdir', ind=1, hi='dir')
+    assert_content('subdir2', ind=2, hi='dir')
+    assert_content('a', ind=3, hi='file')
+    assert_fs('', ['dir2', 'subdir', 'subdir2', 'a'])
+    assert_fs('dir2', ['dir', 'subdir2'])
 
 
 def test_delete():
-    nvim.input('vD')
-    assert_fs(lambda: Shell.run('ls').split()[0]=='dir2')
+    nvim.input(' jvjjvD')
+    assert_fs('dir', ['subdir2'])
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('subdir2', ind=1, level=1, hi='dir')
+    assert_content('dir2', ind=2, hi='dir')
     nvim.input('XX')
-    avoid_freeze()
-    assert_fs(lambda: Shell.run('ls')=='')
+    assert_content('dir2', ind=0, hi='dir')
+    assert_fs('', ['dir2'])
 
 
 def test_detect_fs_change():
-    Shell.touch('newfile')
+    nvim.input(' ')
+    Shell.touch('dir/b')
+    Shell.mkdir('dir3')
     nvim.command('split new')
     nvim.command('quit')
-    assert_num_content_line(3)
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('b', ind=4, level=1, hi='file')
+    assert_content('dir3', ind=6, hi='dir')
+    assert_num_content_line(7)
 
-    nvim.input('l')
-    Shell.rm('newfile')
-    nvim.input('h')
-    assert_num_content_line(2)
+    Shell.rm('dir3')
+    nvim.input('lh')
+    assert_num_content_line(6)
 
 
 def test_bookmark():
@@ -195,23 +236,20 @@ def test_misc():
     assert_content('dir')
 
     nvim.input('zh')
-    avoid_freeze()
-    assert_content('.a', ind=2)
-
+    assert_content('.a', ind=2, hi='file')
     nvim.input('zh')
-    avoid_freeze()
     assert_num_content_line(2)
 
 
 if __name__ == '__main__':
-    nvim = attach('socket', path='/tmp/netrangertest')
+    nvim = attach('socket', path=os.path.join(tempfile.gettempdir(), 'netrangertest'))
     ori_timeoutlen = nvim.options['timeoutlen']
     nvim.options['timeoutlen'] = 1
 
     do_test(test_navigation)
     do_test(test_edit)
-    do_test(test_pickCutCopyPaste)
     do_test(test_delete)
+    do_test(test_pickCutCopyPaste)
     do_test(test_bookmark)
     do_test(test_misc)
     do_test(test_detect_fs_change)

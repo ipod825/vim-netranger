@@ -15,4 +15,3 @@ while c < 256
   exec 'hi NETRhi'.c.'r ctermbg='.c.' ctermfg=black'
   let c += 1
 endwhile
-

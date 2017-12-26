@@ -42,6 +42,7 @@ vim-netranger requires Neovim. You should install neovim's Python3 api with pip:
 ### Opening a `vim-netranger` buffer
 1. vim a directory
 2. Inside vim, use edit commands (e.g. `vsplit`, `edit`, `tabedit`) to edit a directory. Just like `netrw`.
+3. Note that you can open multiple vim buffer for the same directory. When the directory content is changed, all window's content will be modified. You can even copy file in one window and paste in another widow.
 
 ### Help
 1. Press `?` to see current key bindings
@@ -64,8 +65,8 @@ vim-netranger requires Neovim. You should install neovim's Python3 api with pip:
     * Press `D` to delete (`rm -r`) all selected files
     * Press `X` to force delete (i.e. `rm -rf`) all selected files
 
-2. Note that if you leave the directory before pressing any aforementioned keys, your selection will be lost.
-3. For `y`, `x`, `d`, go to the target directory, press `p` to paste all cut/copied files/directories.
+2. For `y`, `x`, `d`, go to the target directory, press `p` to paste all cut/copied files/directories.
+3. Note that you can open multiple vim buffer for different directories and cut (copy) files in one buffer and paste files in another buffer. When you jump back to the source buffer, cut files will disappear as expected.
 4. If only one file is to be cut/copy, you can simply press `yy` (copy) or `dd` (cut). The current file will be marked. You can then continue `yy`,  `dd` other lines. I personally think this is more convenient then using `v`.
 5. Similarly, if only one file is to be (force) deleted, you can simply press `DD` or `XX`.
 
@@ -109,5 +110,5 @@ let g:NETRBookmarkGo = ["m"]
 | g:NETRIgnore         | File patterns (bash wild card) to ignore (not displaying) | []                    |
 | g:NETRRootDir        | Directory for storing remote cache and bookmark file      | ['$HOME/.netranger/'] |
 | g:NETRTabAutoToFirst | Automatically move new netranger tab to the first tab     | v:false               |
-| g:NETROpenInBuffer   | Open files in current buffer instead of a new tab         | v:false               |
+| g:NETROpenCmd        | Vim command to open files from netranger buffer           | 'tab drop'            |
 

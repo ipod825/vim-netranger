@@ -2,9 +2,9 @@ import os
 import shutil
 import subprocess
 import sys
-
-
 import tempfile
+
+
 def log(*msg):
     with open(os.path.join(tempfile.gettempdir(), "netlog"), 'a') as f:
         f.write(' '.join([str(m) for m in msg])+"\n")
@@ -26,8 +26,8 @@ class VimIO(object):
         VimIO.vim.command('echohl ErrorMsg | echo "{}" | echohl None '.format(msg.replace('"','\\"')))
 
     def userInput(hint, default=''):
-        VimIO.vim.command('let g:_NETRRegister=input("{}: ", "{}")'.format(hint, default))
-        return VimIO.vim.vars['_NETRRegister']
+        VimIO.vim.command('let g:NETRRegister=input("{}: ", "{}")'.format(hint, default))
+        return VimIO.vim.vars['NETRRegister']
 
 
 def spawnDaemon(func):
@@ -62,7 +62,11 @@ def spawnDaemon(func):
 
 
 class Shell():
-    CmdError = subprocess.CalledProcessError
+    userhome = os.path.expanduser('~')
+
+    @classmethod
+    def abbrevuser(cls, path):
+        return path.replace(Shell.userhome, '~')
 
     @classmethod
     def run(cls, cmd):
@@ -74,11 +78,7 @@ class Shell():
 
     @classmethod
     def rm(cls, name):
-        Shell.run('rm ' + name)
-
-    @classmethod
-    def mtime(cls, fname):
-        return os.stat(fname).st_mtime
+        Shell.run('rm -r ' + name)
 
     @classmethod
     def spawn(cls, cmd):
