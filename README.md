@@ -109,6 +109,5 @@ let g:NETRBookmarkGo = ["m"]
 | :------------        | :--------------                                           | :----------------     |
 | g:NETRIgnore         | File patterns (bash wild card) to ignore (not displaying) | []                    |
 | g:NETRRootDir        | Directory for storing remote cache and bookmark file      | ['$HOME/.netranger/'] |
-| g:NETRTabAutoToFirst | Automatically move new netranger tab to the first tab     | v:false               |
 | g:NETROpenCmd        | Vim command to open files from netranger buffer           | 'tab drop'            |
 
