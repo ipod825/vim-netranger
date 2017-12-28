@@ -1,4 +1,7 @@
 import os
+import tempfile
+from netranger.config import root_dir, test_remote_dir, test_remote_name
+
 keymap = {
     # non-printable characters (e.g. <cr>) should be in small case for NETRDefaultMapSkip feature
     'NETROpen': (['l','<right>'], "Change directory/open file under cursor"),
@@ -37,7 +40,6 @@ color = {
 }
 
 
-root_dir = os.path.expanduser('~/.netranger/')
 variables = {
     'NETRIgnore': [],
     'NETROpenCmd': 'tab drop',
@@ -47,7 +49,8 @@ variables = {
     'NETRRootDir': root_dir,
     'NETRBookmarkFile': root_dir+'bookmark',
     'NETRRifleFile': root_dir+'rifle.conf',
-    'NETRCacheDir': root_dir+'cache',
+    'NETRemoteCacheDir': root_dir+'remote',
+    'NETRemoteRoots': {test_remote_name: test_remote_dir},
 }
 
 internal_variables = {

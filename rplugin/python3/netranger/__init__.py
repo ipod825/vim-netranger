@@ -21,6 +21,18 @@ class Main(object):
     def NETRInvokeMap(self, args):
         self.ranger.invoke_map(args[0])
 
-    # @neovim.command("NETRListRemotes", range='', nargs='*', sync=True)
-    # def NETRListRemotes(self, args, range):
-    #     self.ranger.listremotes()
+    @neovim.autocmd('BufWritePost', eval='expand("%:p")', sync=False)
+    def on_bufwritepost(self, fpath):
+        self.ranger.on_bufwritepost(fpath)
+
+    @neovim.autocmd('BufReadPre', eval='expand("%:p")', sync=True)
+    def on_bufreadpre(self, fpath):
+        self.ranger.on_bufreadpre(fpath)
+
+    @neovim.command("NETRemoteList", range='', nargs='*', sync=True)
+    def NETRListRemotes(self, args, range):
+        self.ranger.NETRemoteList()
+
+    @neovim.command("NETRemotePull", range='', nargs='*', sync=False)
+    def NETRDownSync(self, args, range):
+        self.ranger.NETRemotePull()

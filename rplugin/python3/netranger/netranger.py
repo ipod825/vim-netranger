@@ -1,7 +1,7 @@
 import os
 import fnmatch
 from neovim.api.nvim import NvimError
-from netranger.fs import FS, RClone
+from netranger.fs import FS, Rclone
 from netranger.util import log, VimIO, Shell
 from netranger import default
 from netranger.colortbl import colortbl
@@ -156,7 +156,6 @@ class NetRangerBuf(object):
         self.wd = wd
         self.content_outdated = False
         self.highlight_outdated_nodes = set()
-        self.expanded_dirs = set()
 
         self.vim.command('silent file N:{}'.format(os.path.basename(wd)))
         self.vim.command('lcd ' + wd)
@@ -165,7 +164,8 @@ class NetRangerBuf(object):
         self.nodes.insert(0, Node(Shell.abbrevuser(wd), self.vim.vars['NETRHiCWD']))
         self.clineNo = self.first_content_lineNo
         self.nodes[self.clineNo].cursor_on()
-        self.mtime = fs.mtime(wd)
+        self.mtime = defaultdict(None)
+        self.mtime[wd] = fs.mtime(wd)
         self.render()
 
     def createNodes(self, wd, level=0):
@@ -193,15 +193,14 @@ class NetRangerBuf(object):
 
     def refresh_nodes(self):
         new_mtime = self.fs.mtime(self.wd)
-        if new_mtime > self.mtime:
-            self.content_outdated = True
-            self.mtime = self.fs.mtime(self.wd)
-        for d in self.expanded_dirs:
-            if not os.path.isdir(d.fullpath):
-                continue
-            if self.fs.mtime(d.fullpath):
-                self.content_outdated = True
-                break
+        for path in self.mtime:
+            try:
+                new_mtime = self.fs.mtime(path)
+                if new_mtime > self.mtime[path]:
+                    self.content_outdated = True
+                    self.mtime[path] = new_mtime
+            except FileNotFoundError:
+                pass
 
         if not self.content_outdated:
             return
@@ -247,6 +246,8 @@ class NetRangerBuf(object):
         self.nodes = self.sortNodes(new_nodes)
         self.render()
         self.setClineNoByNode(oriNode)
+        if self.fs.isRemote:
+            self.fs.refresh_remote(self.wd)
 
     def refresh_highlight(self):
         if not self.highlight_outdated:
@@ -255,7 +256,7 @@ class NetRangerBuf(object):
         for i, node in enumerate(self.nodes):
             if node in self.highlight_outdated_nodes:
                 lines.append(i)
-        self.refresh_lines(lines)
+        self.refresh_lines_hi(lines)
         self.highlight_outdated_nodes.clear()
 
     def sortNodes(self, nodes):
@@ -296,7 +297,6 @@ class NetRangerBuf(object):
         self.vim.command('call cursor({}, 1)'.format(self.clineNo+1))
 
     def on_cursormoved(self):
-        log('on_cursormoved')
         lineNo = self.vim.eval("line('.')") - 1
         self.setClineNo(lineNo)
 
@@ -317,7 +317,7 @@ class NetRangerBuf(object):
         if newLineNo == self.clineNo:
             # ensure clineNo is on
             self.nodes[newLineNo].cursor_on()
-            self.refresh_lines([newLineNo])
+            self.refresh_lines_hi([newLineNo])
             return
 
         oc = self.clineNo
@@ -325,9 +325,9 @@ class NetRangerBuf(object):
         if oc < len(self.nodes):
             self.nodes[oc].cursor_off()
         self.nodes[newLineNo].cursor_on()
-        self.refresh_lines([oc, newLineNo])
+        self.refresh_lines_hi([oc, newLineNo])
 
-    def refresh_lines(self, lineNos):
+    def refresh_lines_hi(self, lineNos):
         self.vim.command('setlocal modifiable')
 
         sz = min(len(self.nodes), len(self.vim.current.buffer))
@@ -336,19 +336,19 @@ class NetRangerBuf(object):
                 self.vim.current.buffer[i] = self.nodes[i].highlight_content
         self.vim.command('setlocal nomodifiable')
 
-    def refresh_cur_line(self):
-        self.refresh_lines([self.clineNo])
+    def refresh_cur_line_hi(self):
+        self.refresh_lines_hi([self.clineNo])
 
     def ToggleExpand(self):
         curNode = self.curNode
         if not curNode.isDir:
             return
         if curNode.expanded:
-            self.expanded_dirs.remove(curNode)
+            del self.mtime[curNode.fullpath]
             endInd = self.next_lesseq_level_ind(self.clineNo)
             self.nodes = self.nodes[:self.clineNo+1] + self.nodes[endInd:]
         else:
-            self.expanded_dirs.add(curNode)
+            self.mtime[curNode.fullpath] = self.fs.mtime(curNode.fullpath)
             newNodes = self.createNodes(self.curNode.fullpath, curNode.level+1)
             if len(newNodes)>0:
                 self.nodes = self.nodes[:self.clineNo+1] + newNodes + self.nodes[self.clineNo+1:]
@@ -372,6 +372,9 @@ class NetRangerBuf(object):
         self.nodes = self.sortNodes(self.nodes)
         self.render()
         self.setClineNoByNode(oriNode)
+
+        if self.fs.isRemote:
+            self.fs.refresh_remote(self.wd)
 
     def Cut(self, nodes):
         for node in nodes:
@@ -415,27 +418,28 @@ class Netranger(object):
         self.inited = False
         self.bufs = {}
         self.wd2bufnum = {}
+        self.isEditing = False
+        self.pinnedRoots = set()
+        self.picked_nodes = defaultdict(set)
+        self.cut_nodes, self.copied_nodes= defaultdict(set), defaultdict(set)
+        self.bookmarkUI = None
+        self.helpUI = None
+        self.onuiquit = None
+        self.onuiquitNumArgs = 0
+        self.fs = FS()
+        self.rclone = None
         VimIO.init(self.vim)
 
-    def init(self):
+    def delay_init(self):
+        if self.inited:
+            return
         self.inited = True
         self.initVimVariables()
         self.initKeymaps()
-        self.rclone = None
-        self.bookmarkUI = None
-        self.helpUI = None
-        self.isEditing = False
-        self.onuiquit = None
-        self.onuiquitNumArgs = 0
         Shell.mkdir(default.variables['NETRRootDir'])
         self.rifle = Rifle(self.vim, self.vim.vars['NETRRifleFile'])
-        self.fs = FS()
-        self.pinnedRoots = set()
-        self.lock = False
         ignore_pat = self.vim.vars['NETRIgnore']
-        self.picked_nodes = defaultdict(set)
-        self.cut_nodes, self.copied_nodes= defaultdict(set), defaultdict(set)
-
+        self.vim.vars['NETRemoteCacheDir'] = os.path.expanduser(self.vim.vars['NETRemoteCacheDir'])
         if '.*' not in ignore_pat:
             ignore_pat.append('.*')
             self.vim.vars['NETRIgnore'] = ignore_pat
@@ -485,8 +489,7 @@ class Netranger(object):
             if not os.path.isdir(bufname):
                 return
 
-            if not self.inited:
-                self.init()
+            self.delay_init()
 
             if self.buf_existed(bufname):
                 self.show_existing_buf(bufname)
@@ -511,7 +514,7 @@ class Netranger(object):
 
     def gen_new_buf(self, bufname):
         bufnum = self.vim.current.buffer.number
-        if(bufname.startswith(self.vim.vars['NETRCacheDir'])):
+        if(bufname.startswith(self.vim.vars['NETRemoteCacheDir'])):
             self.bufs[bufnum] = NetRangerBuf(self.vim, os.path.abspath(bufname), self.rclone, self.rifle)
         else:
             self.bufs[bufnum] = NetRangerBuf(self.vim, os.path.abspath(bufname), self.fs, self.rifle)
@@ -542,7 +545,7 @@ class Netranger(object):
         self.vim.command('setlocal foldmethod=manual')
         self.vim.command('setlocal foldcolumn=0')
         self.vim.command('setlocal nofoldenable')
-        # self.vim.command('setlocal nobuflisted')
+        self.vim.command('setlocal nobuflisted')
         self.vim.command('setlocal nospell')
         self.vim.command('setlocal bufhidden=hide')
         self.vim.command('setlocal conceallevel=3')
@@ -568,8 +571,6 @@ class Netranger(object):
         if curNode.isDir:
             self.vim.command('silent edit {}'.format(fullpath))
         else:
-            if type(self.fs) is RClone:
-                self.fs.download(fullpath)
             cmd = self.rifle.decide_open_cmd(fullpath)
 
             if cmd:
@@ -688,9 +689,9 @@ class Netranger(object):
     def NETRCutSingle(self):
         curBuf = self.curBuf
         curNode = self.curNode
-        curBuf.Cut([curNode])
+        curNode.cut()
         self.cut_nodes[curBuf].add(curNode)
-        curBuf.refresh_highlight()
+        curBuf.refresh_cur_line_hi()
 
     def NETRCopy(self):
         for buf, nodes in self.picked_nodes.items():
@@ -702,9 +703,9 @@ class Netranger(object):
     def NETRCopySingle(self):
         curBuf = self.curBuf
         curNode = self.curNode
-        curBuf.Copy([curNode])
+        curNode.copy()
         self.copied_nodes[curBuf].add(curNode)
-        curBuf.refresh_highlight()
+        curBuf.refresh_cur_line_hi()
 
     def NETRPaste(self):
         cwd = self.cwd
@@ -730,7 +731,6 @@ class Netranger(object):
                     except Exception as e:
                         VimIO.ErrorMsg(e)
                     alreday_moved.add(node.fullpath)
-        self.cut_nodes = defaultdict(set)
 
         for buf, nodes in self.copied_nodes.items():
             buf.highlight_outdated_nodes.update(nodes)
@@ -740,6 +740,16 @@ class Netranger(object):
                     self.fs.cp(node.fullpath, cwd)
                 except Exception as e:
                     VimIO.ErrorMsg(e)
+
+        for buf in self.cut_nodes.keys():
+            src_dir = buf.wd
+            if self.isRemotePath(src_dir):
+                self.rclone.refresh_remote(src_dir)
+
+        if self.isRemotePath(cwd):
+            self.rclone.refresh_remote(cwd)
+
+        self.cut_nodes = defaultdict(set)
         self.copied_nodes = defaultdict(set)
         self.curBuf.refresh_nodes()
         self.curBuf.refresh_highlight()
@@ -762,17 +772,38 @@ class Netranger(object):
     def NETRForceDeleteSingle(self):
         self.NETRDeleteSingle(force=True)
 
-    def valid_rclone_or_install(self):
-        if self.rclone is not None:
+    def isRemotePath(self, path):
+        return path.startswith(self.vim.vars['NETRemoteCacheDir'])
+
+    def on_bufwritepost(self, fullpath):
+        if self.rclone is not None and self.isRemotePath(fullpath):
+            self.rclone.refresh_remote(fullpath)
+
+    def on_bufreadpre(self, fname):
+        if self.rclone is not None and self.isRemotePath(fname):
+            self.rclone.lazy_init(fname)
+
+    def NETRemotePull(self):
+        self.delay_init()
+        try:
+            curBuf = self.curBuf
+        except KeyError:
+            VimIO.ErrorMsg('Not a netranger buffer')
             return
-        RClone.valid_or_install(self.vim)
 
-        self.vim.vars['NETRCacheDir'] = os.path.expanduser(self.vim.vars['NETRCacheDir'])
-        self.rclone = RClone(self.vim.vars['NETRCacheDir'])
+        if not self.isRemotePath(curBuf.wd):
+            VimIO.ErrorMsg('Not a remote directory')
+        else:
+            self.rclone.sync(curBuf.wd, Rclone.SyncDirection.DOWN)
+        curBuf.refresh_nodes()
 
-    def listremotes(self):
-        self.valid_rclone_or_install()
+    def NETRemoteList(self):
+        if self.rclone is None:
+            self.delay_init()
+            Rclone.valid_or_install(self.vim)
+            self.rclone = Rclone(self.vim.vars['NETRemoteCacheDir'], self.vim.vars['NETRemoteRoots'])
+
         if self.rclone.has_remote:
-            self.vim.command('tabe ' + self.vim.vars['NETRCacheDir'])
+            self.vim.command('tabe ' + self.vim.vars['NETRemoteCacheDir'])
         else:
             VimIO.ErrorMsg("There's no remote now. Run 'rclone config' in a terminal to setup remotes")

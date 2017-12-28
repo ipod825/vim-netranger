@@ -34,7 +34,7 @@ vim-netranger requires Neovim. You should install neovim's Python3 api with pip:
     pip3 install neovim
 ```
 
-`rclone` is needed if you use the remote editing feature. However, it will be installed automatically on the first time running `NETRListRemotes` command.
+`rclone` is needed if you use the remote editing feature. However, it will be installed automatically on the first time running `NETRemoteList` command.
 
 
 ## Usage
@@ -89,8 +89,8 @@ In progress
 2. Press `zh` to (toggle) show hidden files.
 
 ### Remote storage
-1. Run `NETRListRemotes` command to open a `vim-netranger` buffer showing all configured remote storage.
-2. If `rclone` is not in your `PATH`, on first time running `NETRListRemotes`. It will be automatically downloaded and installed.
+1. Run `NETRemoteList` command to open a `vim-netranger` buffer showing all configured remote storage.
+2. If `rclone` is not in your `PATH`, on first time running `NETRemoteList`. It will be automatically downloaded and installed.
 3. Remote files are downloaded on demand and cached in `g:NETRRootDir/cache`. Other than that, it's just like browsing local files.
 __Note__ Remote reading is done now. Writing is still in progress.
 
@@ -111,3 +111,6 @@ let g:NETRBookmarkGo = ["m"]
 | g:NETRRootDir        | Directory for storing remote cache and bookmark file      | ['$HOME/.netranger/'] |
 | g:NETROpenCmd        | Vim command to open files from netranger buffer           | 'tab drop'            |
 
+### Known Issues
+1. When opening two vim buffers for the same directory, there is a delay for moving cursor up and down. This seems to be an nvim api [issue](https://github.com/neovim/neovim/issues/7756)
+2. When remote directory is empty, it will not be copied to remote. It is an rclone [bug] (https://github.com/ncw/rclone/issues/1837), which is expected to be fixed in next release.

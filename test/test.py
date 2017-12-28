@@ -1,11 +1,14 @@
 import os
+import sys
+import re
+import time
+import tempfile
+import argparse
 from netranger.util import Shell
 from netranger import default
 from netranger.colortbl import colortbl
 from neovim import attach
-import re
-import time
-import tempfile
+from netranger.config import test_dir, test_local_dir, test_remote_dir, test_remote_name
 
 
 def assert_content(expected, level=0, ind=None, hi=None):
@@ -62,27 +65,49 @@ def assert_fs(d, expected):
     assert real == expected, 'expected: {}, real: {}'.format(expected, real)
 
 
-def do_test(fn, wipe_on_done=True):
+def do_test(fn=None, fn_remote=None):
     old_cwd = os.getcwd()
-    test_root = os.path.expanduser('~/netranger_test_dir')
-    Shell.run('rm -rf {}'.format(test_root))
-    Shell.mkdir(test_root)
+    Shell.run('rm -rf {}'.format(test_dir))
 
-    os.chdir(test_root)
-    Shell.mkdir(os.path.join(test_root, 'dir/subdir'))
-    Shell.mkdir(os.path.join(test_root, 'dir/subdir/subsubdir'))
-    Shell.mkdir(os.path.join(test_root, 'dir/subdir2'))
-    Shell.run('touch {}/dir/a'.format(test_root))
-    Shell.run('touch {}/.a'.format(test_root))
-    Shell.mkdir(os.path.join(test_root, 'dir2/'))
+    def chdir(dirname):
+        Shell.mkdir(dirname)
+        os.chdir(dirname)
+        Shell.mkdir('dir/subdir')
+        Shell.mkdir('dir/subdir/subsubdir')
+        Shell.mkdir('dir/subdir2')
+        Shell.touch('dir/a')
+        Shell.touch('.a')
+        Shell.mkdir('dir2/')
 
-    nvim.command('tabe {}'.format(test_root))
-    fn()
-    if wipe_on_done:
+        # The following should be removed when rclone fix "not copying empty directories" bug.
+        Shell.touch('dir/subdir/subsubdir/placeholder')
+        Shell.touch('dir/subdir2/placeholder')
+        Shell.touch('dir/subdir2/placeholder')
+
+    chdir(test_local_dir)
+    if fn is not None:
+        nvim.command('tabe {}'.format(test_local_dir))
+        fn()
         nvim.command('bwipeout')
+        print('== {} success =='.format(str(fn.__name__)))
+
+    chdir(test_remote_dir)
+    if fn_remote is not None:
+        nvim.command('NETRemoteList')
+        found_remote = False
+        for i, line in enumerate(nvim.current.buffer):
+            if re.findall('.+(netrtest)', line):
+                nvim.command('call cursor({}, 1)'.format(i+1))
+                found_remote = True
+                break
+
+        assert found_remote, 'You must set up an rclone remote named "{}" to test remote function'.format(test_remote_name)
+        nvim.input('l')
+        fn_remote()
+        nvim.command('bwipeout')
+        print('== {} success =='.format(str(fn_remote.__name__)))
 
     os.chdir(old_cwd)
-    print('== {} success =='.format(str(fn.__name__)))
 
 
 def test_navigation():
@@ -123,6 +148,18 @@ def test_edit():
     assert_content('xsubdir2', ind=2, level=1, hi='dir')
     assert_content('ysubdir', ind=3, level=1, hi='dir')
     assert_content('wa', ind=4, level=1, hi='file')
+
+    assert_fs('', ['dir2', 'zdir'])
+    assert_fs('zdir', ['xsubdir2', 'ysubdir', 'wa'])
+
+
+def test_edit_remote():
+    nvim.input(' ')
+    nvim.input('iz<Left><Down>')
+    nvim.input('y<Left><Down>')
+    nvim.input('x<Left><Down>')
+    nvim.input('w')
+    nvim.input('')
 
     assert_fs('', ['dir2', 'zdir'])
     assert_fs('zdir', ['xsubdir2', 'ysubdir', 'wa'])
@@ -192,6 +229,13 @@ def test_delete():
     assert_fs('', ['dir2'])
 
 
+def test_delete_remote():
+    nvim.input(' jvjjvD')
+    assert_fs('dir', ['subdir2'])
+    nvim.input('XX')
+    assert_fs('', ['dir2'])
+
+
 def test_detect_fs_change():
     nvim.input(' ')
     Shell.touch('dir/b')
@@ -241,16 +285,28 @@ def test_misc():
     assert_num_content_line(2)
 
 
-if __name__ == '__main__':
-    nvim = attach('socket', path=os.path.join(tempfile.gettempdir(), 'netrangertest'))
-    ori_timeoutlen = nvim.options['timeoutlen']
-    nvim.options['timeoutlen'] = 1
+def parse_arg(argv):
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('-m', '--manual', action='store_true', help='Only setting up testing directories. Used for testing manually')
+    return parser.parse_args(argv[1:])
 
-    do_test(test_navigation)
-    do_test(test_edit)
-    do_test(test_delete)
-    do_test(test_pickCutCopyPaste)
-    do_test(test_bookmark)
-    do_test(test_misc)
-    do_test(test_detect_fs_change)
-    nvim.options['timeoutlen'] = ori_timeoutlen
+
+if __name__ == '__main__':
+    args = parse_arg(sys.argv)
+    if args.manual:
+        do_test()
+    else:
+        nvim = attach('socket', path=os.path.join(tempfile.gettempdir(), 'netrangertest'))
+        ori_timeoutlen = nvim.options['timeoutlen']
+        nvim.options['timeoutlen'] = 1
+
+        do_test(test_navigation)
+        do_test(test_edit)
+        # do_test(fn_remote=test_edit_remote)
+        do_test(test_delete)
+        # do_test(fn_remote=test_delete_remote)
+        do_test(test_pickCutCopyPaste)
+        do_test(test_bookmark)
+        do_test(test_misc)
+        do_test(test_detect_fs_change)
+        nvim.options['timeoutlen'] = ori_timeoutlen

@@ -1,12 +1,16 @@
 import os
 from netranger.util import Shell
 from netranger.util import log, VimIO
+from enum import Enum
 import shutil
 
 log('')
 
 
 class FS(object):
+    @property
+    def isRemote(self):
+        return type(self) is Rclone
 
     def ls(self, dirname):
         if not os.access(dirname, os.R_OK):
@@ -41,7 +45,6 @@ class FS(object):
         return catlog
 
     def mv(self, src, dst):
-        log('mv {} to {}'.format(os.path.basename(src), os.path.basename(dst)))
         shutil.move(src, dst)
 
     def cp(self, src, dst):
@@ -61,86 +64,113 @@ class FS(object):
         return os.stat(fname).st_mtime
 
 
-class RcloneFile(FS):
-    def __init__(self, lpath, path):
-        FS.__init__(self)
-
+class RcloneFile(object):
+    def __init__(self, lpath, rpath):
         self.lpath = lpath
-        self.path = path
-        self.downloaded = False
+        self.rpath = rpath
+        self.inited = os.path.isfile(lpath)
 
-        with open(lpath, "w") as f:
-            f.write("")
+        if not self.inited:
+            Shell.touch(lpath)
 
-    def download(self):
-        if self.downloaded:
+    def lazy_init(self):
+        if self.inited:
             return
-        else:
-            Shell.run('rclone copyto "{}" "{}"'.format(self.path, self.lpath))
-            self.downloaded = True
+        self.inited = True
+        self.sync(Rclone.SyncDirection.DOWN)
+
+    def sync(self, direction):
+        src, dst = Rclone.sync_src_dst(self.lpath, self.rpath, direction)
+        Shell.run('rclone copyto "{}" "{}"'.format(src, dst))
 
 
 class RcloneDir(object):
-    def __init__(self, lpath, path):
+    def __init__(self, lpath, rpath):
         Shell.mkdir(lpath)
         self.lpath = lpath
 
-        self.child = {}
-        self.cached = False
-        self.path = path
+        self.children = {}
+        self.inited = False
+        self.rpath = rpath
 
-        if path is None:
+        if type(rpath) is dict:
             remotes = Shell.run('rclone listremotes').split(':\n')
-            log(remotes)
             for remote in remotes:
                 if len(remote)==0:
                     continue
-                self.child[remote] = RcloneDir(os.path.join(lpath, remote), remote+':/')
-            self.cached = True
+                root = rpath.get(remote, '')
+                self.children[remote] = RcloneDir(os.path.join(lpath, remote), remote+':'+root)
+            self.inited = True
 
     @property
     def contentcache(self):
-        return self.child.keys()
+        return self.children.keys()
 
     def lsd(self):
-        info = Shell.run('rclone lsd {} --max-depth 1'.format(self.path))
+        info = Shell.run('rclone lsd {} --max-depth 1'.format(self.rpath))
 
         for line in info.split('\n'):
             line = line.strip()
             if len(line)>0:
                 name = line.split()[-1]
-                self.child[name] = RcloneDir(os.path.join(self.lpath, name), os.path.join(self.path, name))
+                self.children[name] = RcloneDir(os.path.join(self.lpath, name), os.path.join(self.rpath, name))
 
     def lsl(self):
-        info = Shell.run('rclone lsl {} --max-depth 1'.format(self.path))
+        info = Shell.run('rclone lsl {} --max-depth 1'.format(self.rpath))
 
         for line in info.split('\n'):
             line = line.strip()
             if len(line)>0:
                 name = line.split()[-1]
-                self.child[name] = RcloneFile(os.path.join(self.lpath, name), os.path.join(self.path, name))
+                self.children[name] = RcloneFile(os.path.join(self.lpath, name), os.path.join(self.rpath, name))
 
-    def ls(self):
-        if not self.cached:
-            self.cached = True
-            # files = Shell.run('rclone lsl --max-depth 1')
-            self.lsd()
-            self.lsl()
-            self.cached = True
-        return self.contentcache
+    def lazy_init(self):
+        if self.inited:
+            return
+        self.inited = True
+        self.lsd()
+        self.lsl()
+
+    def sync(self, direction):
+        src, dst = Rclone.sync_src_dst(self.lpath, self.rpath, direction)
+        Shell.run('rclone sync "{}" "{}"'.format(src, dst))
+
+    def refresh_children(self):
+        fs_files = set(Shell.ls(self.lpath))
+        cur_files = set(self.children.keys())
+
+        for name in cur_files.difference(fs_files):
+            del self.children[name]
+
+        for name in fs_files.difference(cur_files):
+            fullpath = os.path.join(self.lpath, name)
+            if os.path.isdir(fullpath):
+                self.children[name] = RcloneDir(fullpath, os.path.join(self.rpath, name))
+            else:
+                self.children[name] = RcloneFile(fullpath, os.path.join(self.rpath, name))
 
 
-class RClone(object):
-    def __init__(self, cache_dir):
+class Rclone(FS):
+    SyncDirection = Enum('SyncDirection', 'DOWN, UP')
+
+    @classmethod
+    def sync_src_dst(self, lpath, rpath, direction):
+        if direction == Rclone.SyncDirection.UP:
+            return lpath, rpath
+        else:
+            return rpath, lpath
+
+    def __init__(self, cache_dir, remote_roots):
         if cache_dir[-1] == '/':
             cache_dir = cache_dir[:-1]
+        super().rm(cache_dir, force=True)
 
         self.rplen = len(cache_dir)+1
-        self.root_dir = RcloneDir(cache_dir, None)
+        self.root_dir = RcloneDir(cache_dir, remote_roots)
 
     @property
     def has_remote(self):
-        return len(self.root_dir.child)>0
+        return len(self.root_dir.children)>0
 
     def ftype(self, fname):
         if os.path.islink(fname):
@@ -153,25 +183,36 @@ class RClone(object):
             catlog = 'file'
         return catlog
 
-    def getNode(self, path):
+    def getNode(self, lpath):
         curNode = self.root_dir
 
-        for name in path[self.rplen:].split('/'):
+        for name in lpath[self.rplen:].split('/'):
             if len(name) == 0:
                 continue
-            curNode = curNode.child[name]
+            curNode = curNode.children[name]
         return curNode
 
     def ls(self, dirname):
-        return self.getNode(dirname).ls()
+        self.lazy_init(dirname)
+        return super().ls(dirname)
 
-    def download(self, fname):
-        self.getNode(fname).download()
+    def lazy_init(self, lpath):
+        self.getNode(lpath).lazy_init()
+
+    def sync(self, lpath, direction):
+        self.getNode(lpath).sync(direction)
 
     def parent_dir(self, cwd):
         if len(cwd) == self.rplen-1:
             return cwd
         return os.path.abspath(os.path.join(cwd, os.pardir))
+
+    def refresh_remote(self, wd):
+        log('refresh_remote', wd)
+        node = self.getNode(wd)
+        node.sync(Rclone.SyncDirection.UP)
+        if type(node) is RcloneDir:
+            node.refresh_children()
 
     @classmethod
     def valid_or_install(cls, vim):

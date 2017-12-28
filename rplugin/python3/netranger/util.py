@@ -65,6 +65,10 @@ class Shell():
     userhome = os.path.expanduser('~')
 
     @classmethod
+    def ls(cls, dirname):
+        return os.listdir(dirname)
+
+    @classmethod
     def abbrevuser(cls, path):
         return path.replace(Shell.userhome, '~')
 
