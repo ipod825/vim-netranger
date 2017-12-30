@@ -33,8 +33,7 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
     pip3 install neovim
 ```
 
-`rclone`: v1.4.0(v1.3.9) or newer (1.4.0 not yet published, see [Known Issues](#known-issues))
-`rclone` is needed if you use the remote editing feature. However, it will be installed automatically on the first time running `NETRemoteList` command.
+`rclone`: v1.4.0(v1.3.9) or newer (1.4.0 not yet published, see [Known Issues](#known-issues)). `rclone` is needed if you use remote editing features. However, it will be installed automatically on the first time running `NETRemoteList` command.
 
 ## Contributing
 Pull request is welcomed. However, please run tests and coding style check before sending pull request.
