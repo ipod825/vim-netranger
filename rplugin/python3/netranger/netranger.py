@@ -542,12 +542,12 @@ class Netranger(object):
             bufname = self.vim.current.buffer.name
             if len(bufname)>0 and bufname[-1] == '~':
                 bufname = os.path.expanduser('~')
-
             if not os.path.isdir(bufname):
                 return
 
             self.delay_init()
 
+            bufname = os.path.abspath(bufname)
             if self.buf_existed(bufname):
                 self.show_existing_buf(bufname)
             else:
