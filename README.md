@@ -28,14 +28,44 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 
 ## Requirements
 
-vim-netranger requires Neovim. You should install neovim's Python3 api with pip:
-
+`neovim-python3`: v0.2.0 or newer
 ```bash
     pip3 install neovim
 ```
 
+`rclone`: v1.4.0(v1.3.9) or newer (1.4.0 not yet published, see [Known Issues](#known-issues))
 `rclone` is needed if you use the remote editing feature. However, it will be installed automatically on the first time running `NETRemoteList` command.
 
+## Contributing
+Pull request is welcomed. However, please run tests and coding style check before sending pull request.
+
+Additional requirement: `tmux`, `pytest`, `pytest-pep8`
+
+~~~{.bash}
+$ pip3 install pytest pytest-pep8
+~~~
+
+### Testing
+~~~{.bash}
+$ cd test
+$ bash test.sh
+~~~
+
+### Coding Style
+~~~{.bash}
+$ cd test
+$ py.test --pep8 -m pep8 .
+~~~
+If you fail on syntax check, you could use `autopep8` to fix it:
+~~~{.bash}
+$ pip install autopep8
+$ autopep8 --recursive -i --select E128 test/netranger # fix all error no.128
+~~~
+
+It is highly recommend you avoid these errors when writing them using. I recommend installing `flake8` and adopt the (vim) settings in this [gist](https://gist.github.com/ipod825/fbee70d8bd063f228951cd4b6f38f4df). Note that `flask8` is required:
+~~~{.bash}
+$ pip install flask8
+~~~
 
 ## Usage
 
@@ -91,8 +121,11 @@ In progress
 ### Remote storage
 1. Run `NETRemoteList` command to open a `vim-netranger` buffer showing all configured remote storage.
 2. If `rclone` is not in your `PATH`, on first time running `NETRemoteList`. It will be automatically downloaded and installed.
-3. Remote files are downloaded on demand and cached in `g:NETRRootDir/cache`. Other than that, it's just like browsing local files.
-__Note__ Remote reading is done now. Writing is still in progress.
+3. Remote files are downloaded on demand and cached in `g:NETRRootDir/remote`. Other than that, it's just like browsing local files.
+4. Run `NETRemotePull` to sync the current directory to be the same as the remote directory. Use this command when remote directory is modified elsewhere.
+5. Netranger does not provide `NETRemotePush` command. When any file in a remote directory is modified. You must reenter that directory to sync remote content to be the same as the local content.
+
+__Note__ Remote functions hasn't been fully tested. Use it with caution.
 
 ## Customization
 ### Key mappings:

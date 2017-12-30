@@ -102,10 +102,6 @@ class RcloneDir(object):
                 self.children[remote] = RcloneDir(os.path.join(lpath, remote), remote+':'+root)
             self.inited = True
 
-    @property
-    def contentcache(self):
-        return self.children.keys()
-
     def lsd(self):
         info = Shell.run('rclone lsd {} --max-depth 1'.format(self.rpath))
 
@@ -160,30 +156,22 @@ class Rclone(FS):
         else:
             return rpath, lpath
 
-    def __init__(self, cache_dir, remote_roots):
-        if cache_dir[-1] == '/':
-            cache_dir = cache_dir[:-1]
-        super().rm(cache_dir, force=True)
-
-        self.rplen = len(cache_dir)+1
-        self.root_dir = RcloneDir(cache_dir, remote_roots)
-
     @property
     def has_remote(self):
         return len(self.root_dir.children)>0
 
-    def ftype(self, fname):
-        if os.path.islink(fname):
-            catlog = 'link'
-        elif os.path.isdir(fname):
-            catlog = 'dir'
-        elif os.access(fname, os.X_OK):
-            catlog = 'exe'
-        else:
-            catlog = 'file'
-        return catlog
+    def __init__(self, root_dir, remote_roots):
+        if root_dir[-1] == '/':
+            root_dir = root_dir[:-1]
+        super().rm(root_dir, force=True)
+
+        self.rplen = len(root_dir)+1
+        self.root_dir = RcloneDir(root_dir, remote_roots)
 
     def getNode(self, lpath):
+        """
+        Reutrn the RcloneDir/RcloneFile node corresponding to lpath.
+        """
         curNode = self.root_dir
 
         for name in lpath[self.rplen:].split('/'):
@@ -193,6 +181,9 @@ class Rclone(FS):
         return curNode
 
     def ls(self, dirname):
+        """
+        Ensure directory entries match remote entries then return local ls result.
+        """
         self.lazy_init(dirname)
         return super().ls(dirname)
 
@@ -207,9 +198,11 @@ class Rclone(FS):
             return cwd
         return os.path.abspath(os.path.join(cwd, os.pardir))
 
-    def refresh_remote(self, wd):
-        log('refresh_remote', wd)
-        node = self.getNode(wd)
+    def refresh_remote(self, lpath):
+        """
+        Sync remote so that remote content is the same as local content. If lpath is a directory, we also need to update its children data structure.
+        """
+        node = self.getNode(lpath)
         node.sync(Rclone.SyncDirection.UP)
         if type(node) is RcloneDir:
             node.refresh_children()
