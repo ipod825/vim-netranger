@@ -1,6 +1,7 @@
 import string
 import os
 from netranger.util import log
+from netranger.config import config_dir
 
 log('')
 
@@ -54,6 +55,43 @@ class HelpUI(UI):
         UI.__init__(self, vim)
 
         self.create_buf(content=['{:<25} {:<10} {}'.format(fn, ','.join(keys), desc) for fn, (keys, desc) in keymap_doc.items()])
+
+
+def size(path):
+    if os.path.isdir(path):
+        return str(len(os.listdir(path))).rjust(18)
+    else:
+        return str(os.stat(path).st_size).rjust(18)
+
+
+def ext_name(path):
+    ind = path.rfind('.')
+    if ind < 0:
+        return ' '
+    else:
+        return path[ind+1:]
+
+
+class SortUI(UI):
+    sort_fns = {
+        'a': lambda n: os.stat(n.fullpath).st_atime,
+        'c': lambda n: os.stat(n.fullpath).st_ctime,
+        'd': lambda n: '',
+        'e': lambda n: ext_name(n.name),
+        'm': lambda n: os.stat(n.fullpath).st_ctime,
+        's': lambda n: size(n.fullpath),
+    }
+
+    sort_fn = sort_fns['d']
+    reverse = False
+
+    def __init__(self, vim):
+        UI.__init__(self, vim)
+        sort_opts = ['atime', 'ctime', 'default', 'extension', 'mtime', 'size']
+        content = ['{}  {}'.format(s[0], s) for s in sort_opts]
+        content.insert(0, 'Type keys for sorting option. Use captial letter for reverse (small to large) order')
+        mappings = [(k[0],k[0]) for k in sort_opts] + [(k[0].upper(), k[0].upper()) for k in sort_opts]
+        self.create_buf(content=content, mappings=mappings)
 
 
 class BookMarkUI(UI):

@@ -25,6 +25,7 @@ keymap = {
     'NETRBookmarkSet': (['m'], "Jump to bookmark, pending for single character"),
     'NETRBookmarkGo': (["'"], "Bookmark current directory, pending for single character"),
     'NETRBookmarkEdit': (["em"], "Open bookmark file to edit"),
+    'NETRSort': (['S'], 'Sort contnet in current directory, pending for single (double) character'),
     'NETRHelp':(['?'], "Show help message")
 }
 

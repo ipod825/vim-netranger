@@ -1,6 +1,7 @@
 import re
 import os
 from netranger.util import Shell, log, VimIO
+from netranger.config import config_dir
 
 log('')
 
@@ -29,7 +30,7 @@ class Rifle(object):
         self.rules = []
 
         if not os.path.isfile(path):
-            Shell.cp('{}/../../../config/rifle.conf'.format(os.path.dirname(__file__)), path)
+            Shell.cp(os.path.join(config_dir, rifle.conf), path)
 
         with open(path, 'r') as f:
             for i, line in enumerate(f):

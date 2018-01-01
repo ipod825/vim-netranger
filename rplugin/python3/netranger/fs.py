@@ -2,7 +2,9 @@ import os
 from netranger.util import Shell
 from netranger.util import log, VimIO
 from enum import Enum
+from netranger.config import file_sz_display_wid
 import shutil
+import re
 
 log('')
 
@@ -63,6 +65,16 @@ class FS(object):
     def mtime(self, fname):
         return os.stat(fname).st_mtime
 
+    def size(self, path):
+        if os.path.isdir(path):
+            return str(len(self.ls(path)))
+        else:
+            res = float(os.stat(path).st_size)
+            for u in ['B', 'K', 'M', 'G', 'T', 'P']:
+                if res < 1024:
+                    return '{} {}'.format(re.sub('\.0*$', '', str(res)[:file_sz_display_wid-2]), u)
+                res /= 1024
+            return '?'*file_sz_display_wid
 
 class RcloneFile(object):
     def __init__(self, lpath, rpath):

@@ -76,6 +76,10 @@ $ pip install flask8
 ### Help
 1. Press `?` to see current key bindings
 
+### Automatic Update
+1. vim-netranger does not provide any function or key-binding for creating directories, touching new files, etc. The reason is because it's cheap to open a terminal to get this jobs done. However, when the directory content is changed elsewhere, the vim-netranger buffer will be updated when you reenter it.
+2. This applies in general, You can always manipulate directory content manually and expect the vim-nertanger buffer be updated when you reenter it. For example, you could run `:tabe newfile` in a vim-netranger buffer. After writing file with `:w` and switching back to the vim-netranger buffer, you'll see `newfile` there.
+
 ### Navigation
 1. Press `l` to change directory/open file for the current directory/file under the cursor.
 2. Press `h` to jump to the parent directory.
@@ -93,10 +97,9 @@ $ pip install flask8
     * Press `x` or `d` to cut all selected files
     * Press `D` to delete (`rm -r`) all selected files
     * Press `X` to force delete (i.e. `rm -rf`) all selected files
-
 2. For `y`, `x`, `d`, go to the target directory, press `p` to paste all cut/copied files/directories.
 3. Note that you can open multiple vim buffer for different directories and cut (copy) files in one buffer and paste files in another buffer. When you jump back to the source buffer, cut files will disappear as expected.
-4. If only one file is to be cut/copy, you can simply press `yy` (copy) or `dd` (cut). The current file will be marked. You can then continue `yy`,  `dd` other lines. I personally think this is more convenient then using `v`.
+4. If only one file is to be cut/copy, you can simply press `yy` (copy) or `dd` (cut). The current file will be marked. You can then continue `yy`,  `dd` other lines.
 5. Similarly, if only one file is to be (force) deleted, you can simply press `DD` or `XX`.
 
 ### Bookmark
@@ -111,7 +114,7 @@ $ pip install flask8
 
 
 ### Sort
-In progress
+1. Press `S` to sort.
 
 ### Misc
 1. Press `zp` to (toggle) pin current directory as the project root, which means you can't use `h` to jump to the parent directory. I think it might be useful when developing a project.
@@ -143,6 +146,6 @@ let g:NETRBookmarkGo = ["m"]
 | g:NETRRootDir        | Directory for storing remote cache and bookmark file      | ['$HOME/.netranger/'] |
 | g:NETROpenCmd        | Vim command to open files from netranger buffer           | 'tab drop'            |
 
-### Known Issues
+## Known Issues
 1. When opening two vim buffers for the same directory, there is a delay for moving cursor up and down. This seems to be an nvim api [issue](https://github.com/neovim/neovim/issues/7756)
 2. When remote directory is empty, it will not be copied to remote. It is an rclone [bug] (https://github.com/ncw/rclone/issues/1837), which is expected to be fixed in next release.

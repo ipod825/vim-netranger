@@ -18,10 +18,9 @@ def assert_content(expected, level=0, ind=None, hi=None):
         ind += 1
         line = nvim.current.buffer[ind]
 
-    m = re.search('\[38;5;([0-9]+)(;7)?m(.+)', line)
-    expected = '  '*level+expected
-
-    assert m.group(3) == expected, 'expected:"{}", real: "{}"'.format(expected, m.group(3))
+    m = re.search('\[38;5;([0-9]+)(;7)?m( *)([^ ]+)', line)
+    assert m.group(3) == '  '*level, "level mismatch"
+    assert m.group(4) == expected, 'expected:"{}", real: "{}"'.format(expected, m.group(4))
 
     if hi is not None:
         expected_hi = str(colortbl[default.color[hi]])
@@ -118,7 +117,6 @@ def test_navigation():
     nvim.input('kl')
     assert_content('subdir', ind=0, hi='dir')
 
-    return
     nvim.input('h')
     assert_content('dir', ind=0, hi='dir')
     assert_content('dir2', ind=1, hi='dir')
@@ -130,7 +128,14 @@ def test_navigation():
     nvim.input(' ')
     assert_content('dir2', ind=1, hi='dir')
 
-    nvim.input('j<Cr>')
+    nvim.input(' jlhh')
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('subdir', ind=1, level=1, hi='dir')
+    assert_content('subdir2', ind=2, level=1, hi='dir')
+    assert_content('a', ind=3, level=1, hi='file')
+    assert_content('dir2', ind=4, hi='dir')
+
+    nvim.input(' j<Cr>')
     assert os.path.basename(nvim.command_output('pwd')) == 'dir2'
     nvim.input('k 3j<Cr>')
     assert os.path.basename(nvim.command_output('pwd')) == 'dir'
@@ -224,7 +229,7 @@ def test_delete():
     assert_content('dir', ind=0, hi='dir')
     assert_content('subdir2', ind=1, level=1, hi='dir')
     assert_content('dir2', ind=2, hi='dir')
-    nvim.input('XX')
+    nvim.input('kkXX')
     assert_content('dir2', ind=0, hi='dir')
     assert_fs('', ['dir2'])
 
@@ -285,6 +290,72 @@ def test_misc():
     assert_num_content_line(2)
 
 
+def test_size_display():
+    width = nvim.current.window.width
+    assert nvim.current.line.endswith('3'), 'size display dir fail: {}'.format(nvim.current.line[-10:])
+    Shell.run('echo {} > {}'.format('a'*1035, 'a'*width +'.pdf'))
+    Shell.run('echo {} > {}'.format('b'*1024, 'b'*width))
+
+    nvim.command('edit .')
+    nvim.input('Gk')
+    assert nvim.current.line.endswith('~.pdf 1.01 K'), 'size display abbreviation fail: a~.pdf {}'.format(nvim.current.line[-10:])
+    nvim.input('j')
+    assert nvim.current.line.endswith('b~    1 K'), 'size display abbreviation fail: b~ {}'.format(nvim.current.line[-10:])
+
+
+def test_sort():
+    # only test extension, mtime, size
+    # extension: [a, a.a, a.b]
+    # size: [a.b, a.a, a]
+    # mtime: [a, a.b, a.a]
+    Shell.run('echo {} > dir/{}'.format('a'*3, 'a'))
+    Shell.run('echo {} > dir/{}'.format('a'*2, 'a.a'))
+    Shell.run('echo {} > dir/{}'.format('a'*1, 'a.b'))
+    Shell.run('touch dir/a.a')
+
+    nvim.input(' Se')
+    assert_content('dir', ind=0, hi='dir', level=0)
+    assert_content('a', ind=3, hi='file', level=1)
+    assert_content('a.a', ind=4, hi='file', level=1)
+    assert_content('a.b', ind=5, hi='file', level=1)
+    assert_content('dir2', ind=6, hi='dir', level=0)
+
+    nvim.input('SE')
+    assert_content('dir2', ind=0, hi='dir', level=0)
+    assert_content('dir', ind=1, hi='dir', level=0)
+    assert_content('a.b', ind=2, hi='file', level=1)
+    assert_content('a.a', ind=3, hi='file', level=1)
+    assert_content('a', ind=4, hi='file', level=1)
+
+    nvim.input('Ss')
+    assert_content('dir2', ind=0, hi='dir', level=0)
+    assert_content('dir', ind=1, hi='dir', level=0)
+    assert_content('a.b', ind=4, hi='file', level=1)
+    assert_content('a.a', ind=5, hi='file', level=1)
+    assert_content('a', ind=6, hi='file', level=1)
+
+    nvim.input('SS')
+    assert_content('dir', ind=0, hi='dir', level=0)
+    assert_content('a', ind=1, hi='file', level=1)
+    assert_content('a.a', ind=2, hi='file', level=1)
+    assert_content('a.b', ind=3, hi='file', level=1)
+    assert_content('dir2', ind=6, hi='dir', level=0)
+
+    nvim.input('Sm')
+    assert_content('dir2', ind=0, hi='dir', level=0)
+    assert_content('dir', ind=1, hi='dir', level=0)
+    assert_content('a', ind=4, hi='file', level=1)
+    assert_content('a.b', ind=5, hi='file', level=1)
+    assert_content('a.a', ind=6, hi='file', level=1)
+
+    nvim.input('SM')
+    assert_content('dir', ind=0, hi='dir', level=0)
+    assert_content('a.a', ind=1, hi='file', level=1)
+    assert_content('a.b', ind=2, hi='file', level=1)
+    assert_content('a', ind=3, hi='file', level=1)
+    assert_content('dir2', ind=6, hi='dir', level=0)
+
+
 def parse_arg(argv):
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('-m', '--manual', action='store_true', help='Only setting up testing directories. Used for testing manually')
@@ -309,4 +380,6 @@ if __name__ == '__main__':
         do_test(test_bookmark)
         do_test(test_misc)
         do_test(test_detect_fs_change)
+        do_test(test_size_display)
+        do_test(test_sort)
         nvim.options['timeoutlen'] = ori_timeoutlen
