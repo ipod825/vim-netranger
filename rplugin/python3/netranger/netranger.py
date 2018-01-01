@@ -11,6 +11,7 @@ from enum import Enum
 from collections import defaultdict
 from netranger.config import file_sz_display_wid
 from netranger.ui import SortUI
+import re
 
 
 log('')
@@ -89,10 +90,19 @@ class EntryNode(Node):
         highlight = default.color[fs.ftype(fullpath)]
         super().__init__(name, highlight, level=level)
         self.ori_highlight = self.highlight
-        self.set_size(fs)
+        self.re_stat(fs)
 
-    def set_size(self, fs):
-        self.size = fs.size(self.fullpath)
+    def size_str(self, fs):
+        res = float(self.stat.st_size)
+        for u in ['B', 'K', 'M', 'G', 'T', 'P']:
+            if res < 1024:
+                return '{} {}'.format(re.sub('\.0*$', '', str(res)[:file_sz_display_wid-2]), u)
+            res /= 1024
+        return '?'*file_sz_display_wid
+
+    def re_stat(self, fs):
+        self.stat = os.stat(self.fullpath)
+        self.size = self.size_str(fs)
 
     def cursor_on(self):
         hiArr = self.highlight.split(';')
@@ -148,6 +158,9 @@ class DirNode(EntryNode):
     def __init__(self, fullpath, name, fs, level=0):
         self.expanded = False
         super().__init__(fullpath, name, fs, level)
+
+    def size_str(self, fs):
+        return str(fs.ls_count(self.fullpath))
 
 
 class NetRangerBuf(object):
@@ -324,7 +337,7 @@ class NetRangerBuf(object):
             return
         self.nodes_order_outdated = False
         for i in range(self.header_height, len(self.nodes)):
-            self.nodes[i].set_size(self.fs)
+            self.nodes[i].re_stat(self.fs)
         self.nodes = self.sortNodes(self.nodes)
         self.render()
         self.setClineNoByNode(self.lastNodeId)

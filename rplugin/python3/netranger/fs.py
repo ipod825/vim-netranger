@@ -32,6 +32,9 @@ class FS(object):
         os.chdir(ori_cwd)
         return dirs + files
 
+    def ls_count(self, dirname):
+        return len(os.listdir(dirname))
+
     def parent_dir(self, cwd):
         return os.path.abspath(os.path.join(cwd, os.pardir))
 
@@ -65,16 +68,6 @@ class FS(object):
     def mtime(self, fname):
         return os.stat(fname).st_mtime
 
-    def size(self, path):
-        if os.path.isdir(path):
-            return str(len(self.ls(path)))
-        else:
-            res = float(os.stat(path).st_size)
-            for u in ['B', 'K', 'M', 'G', 'T', 'P']:
-                if res < 1024:
-                    return '{} {}'.format(re.sub('\.0*$', '', str(res)[:file_sz_display_wid-2]), u)
-                res /= 1024
-            return '?'*file_sz_display_wid
 
 class RcloneFile(object):
     def __init__(self, lpath, rpath):
