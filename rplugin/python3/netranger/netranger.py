@@ -12,6 +12,8 @@ from collections import defaultdict
 from netranger.config import file_sz_display_wid
 from netranger.ui import SortUI
 import re
+import pwd
+import grp
 
 
 log('')
@@ -92,17 +94,19 @@ class EntryNode(Node):
         self.ori_highlight = self.highlight
         self.re_stat(fs)
 
-    def size_str(self, fs):
-        res = float(self.stat.st_size)
-        for u in ['B', 'K', 'M', 'G', 'T', 'P']:
-            if res < 1024:
-                return '{} {}'.format(re.sub('\.0*$', '', str(res)[:file_sz_display_wid-2]), u)
-            res /= 1024
-        return '?'*file_sz_display_wid
-
     def re_stat(self, fs):
-        self.stat = os.stat(self.fullpath)
-        self.size = self.size_str(fs)
+        try:
+            self.stat = os.stat(self.fullpath)
+            self.size = fs.size_str(self.fullpath, self.stat)
+            self.acl = fs.acl_str(self.stat)
+            self.user = pwd.getpwuid(self.stat.st_uid)[0]
+            self.group = grp.getgrgid(self.stat.st_gid)[0]
+        except FileNotFoundError:
+            self.stat = None
+            self.size = ''
+            self.acl = ''
+            self.user = ''
+            self.group = ''
 
     def cursor_on(self):
         hiArr = self.highlight.split(';')
@@ -158,9 +162,6 @@ class DirNode(EntryNode):
     def __init__(self, fullpath, name, fs, level=0):
         self.expanded = False
         super().__init__(fullpath, name, fs, level)
-
-    def size_str(self, fs):
-        return str(fs.ls_count(self.fullpath))
 
 
 class NetRangerBuf(object):
@@ -224,6 +225,36 @@ class NetRangerBuf(object):
         self.winwidth = self.vim.current.window.width
         self.render()
 
+    def abbrevcwd(self, width):
+        res = self.wd.replace(Shell.userhome, '~')
+        if len(res) <= width:
+            return res.ljust(width)
+
+        sp = res.split('/')
+        szm1 = len(sp) - 1
+        total = 2*(szm1) + len(sp[-1])
+        for i in range(szm1, -1, -1):
+            if total + len(sp[i]) - 1 > width:
+                for j in range(i+1):
+                    try:
+                        sp[j] = sp[j][0]
+                    except IndexError:
+                        pass
+                return '/'.join(sp).ljust(width)
+            else:
+                total += len(sp[i]) - 1
+
+    def set_header_content(self):
+        meta = ''
+        curNode = self.curNode
+        if not curNode.isHeader:
+            meta =' {} {} {}'.format(curNode.user, curNode.group, curNode.acl)
+        left = self.abbrevcwd(self.winwidth-len(meta)-1)
+        self.vim.command("setlocal modifiable")
+        self.nodes[0].name = '{} {}'.format(left, meta)
+        self.vim.current.buffer[0] = self.nodes[0].highlight_content
+        self.vim.command("setlocal nomodifiable")
+
     def createNodes(self, wd, level=0):
         nodes = []
         for f in self.fs.ls(wd):
@@ -277,7 +308,6 @@ class NetRangerBuf(object):
         if not self.content_outdated:
             return
 
-        log('refresh_nodes')
         oriNode = self.curNode
 
         self.content_outdated = False
@@ -398,6 +428,7 @@ class NetRangerBuf(object):
         """
         lineNo = self.vim.eval("line('.')") - 1
         self.setClineNo(lineNo)
+        self.set_header_content()
 
     def moveVimCursor(self, lineNo):
         """

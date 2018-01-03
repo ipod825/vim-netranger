@@ -7,6 +7,10 @@ log('')
 
 
 class UI(object):
+    @property
+    def position(self):
+        return 'belowright'
+
     def __init__(self, vim):
         self.bufs = {}
         self.vim = vim
@@ -22,10 +26,10 @@ class UI(object):
             del self.bufs[name]
 
     def show(self, name='default'):
-        self.vim.command('belowright {}sb'.format(self.bufs[name].number))
+        self.vim.command('{} {}sb'.format(self.position, self.bufs[name].number))
 
     def create_buf(self, content, mappings=None, name='default'):
-        self.vim.command('belowright new')
+        self.vim.command('{} new'.format(self.position))
         self.set_buf_common_option()
         new_buf = self.vim.current.buffer
         self.bufs[name] = new_buf
@@ -174,3 +178,16 @@ class BookMarkUI(UI):
         self.del_buf('set')
         self.del_buf('go')
         self.netranger.pend_onuiquit(self.load_bookmarks)
+
+
+class ParentUI(UI):
+    def __init__(self, vim, height):
+        UI.__init__(self, vim)
+        self.height = height
+        self.create_buf([])
+
+    def set_content(self, acl, content):
+        buf = self.bufs['default']
+        buf.api.set_option('modifiable', True)
+        buf[:] = [acl] + content
+        buf.api.set_option('modifiable', False)

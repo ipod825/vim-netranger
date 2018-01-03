@@ -5,6 +5,7 @@ from enum import Enum
 from netranger.config import file_sz_display_wid
 import shutil
 import re
+import stat
 
 log('')
 
@@ -17,23 +18,7 @@ class FS(object):
     def ls(self, dirname):
         if not os.access(dirname, os.R_OK):
             return []
-        assert os.path.isdir(dirname)
-        ori_cwd = os.getcwd()
-        os.chdir(dirname)
-        dirs = []
-        files = []
-        for f in os.listdir(dirname):
-            if os.path.isdir(f):
-                dirs.append(f)
-            else:
-                files.append(f)
-        dirs = sorted(dirs)
-        files = sorted(files)
-        os.chdir(ori_cwd)
-        return dirs + files
-
-    def ls_count(self, dirname):
-        return len(os.listdir(dirname))
+        return sorted(os.listdir(dirname), key=lambda x: os.path.isdir(x))
 
     def parent_dir(self, cwd):
         return os.path.abspath(os.path.join(cwd, os.pardir))
@@ -67,6 +52,51 @@ class FS(object):
 
     def mtime(self, fname):
         return os.stat(fname).st_mtime
+
+    def size_str(self, path, statinfo):
+        if os.path.isdir(path):
+            return str(len(os.listdir(path)))
+
+        res = float(statinfo.st_size)
+        for u in ['B', 'K', 'M', 'G', 'T', 'P']:
+            if res < 1024:
+                return '{} {}'.format(re.sub('\.0*$', '', str(res)[:file_sz_display_wid-2]), u)
+            res /= 1024
+        return '?'*file_sz_display_wid
+
+    acl_tbl = {
+        '7': ['r','w','x'],
+        '6': ['r','w','-'],
+        '5': ['r','-','x'],
+        '4': ['r','-','-'],
+        '3': ['-','w','x'],
+        '2': ['-','w','-'],
+        '1': ['-','-','x'],
+        '0': ['-','-','-'],
+    }
+    acl_tbl2 = {
+        '7': ['s','s','t'],
+        '6': ['s','s','-'],
+        '5': ['s','-','t'],
+        '4': ['s','-','-'],
+        '3': ['-','s','t'],
+        '2': ['-','s','-'],
+        '1': ['-','-','t'],
+        '0': ['-','-','-'],
+    }
+
+    def acl_str(self, statinfo):
+        acl = oct(statinfo.st_mode)[-4:]
+        rwx = FS.acl_tbl[acl[1]] + FS.acl_tbl[acl[2]] + FS.acl_tbl[acl[3]]
+        sst = FS.acl_tbl2[acl[0]]
+        i = 2
+        for b in sst:
+            if b != '-':
+                rwx[i] = b
+            i += 3
+
+        rwx.insert(0, ['-','d'][stat.S_ISDIR(statinfo.st_mode)])
+        return ''.join(rwx)
 
 
 class RcloneFile(object):
