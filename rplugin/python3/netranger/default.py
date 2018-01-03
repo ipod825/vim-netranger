@@ -37,6 +37,7 @@ color = {
     'exe': 'darkgreen',
     'dir': 'dodgerblue3',
     'link': 'cyan1',
+    'brokenlink': 'red',
     'file': 'white',
 }
 

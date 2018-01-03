@@ -68,16 +68,21 @@ class EntryNode(Node):
     Content node.
     """
     def abbrev_name(self, width):
-        sz = len(self.name)
+        if self.linkto is not None:
+            name = self.name + ' -> ' + self.linkto
+        else:
+            name = self.name
+
+        sz = len(name)
         if width >= sz:
-            return self.name.ljust(width)
+            return name.ljust(width)
 
         width -= 1
-        ext_beg = self.name.rfind('.')
+        ext_beg = name.rfind('.')
         if ext_beg > 0:
-            return '{}~{}'.format(self.name[:width - (sz-ext_beg)], self.name[ext_beg:])
+            return '{}~{}'.format(name[:width - (sz-ext_beg)], name[ext_beg:])
         else:
-            return self.name[:width]+'~'
+            return name[:width]+'~'
 
     @property
     def highlight_content(self):
@@ -85,16 +90,20 @@ class EntryNode(Node):
         width = VimIO.vim.current.window.width
         left = '  '*self.level
         right = self.size.rjust(file_sz_display_wid+1)
-        return '{}m{}{}{}'.format(self.highlight, left, self.abbrev_name(width-len(left)-len(right)), right)
+        return '{}m{}{}{}'.format(self.highlight, left, self.abbrev_name(width-len(left)-len(right)), right).strip()
 
     def __init__(self, fullpath, name, fs, level=0):
         self.fullpath = fullpath
-        highlight = default.color[fs.ftype(fullpath)]
+        self.re_stat(fs)
+        highlight = self.decide_hi()
         super().__init__(name, highlight, level=level)
         self.ori_highlight = self.highlight
-        self.re_stat(fs)
 
     def re_stat(self, fs):
+        self.linkto = None
+        if os.path.islink(self.fullpath):
+            self.linkto = os.readlink(self.fullpath)
+
         try:
             self.stat = os.stat(self.fullpath)
             self.size = fs.size_str(self.fullpath, self.stat)
@@ -102,11 +111,25 @@ class EntryNode(Node):
             self.user = pwd.getpwuid(self.stat.st_uid)[0]
             self.group = grp.getgrgid(self.stat.st_gid)[0]
         except FileNotFoundError:
+            assert self.linkto is not None
             self.stat = None
             self.size = ''
             self.acl = ''
             self.user = ''
             self.group = ''
+
+    def decide_hi(self):
+        if self.linkto is not None:
+            if self.stat is None:
+                return default.color['brokenlink']
+            else:
+                return default.color['link']
+        elif self.acl[0] == 'd':
+            return default.color['dir']
+        elif os.access(self.fullpath, os.X_OK):
+            return default.color['exe']
+        else:
+            return default.color['file']
 
     def cursor_on(self):
         hiArr = self.highlight.split(';')
@@ -251,7 +274,7 @@ class NetRangerBuf(object):
             meta =' {} {} {}'.format(curNode.user, curNode.group, curNode.acl)
         left = self.abbrevcwd(self.winwidth-len(meta)-1)
         self.vim.command("setlocal modifiable")
-        self.nodes[0].name = '{} {}'.format(left, meta)
+        self.nodes[0].name = '{} {}'.format(left, meta).strip()
         self.vim.current.buffer[0] = self.nodes[0].highlight_content
         self.vim.command("setlocal nomodifiable")
 

@@ -9,8 +9,43 @@ import stat
 
 log('')
 
+FType = Enum('FileType', 'SOCK, LNK, REG, BLK, DIR, CHR, FIFO')
+
 
 class FS(object):
+    acl_tbl = {
+        '7': ['r','w','x'],
+        '6': ['r','w','-'],
+        '5': ['r','-','x'],
+        '4': ['r','-','-'],
+        '0': ['-','-','-'],
+    }
+
+    uid_tbl = {
+        '7': ['s','s','t'],
+        '6': ['s','s','-'],
+        '5': ['s','-','t'],
+        '4': ['s','-','-'],
+        '3': ['-','s','t'],
+        '2': ['-','s','-'],
+        '1': ['-','-','t'],
+        '0': ['-','-','-'],
+    }
+
+    ft_tbl = {
+        '14': 's',
+        '12': 'l',
+        '10': '-',
+        '06': 'b',
+        '04': 'd',
+        '02': 'c',
+        '01': 'p',
+        'o6': 'b',
+        'o4': 'd',
+        'o2': 'c',
+        'o1': 'p',
+    }
+
     @property
     def isRemote(self):
         return type(self) is Rclone
@@ -23,7 +58,7 @@ class FS(object):
     def parent_dir(self, cwd):
         return os.path.abspath(os.path.join(cwd, os.pardir))
 
-    def ftype(self, fname):
+    def fftype(self, fname):
         if os.path.islink(fname):
             catlog = 'link'
         if os.path.isdir(fname):
@@ -64,38 +99,18 @@ class FS(object):
             res /= 1024
         return '?'*file_sz_display_wid
 
-    acl_tbl = {
-        '7': ['r','w','x'],
-        '6': ['r','w','-'],
-        '5': ['r','-','x'],
-        '4': ['r','-','-'],
-        '3': ['-','w','x'],
-        '2': ['-','w','-'],
-        '1': ['-','-','x'],
-        '0': ['-','-','-'],
-    }
-    acl_tbl2 = {
-        '7': ['s','s','t'],
-        '6': ['s','s','-'],
-        '5': ['s','-','t'],
-        '4': ['s','-','-'],
-        '3': ['-','s','t'],
-        '2': ['-','s','-'],
-        '1': ['-','-','t'],
-        '0': ['-','-','-'],
-    }
-
     def acl_str(self, statinfo):
-        acl = oct(statinfo.st_mode)[-4:]
+        statinfo = oct(statinfo.st_mode)
+        acl = statinfo[-4:]
         rwx = FS.acl_tbl[acl[1]] + FS.acl_tbl[acl[2]] + FS.acl_tbl[acl[3]]
-        sst = FS.acl_tbl2[acl[0]]
+        sst = FS.uid_tbl[acl[0]]
         i = 2
         for b in sst:
             if b != '-':
                 rwx[i] = b
             i += 3
 
-        rwx.insert(0, ['-','d'][stat.S_ISDIR(statinfo.st_mode)])
+        rwx.insert(0, FS.ft_tbl[statinfo[-6:-4]])
         return ''.join(rwx)
 
 

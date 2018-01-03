@@ -356,6 +356,11 @@ def test_sort():
     assert_content('dir2', ind=6, hi='dir', level=0)
 
 
+def test_ftype():
+    # TODO
+    pass
+
+
 def parse_arg(argv):
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('-m', '--manual', action='store_true', help='Only setting up testing directories. Used for testing manually')
@@ -382,4 +387,5 @@ if __name__ == '__main__':
         do_test(test_detect_fs_change)
         do_test(test_size_display)
         do_test(test_sort)
+        do_test(test_ftype)
         nvim.options['timeoutlen'] = ori_timeoutlen
