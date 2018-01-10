@@ -1,6 +1,5 @@
 import os
 import fnmatch
-from neovim.api.nvim import NvimError
 from netranger.fs import FS, Rclone
 from netranger.util import log, VimIO, Shell
 from netranger import default
@@ -10,8 +9,6 @@ from netranger.rifle import Rifle
 from enum import Enum
 from collections import defaultdict
 from netranger.config import file_sz_display_wid
-from netranger.ui import SortUI
-import re
 import pwd
 import grp
 
@@ -354,7 +351,6 @@ class NetRangerBuf(object):
             new_nodes.append(curNode)
             if curNode.isDir and curNode.expanded:
                 nextInd = self.next_lesseq_level_ind(i)
-                old_names = set([n.name for n in self.nodes[i+1:nextInd+1]])
                 new_nodes += self.creat_nodes_if_not_exist(self.nodes[i+1:nextInd+1], curNode.fullpath, curNode.level)
 
         self.nodes = self.sortNodes(new_nodes)
@@ -668,7 +664,7 @@ class Netranger(object):
     def map_keys(self):
         for fn, keys in self.keymaps.items():
             for k in keys:
-                self.vim.command("nnoremap <buffer> {} :call _NETRInvokeMap('{}')<CR>".format(k, fn))
+                self.vim.command('nnoremap <silent> <buffer> {} :exe ":silent call _NETRInvokeMap({})"<CR>'.format(k, "'" + fn + "'"))
 
     def on_bufenter(self, bufnum):
         """
@@ -809,7 +805,6 @@ class Netranger(object):
         if cwd in self.pinnedRoots:
             return
         pdir = self.fs.parent_dir(cwd)
-        parent_buf_existed = self.buf_existed(pdir)
         self.vim.command('silent edit {}'.format(pdir))
         curBuf = self.curBuf
         curBuf.setClineNoByPath(cwd)
@@ -819,9 +814,9 @@ class Netranger(object):
     def NETRVimCD(self):
         curName = self.curNode.fullpath
         if os.path.isdir(curName):
-            self.vim.command('lcd {}'.format(curName))
+            self.vim.command('silent lcd {}'.format(curName))
         else:
-            self.vim.command('lcd {}'.format(os.path.dirname(curName)))
+            self.vim.command('silent lcd {}'.format(os.path.dirname(curName)))
 
     def NETREdit(self):
         self.isEditing = True
@@ -829,7 +824,7 @@ class Netranger(object):
             if fn == 'NETRSave':
                 continue
             for k in keys:
-                self.vim.command("nunmap <buffer> {}".format(k))
+                self.vim.command("nunmap <silent> <buffer> {}".format(k))
         self.curBuf.render(plain=True)
         self.vim.command('setlocal modifiable')
         self.vim.command('setlocal wrap')
@@ -1026,7 +1021,6 @@ class Netranger(object):
 
     def NETRDeleteSingle(self, force=False):
         curBuf = self.curBuf
-        clineNo = curBuf.clineNo
         self.fs.rm(self.curNode.fullpath, force)
         curBuf.refresh_nodes()
         curBuf.moveVimCursor(curBuf.clineNo)

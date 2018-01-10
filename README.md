@@ -38,10 +38,10 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 ## Contributing
 Pull request is welcomed. However, please run tests and coding style check before sending pull request.
 
-Additional requirement: `tmux`, `pytest`, `pytest-pep8`
+Additional requirement: `pytest-flake8`
 
 ~~~{.bash}
-$ pip3 install pytest pytest-pep8
+$ pip3 install pytest-flake8
 ~~~
 
 ### Testing
@@ -53,7 +53,7 @@ $ bash test.sh
 ### Coding Style
 ~~~{.bash}
 $ cd test
-$ py.test --pep8 -m pep8 .
+$ py.test --flake8 .
 ~~~
 If you fail on syntax check, you could use `autopep8` to fix it:
 ~~~{.bash}

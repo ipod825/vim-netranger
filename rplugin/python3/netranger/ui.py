@@ -1,7 +1,6 @@
 import string
 import os
 from netranger.util import log
-from netranger.config import config_dir
 
 log('')
 
@@ -16,7 +15,7 @@ class UI(object):
         self.vim = vim
 
     def map_key_reg(self, key, regval):
-        self.vim.command("nnoremap <buffer> {} :let g:NETRRegister=['{}'] <cr> :quit <cr>".format(key, regval))
+        self.vim.command("nnoremap <silent> <buffer> {} :let g:NETRRegister=['{}'] <cr> :quit <cr>".format(key, regval))
 
     def buf_valid(self, name='default'):
         return name in self.bufs and self.bufs[name].valid

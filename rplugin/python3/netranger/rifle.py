@@ -30,7 +30,7 @@ class Rifle(object):
         self.rules = []
 
         if not os.path.isfile(path):
-            Shell.cp(os.path.join(config_dir, rifle.conf), path)
+            Shell.cp(os.path.join(config_dir, 'rifle.conf'), path)
 
         with open(path, 'r') as f:
             for i, line in enumerate(f):

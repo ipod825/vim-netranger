@@ -85,7 +85,7 @@ def do_test(fn=None, fn_remote=None):
 
     chdir(test_local_dir)
     if fn is not None:
-        nvim.command('tabe {}'.format(test_local_dir))
+        nvim.command('silent tabe {}'.format(test_local_dir))
         fn()
         nvim.command('bwipeout')
         print('== {} success =='.format(str(fn.__name__)))

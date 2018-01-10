@@ -5,7 +5,6 @@ from enum import Enum
 from netranger.config import file_sz_display_wid
 import shutil
 import re
-import stat
 
 log('')
 

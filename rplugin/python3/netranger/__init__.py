@@ -1,6 +1,5 @@
 import neovim
 from netranger.netranger import Netranger
-from netranger.util import log
 
 
 @neovim.plugin

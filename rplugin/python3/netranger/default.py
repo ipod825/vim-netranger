@@ -1,5 +1,3 @@
-import os
-import tempfile
 from netranger.config import root_dir, test_remote_dir, test_remote_name
 
 keymap = {
@@ -45,7 +43,6 @@ color = {
 variables = {
     'NETRIgnore': [],
     'NETROpenCmd': 'tab drop',
-    'NETRDefaultMapSkip': [],
     'NETRDefaultMapSkip': [],
     'NETRHiCWD': 'yellow',
     'NETRRootDir': root_dir,
