@@ -1,6 +1,6 @@
 vim-netranger
 =============
-![Screenshot](https://user-images.githubusercontent.com/1246394/33575494-da0dbff4-d90a-11e7-8b26-f839493b48cc.png)
+![Screenshot](https://user-images.githubusercontent.com/1246394/34659373-009ab882-f3ed-11e7-8d69-8df7db6dcb44.png)
 
 Vim-netranger is a ranger-like system/cloud storage explorer for Vim. It brings together the best of Vim, [ranger](https://github.com/ranger/ranger), and [rclone](https://rclone.org/):
 
