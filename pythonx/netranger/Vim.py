@@ -1,12 +1,27 @@
 import vim
-import sys
 
-if sys.version_info[0] < 3 or int(vim.eval('has("nvim")')):
-    VimVar = lambda name: vim.vars[name]
-    VimVarLst = lambda name: vim.vars[name]
-else:
-    VimVar = lambda name: vim.vars[name].decode('utf8')
-    VimVarLst = lambda name: [v.decode('utf8') for v in vim.vars[name]]
+
+def walk(fn, obj, *args, **kwargs):
+    """Recursively walk an object graph applying `fn`/`args` to objects."""
+    objType = type(obj)
+    if objType in [list, tuple, vim.List]:
+        return list(walk(fn, o, *args) for o in obj)
+    elif objType in [dict, vim.Dictionary]:
+        return dict((walk(fn, k, *args), walk(fn, v, *args)) for k, v in obj.items())
+    else:
+        return fn(obj, *args, **kwargs)
+
+
+def decode_if_bytes(obj, mode=True):
+    """Decode obj if it is bytes."""
+    if mode is True:
+        mode = 'strict'
+    if isinstance(obj, bytes):
+        return obj.decode("utf-8", errors=mode)
+    return obj
+
+
+VimVar = lambda name: walk(decode_if_bytes, vim.vars[name])
 
 
 def VimErrorMsg(exception):
@@ -20,6 +35,7 @@ def VimErrorMsg(exception):
 def VimUserInput(hint, default=''):
     vim.command('let g:NETRRegister=input("{}: ", "{}")'.format(hint, default))
     return vim.vars['NETRRegister']
+
 
 def VimCurWinWidth():
     return vim.current.window.width

@@ -1,17 +1,12 @@
-if !has('python') && !has('python3') 
-    echo "Error: Required vim compiled with +python or +python3"
+if !has('python3')
+    echo "Error: Required vim compiled with +python3"
     finish
 endif
 
 let g:loaded_netrwPlugin = 0
 let g:loaded_netrw = 0
 
-if has('python3')
-    let s:pyx = 'python3 '
-else
-    let s:pyx = 'python '
-endif
-
+let s:pyx = 'python3 '
 exec s:pyx "import vim"
 exec s:pyx "from netranger.netranger import Netranger"
 exec s:pyx "ranger = Netranger(vim)"

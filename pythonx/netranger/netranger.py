@@ -6,7 +6,7 @@ from netranger import default
 from netranger.colortbl import colortbl
 from netranger.ui import BookMarkUI, HelpUI, SortUI
 from netranger.rifle import Rifle
-from netranger.Vim import VimVar, VimVarLst, VimErrorMsg, VimCurWinWidth
+from netranger.Vim import VimVar, VimErrorMsg, VimCurWinWidth
 from enum import Enum
 from collections import defaultdict
 from netranger.config import file_sz_display_wid
@@ -287,7 +287,7 @@ class NetRangerBuf(object):
         return self.sortNodes(nodes)
 
     def shouldIgnore(self, basename):
-        for ig in VimVarLst('NETRIgnore'):
+        for ig in VimVar('NETRIgnore'):
             if fnmatch.fnmatch(basename, ig):
                 return True
         return False
@@ -622,15 +622,15 @@ class Netranger(object):
         self.initVimVariables()
         self.initKeymaps()
         Shell.mkdir(default.variables['NETRRootDir'])
-        self.rifle = Rifle(self.vim, self.vim.vars['NETRRifleFile'])
-        ignore_pat = list(self.vim.vars['NETRIgnore'])
-        self.vim.vars['NETRemoteCacheDir'] = os.path.expanduser(self.vim.vars['NETRemoteCacheDir'])
+        self.rifle = Rifle(self.vim, VimVar('NETRRifleFile'))
+        ignore_pat = list(VimVar('NETRIgnore'))
+        self.vim.vars['NETRemoteCacheDir'] = os.path.expanduser(VimVar('NETRemoteCacheDir'))
         if '.*' not in ignore_pat:
             ignore_pat.append('.*')
             self.vim.vars['NETRIgnore'] = ignore_pat
 
     def initVimVariables(self):
-        for k,v in default.variables.items():
+        for k, v in default.variables.items():
             if k not in self.vim.vars:
                 self.vim.vars[k] = v
 
@@ -645,7 +645,7 @@ class Netranger(object):
         self.keymaps = {}
         self.keymap_doc = {}
         skip = []
-        for k in self.vim.vars['NETRDefaultMapSkip']:
+        for k in VimVar('NETRDefaultMapSkip'):
             if k[0]=='<' and k[-1]=='>':
                 skip = [k.lower()]
         for fn, (keys, desc) in default.keymap.items():
@@ -671,8 +671,8 @@ class Netranger(object):
             self.refresh_curbuf()
             if self.onuiquit is not None:
                 # If not enough arguments are passed, ignore the pending onuituit, e.g. quit the bookmark go ui without pressing key to specify where to go.
-                if len(self.vim.vars['NETRRegister']) == self.onuiquitNumArgs:
-                    self.onuiquit(*self.vim.vars['NETRRegister'])
+                if len(VimVar('NETRRegister')) == self.onuiquitNumArgs:
+                    self.onuiquit(*VimVar('NETRRegister'))
                 self.onuiquit = None
                 self.vim.vars['NETRRegister'] = []
                 self.onuiquitNumArgs = 0
@@ -845,7 +845,7 @@ class Netranger(object):
         """
         Change ignore pattern and mark all existing netranger buffers to be content_outdated so that their content will be updated when entered again.
         """
-        ignore_pat = self.vim.vars['NETRIgnore']
+        ignore_pat = VimVar('NETRIgnore')
         if '.*' in ignore_pat:
             ignore_pat.remove('.*')
         else:
@@ -1024,7 +1024,7 @@ class Netranger(object):
         self.NETRDeleteSingle(force=True)
 
     def isRemotePath(self, path):
-        return path.startswith(self.vim.vars['NETRemoteCacheDir'])
+        return path.startswith(VimVar('NETRemoteCacheDir'))
 
     def NETRemotePull(self):
         """
@@ -1045,9 +1045,9 @@ class Netranger(object):
     def NETRemoteList(self):
         if self.rclone is None:
             Rclone.valid_or_install(self.vim)
-            self.rclone = Rclone(self.vim.vars['NETRemoteCacheDir'], self.vim.vars['NETRemoteRoots'])
+            self.rclone = Rclone(VimVar('NETRemoteCacheDir'), VimVar('NETRemoteRoots'))
 
         if self.rclone.has_remote:
-            self.vim.command('tabe ' + self.vim.vars['NETRemoteCacheDir'])
+            self.vim.command('tabe ' + VimVar('NETRemoteCacheDir'))
         else:
             VimErrorMsg("There's no remote now. Run 'rclone config' in a terminal to setup remotes")
