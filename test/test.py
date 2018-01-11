@@ -19,7 +19,7 @@ def assert_content(expected, level=0, ind=None, hi=None):
         line = nvim.current.buffer[ind]
 
     m = re.search('\[38;5;([0-9]+)(;7)?m( *)([^ ]+)', line)
-    assert m.group(3) == '  '*level, "level mismatch"
+    assert m.group(3) == '  '*level, "level mismatch:expected:{}, real:{}".format('"{}"'.format('  '*level), '"{}"'.format(m.group(3)))
     assert m.group(4) == expected, 'expected:"{}", real: "{}"'.format(expected, m.group(4))
 
     if hi is not None:
@@ -221,6 +221,10 @@ def test_pickCutCopyPaste():
     assert_content('a', ind=3, hi='file')
     assert_fs('', ['dir2', 'subdir', 'subdir2', 'a'])
     assert_fs('dir2', ['dir', 'subdir2'])
+
+    nvim.input(' jddj<Cr>p')
+    assert_content('subdir2', ind=1, hi='dir', level=1)
+    assert_fs('dir2/subdir2', ['dir', 'placeholder'])
 
 
 def test_delete():

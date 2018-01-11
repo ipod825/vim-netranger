@@ -954,7 +954,7 @@ class Netranger(object):
         """
         Perform mv from cut_nodes or cp from copied_nodes to cwd. For each source (cut/copy) buffer, reset the highlight of the cut/copied nodes and mark the buffer as highlight_outdated so that the highlight will be updated when entered again. We also need to refresh remote content if applicable.
         """
-        cwd = self.cwd
+        cwd = self.vim.eval('getcwd(0,0)')
         alreday_moved = set()
         for buf, nodes in self.cut_nodes.items():
             wd = buf.wd
