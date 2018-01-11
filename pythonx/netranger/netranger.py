@@ -24,12 +24,12 @@ class Node(object):
     State = Enum('NodeState', 'NORMAL, PICKED, UNDEROP')
     ToggleOpRes = Enum('NodeToggleOpRes', 'INVALID, ON, OFF')
 
-    def __init__(self, name, highlight, level=0):
+    def __init__(self, fullpath, name, highlight, level=0):
+        self.fullpath = fullpath
         self.name = name
         self.set_highlight(highlight)
         self.level = level
         self.state = Node.State.NORMAL
-        self.valid = True
 
     def set_highlight(self, highlight, cursor_on=False):
         if type(highlight) is str:
@@ -94,7 +94,7 @@ class EntryNode(Node):
         self.fullpath = fullpath
         self.re_stat(fs)
         highlight = self.decide_hi()
-        super().__init__(name, highlight, level=level)
+        super().__init__(fullpath, name, highlight, level=level)
         self.ori_highlight = self.highlight
 
     def re_stat(self, fs):
@@ -238,7 +238,7 @@ class NetRangerBuf(object):
         self.vim.command('lcd ' + wd)
 
         self.nodes = self.createNodes(self.wd)
-        self.nodes.insert(0, Node(Shell.abbrevuser(wd), VimVar('NETRHiCWD')))
+        self.nodes.insert(0, Node(wd, Shell.abbrevuser(wd), VimVar('NETRHiCWD')))
         self.clineNo = self.first_content_lineNo
         self.nodes[self.clineNo].cursor_on()
         self.mtime = defaultdict(None)
