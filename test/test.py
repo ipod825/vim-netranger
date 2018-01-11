@@ -272,6 +272,7 @@ def test_bookmark():
 
     nvim.input('lemjrb')
     nvim.command('exit')
+    time.sleep(0.5)
     nvim.input("'b")
     assert_content('dir')
 

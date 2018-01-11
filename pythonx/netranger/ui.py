@@ -1,6 +1,7 @@
 import string
 import os
 from netranger.util import log
+from netranger.Vim import VimVar
 
 log('')
 
@@ -109,16 +110,16 @@ class BookMarkUI(UI):
         # If bookmark file is initially empty. The first time
         # 'm' (set) mapping is trigger, it won't quit the buffer
         # on user input..
-        if not os.path.isfile(self.vim.vars['NETRBookmarkFile']):
-            with open(self.vim.vars['NETRBookmarkFile'], 'w') as f:
+        if not os.path.isfile(VimVar('NETRBookmarkFile')):
+            with open(VimVar('NETRBookmarkFile'), 'w') as f:
                 f.write('/:/')
 
         self.load_bookmarks()
 
     def load_bookmarks(self):
         self.mark_dict = {}
-        if os.path.isfile(self.vim.vars['NETRBookmarkFile']):
-            with open(self.vim.vars['NETRBookmarkFile'], 'r') as f:
+        if os.path.isfile(VimVar('NETRBookmarkFile')):
+            with open(VimVar('NETRBookmarkFile'), 'r') as f:
                 for line in f:
                     kp = line.split(':')
                     if(len(kp)==2):
@@ -158,7 +159,7 @@ class BookMarkUI(UI):
         set_buf.options['modifiable'] = False
         self.mark_dict[mark] = self.path_to_mark
         self.del_buf('go')
-        with open(self.vim.vars['NETRBookmarkFile'], 'w') as f:
+        with open(VimVar('NETRBookmarkFile'), 'w') as f:
             for k, p in self.mark_dict.items():
                 f.write('{}:{}\n'.format(k,p))
 
@@ -172,7 +173,7 @@ class BookMarkUI(UI):
         self.netranger.pend_onuiquit(self.netranger.bookmarkgo_onuiquit, 1)
 
     def edit(self):
-        self.vim.command('belowright split {}'.format(self.vim.vars['NETRBookmarkFile']))
+        self.vim.command('belowright split {}'.format(VimVar('NETRBookmarkFile')))
         self.vim.command('setlocal bufhidden=wipe')
         self.del_buf('set')
         self.del_buf('go')

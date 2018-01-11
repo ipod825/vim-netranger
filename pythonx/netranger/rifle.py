@@ -1,6 +1,7 @@
 import re
 import os
-from netranger.util import Shell, log, VimIO
+from netranger.util import Shell, log
+from netranger.Vim import VimErrorMsg
 from netranger.config import config_dir
 
 log('')
@@ -39,7 +40,7 @@ class Rifle(object):
                     continue
                 sp = line.split('=')
                 if len(sp) != 2:
-                    VimIO.ErrorMsg('invalid rule: rifle.conf line {}'.format(i+1))
+                    VimErrorMsg('invalid rule: rifle.conf line {}'.format(i+1))
                     continue
 
                 tests = []

@@ -1,6 +1,7 @@
 import os
 from netranger.util import Shell
-from netranger.util import log, VimIO
+from netranger.util import log
+from netranger.Vim import VimUserInput
 from enum import Enum
 from netranger.config import file_sz_display_wid
 import shutil
@@ -264,7 +265,7 @@ class Rclone(FS):
         if Shell.isinPATH('rclone'):
             return True
         else:
-            rclone_dir = VimIO.userInput('Rclone not in PATH. Install it at (modify/enter)', os.path.expanduser('~/rclone'))
+            rclone_dir = VimUserInput('Rclone not in PATH. Install it at (modify/enter)', os.path.expanduser('~/rclone'))
             Shell.mkdir(rclone_dir)
 
             system = platform.system().lower()
@@ -288,7 +289,7 @@ class Rclone(FS):
             zip_ref.close()
             os.remove(zip_fname)
 
-            shellrc = VimIO.userInput('Update PATH in (leave blank to set manually later)', Shell.shellrc())
+            shellrc = VimUserInput('Update PATH in (leave blank to set manually later)', Shell.shellrc())
             if len(shellrc)>0:
                 with open(shellrc, 'a') as f:
                     f.write('PATH={}:$PATH\n'.format(rclone_dir))

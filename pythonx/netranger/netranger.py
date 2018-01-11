@@ -1,11 +1,12 @@
 import os
 import fnmatch
 from netranger.fs import FS, Rclone
-from netranger.util import log, VimIO, Shell
+from netranger.util import log, Shell
 from netranger import default
 from netranger.colortbl import colortbl
 from netranger.ui import BookMarkUI, HelpUI, SortUI
 from netranger.rifle import Rifle
+from netranger.Vim import VimVar, VimVarLst, VimErrorMsg, VimCurWinWidth
 from enum import Enum
 from collections import defaultdict
 from netranger.config import file_sz_display_wid
@@ -84,7 +85,7 @@ class EntryNode(Node):
     @property
     def highlight_content(self):
         # work around, should think a better idea to access vim
-        width = VimIO.vim.current.window.width
+        width = VimCurWinWidth()
         left = '  '*self.level
         right = self.size.rjust(file_sz_display_wid+1)
         return '{}m{}{}{}'.format(self.highlight, left, self.abbrev_name(width-len(left)-len(right)), right).strip()
@@ -237,12 +238,12 @@ class NetRangerBuf(object):
         self.vim.command('lcd ' + wd)
 
         self.nodes = self.createNodes(self.wd)
-        self.nodes.insert(0, Node(Shell.abbrevuser(wd), self.vim.vars['NETRHiCWD']))
+        self.nodes.insert(0, Node(Shell.abbrevuser(wd), VimVar('NETRHiCWD')))
         self.clineNo = self.first_content_lineNo
         self.nodes[self.clineNo].cursor_on()
         self.mtime = defaultdict(None)
         self.mtime[wd] = fs.mtime(wd)
-        self.winwidth = self.vim.current.window.width
+        self.winwidth = VimCurWinWidth()
         self.render()
 
     def abbrevcwd(self, width):
@@ -286,7 +287,7 @@ class NetRangerBuf(object):
         return self.sortNodes(nodes)
 
     def shouldIgnore(self, basename):
-        for ig in self.vim.vars['NETRIgnore']:
+        for ig in VimVarLst('NETRIgnore'):
             if fnmatch.fnmatch(basename, ig):
                 return True
         return False
@@ -435,17 +436,17 @@ class NetRangerBuf(object):
             self.vim.current.buffer[:] = self.highlight_content
         self.vim.command('setlocal nomodifiable')
         self.moveVimCursor(self.clineNo)
-        self.winwidth = self.vim.current.window.width
+        self.winwidth = VimCurWinWidth()
 
     def render_if_winwidth_changed(self):
-        if self.winwidth != self.vim.current.window.width:
+        if self.winwidth != VimCurWinWidth():
             self.render()
 
     def on_cursormoved(self):
         """
         Remember the current line no. and refresh the highlight of the current line no.
         """
-        lineNo = self.vim.eval("line('.')") - 1
+        lineNo = int(self.vim.eval("line('.')")) - 1
         self.setClineNo(lineNo)
         self.set_header_content()
 
@@ -539,7 +540,7 @@ class NetRangerBuf(object):
         """
         vimBuf = self.vim.current.buffer
         if len(self.nodes) != len(vimBuf):
-            VimIO.ErrorMsg('Edit mode can not add/delete files!')
+            VimErrorMsg('Edit mode can not add/delete files!')
             self.render()
             return
 
@@ -617,20 +618,12 @@ class Netranger(object):
         self.onuiquitNumArgs = 0
         self.fs = FS()
         self.rclone = None
-        VimIO.init(self.vim)
 
-    def delay_init(self):
-        """
-        neovim rplugin does not initialize all vim variablres at __init__. This is just a workaround. However, it should also help to  reduce starting time
-        """
-        if self.inited:
-            return
-        self.inited = True
         self.initVimVariables()
         self.initKeymaps()
         Shell.mkdir(default.variables['NETRRootDir'])
         self.rifle = Rifle(self.vim, self.vim.vars['NETRRifleFile'])
-        ignore_pat = self.vim.vars['NETRIgnore']
+        ignore_pat = list(self.vim.vars['NETRIgnore'])
         self.vim.vars['NETRemoteCacheDir'] = os.path.expanduser(self.vim.vars['NETRemoteCacheDir'])
         if '.*' not in ignore_pat:
             ignore_pat.append('.*')
@@ -664,7 +657,8 @@ class Netranger(object):
     def map_keys(self):
         for fn, keys in self.keymaps.items():
             for k in keys:
-                self.vim.command('nnoremap <silent> <buffer> {} :exe ":silent call _NETRInvokeMap({})"<CR>'.format(k, "'" + fn + "'"))
+                # self.vim.command('nnoremap <silent> <buffer> {} :exe ":silent call _NETRInvokeMap({})"<CR>'.format(k, "'" + fn + "'"))
+                self.vim.command('nnoremap <silent> <buffer> {} :exe ":call _NETRInvokeMap({})"<CR>'.format(k, "'" + fn + "'"))
 
     def on_bufenter(self, bufnum):
         """
@@ -688,8 +682,6 @@ class Netranger(object):
                 bufname = os.path.expanduser('~')
             if not os.path.isdir(bufname):
                 return
-
-            self.delay_init()
 
             bufname = os.path.abspath(bufname)
             if self.buf_existed(bufname):
@@ -720,7 +712,7 @@ class Netranger(object):
 
     def gen_new_buf(self, bufname):
         bufnum = self.vim.current.buffer.number
-        if(bufname.startswith(self.vim.vars['NETRemoteCacheDir'])):
+        if(bufname.startswith(VimVar('NETRemoteCacheDir'))):
             self.bufs[bufnum] = NetRangerBuf(self.vim, os.path.abspath(bufname), self.rclone, self.rifle)
         else:
             self.bufs[bufnum] = NetRangerBuf(self.vim, os.path.abspath(bufname), self.fs, self.rifle)
@@ -796,7 +788,7 @@ class Netranger(object):
             if cmd:
                 Shell.spawn('{} {}'.format(cmd, fullpath))
             else:
-                self.vim.command('{} {}'.format(self.vim.vars['NETROpenCmd'], fullpath))
+                self.vim.command('{} {}'.format(VimVar('NETROpenCmd'), fullpath))
 
     def NETRParentDir(self):
         """ Real work is done in on_bufenter """
@@ -983,7 +975,7 @@ class Netranger(object):
                     try:
                         self.fs.mv(node.fullpath, cwd)
                     except Exception as e:
-                        VimIO.ErrorMsg(e)
+                        VimErrorMsg(e)
                     alreday_moved.add(node.fullpath)
 
         for buf, nodes in self.copied_nodes.items():
@@ -993,7 +985,7 @@ class Netranger(object):
                 try:
                     self.fs.cp(node.fullpath, cwd)
                 except Exception as e:
-                    VimIO.ErrorMsg(e)
+                    VimErrorMsg(e)
 
         for buf in self.cut_nodes.keys():
             src_dir = buf.wd
@@ -1038,26 +1030,24 @@ class Netranger(object):
         """
         Sync remote so that the local content of the current directory will be the same as the remote content.
         """
-        self.delay_init()
         try:
             curBuf = self.curBuf
         except KeyError:
-            VimIO.ErrorMsg('Not a netranger buffer')
+            VimErrorMsg('Not a netranger buffer')
             return
 
         if not self.isRemotePath(curBuf.wd):
-            VimIO.ErrorMsg('Not a remote directory')
+            VimErrorMsg('Not a remote directory')
         else:
             self.rclone.sync(curBuf.wd, Rclone.SyncDirection.DOWN)
         curBuf.refresh_nodes()
 
     def NETRemoteList(self):
         if self.rclone is None:
-            self.delay_init()
             Rclone.valid_or_install(self.vim)
             self.rclone = Rclone(self.vim.vars['NETRemoteCacheDir'], self.vim.vars['NETRemoteRoots'])
 
         if self.rclone.has_remote:
             self.vim.command('tabe ' + self.vim.vars['NETRemoteCacheDir'])
         else:
-            VimIO.ErrorMsg("There's no remote now. Run 'rclone config' in a terminal to setup remotes")
+            VimErrorMsg("There's no remote now. Run 'rclone config' in a terminal to setup remotes")

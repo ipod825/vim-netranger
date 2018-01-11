@@ -10,26 +10,6 @@ def log(*msg):
         f.write(' '.join([str(m) for m in msg])+"\n")
 
 
-class VimIO(object):
-    vim = None
-
-    @classmethod
-    def init(cls, vim):
-        VimIO.vim = vim
-
-    def ErrorMsg(exception):
-        if hasattr(exception, 'output'):
-            msg = exception.output.decode('utf-8')
-        else:
-            msg = str(exception)
-
-        VimIO.vim.command('echohl ErrorMsg | echo "{}" | echohl None '.format(msg.replace('"','\\"')))
-
-    def userInput(hint, default=''):
-        VimIO.vim.command('let g:NETRRegister=input("{}: ", "{}")'.format(hint, default))
-        return VimIO.vim.vars['NETRRegister']
-
-
 def spawnDaemon(func):
     # do the UNIX double-fork magic, see Stevens' "Advanced
     # Programming in the UNIX Environment" for details (ISBN 0201563177)

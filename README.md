@@ -2,7 +2,7 @@ vim-netranger
 =============
 ![Screenshot](https://user-images.githubusercontent.com/1246394/34659373-009ab882-f3ed-11e7-8d69-8df7db6dcb44.png)
 
-Vim-netranger is a ranger-like system/cloud storage explorer for Vim. It brings together the best of Vim, [ranger](https://github.com/ranger/ranger), and [rclone](https://rclone.org/):
+Vim-netranger is a ranger-like system/cloud storage explorer for Vim/Neovim. It brings together the best of Vim, [ranger](https://github.com/ranger/ranger), and [rclone](https://rclone.org/):
 
 1. Against Vim (netrw):
     - Better rendering
@@ -20,18 +20,16 @@ Vim-netranger is a ranger-like system/cloud storage explorer for Vim. It brings 
 Using vim-plug
 
 ```viml
-if has('nvim')
-  Plug 'ipod825/vim-netranger', { 'do': ':UpdateRemotePlugins' }
-endif
+Plug 'ipod825/vim-netranger'
 ```
 __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/nerdtree)) might prohibit `vim-netranger`. You must disable them to make `vim-netranger` work.
 
 ## Requirements
 
-`neovim-python3`: v0.2.0 or newer
-```bash
-    pip3 install neovim
-```
+1. `vim`
+    - has('python3') or has('python')
+2. `neovim`
+    - no specific requirement as neovim is shiped with python by default
 
 `rclone`: v1.4.0(v1.3.9) or newer (1.4.0 not yet published, see [Known Issues](#known-issues)). `rclone` is needed if you use remote editing features. However, it will be installed automatically on the first time running `NETRemoteList` command.
 
@@ -127,11 +125,11 @@ $ pip install flask8
 4. Run `NETRemotePull` to sync the current directory to be the same as the remote directory. Use this command when remote directory is modified elsewhere.
 5. Netranger does not provide `NETRemotePush` command. When any file in a remote directory is modified. You must reenter that directory to sync remote content to be the same as the local content.
 
-__Note__ Remote functions hasn't been fully tested. Use it with caution.
+__Note__ Remote functions hasn't been fully tested. You might lose your data in current implementation. Use it with caution.
 
 ## Customization
 ### Key mappings:
-1. Assign a list to each of the variables to provide extra key mappings. For maintaining issue, please press `?` in a vim-ranger buffer to check variables and their key bindings.
+1. In any `vim-netranger`, pressing `?` shows a list of mapping. You can change these default mapping by assigning a list to each variable in your `vimrc`.
 2. Assign a list to `g:NETRDefaultMapSkip` to ignore default mappings. For example, if you want to switch the mappings for `g:NETRBookmarkSet`, `g:NETRBookmarkGo`, you'll put the following in your `.vimrc`:
 ```vim
 let g:NETRDefaultMapSkip = ['m',"'"]
@@ -147,5 +145,5 @@ let g:NETRBookmarkGo = ["m"]
 | g:NETROpenCmd        | Vim command to open files from netranger buffer           | 'tab drop'            |
 
 ## Known Issues
-1. When opening two vim buffers for the same directory, there is a delay for moving cursor up and down. This seems to be an nvim api [issue](https://github.com/neovim/neovim/issues/7756)
+1. In neovim, when opening two vim buffers for the same directory, there is a delay for moving cursor up and down. This seems to be an nvim api [issue](https://github.com/neovim/neovim/issues/7756)
 2. When remote directory is empty, it will not be copied to remote. It is an rclone [bug] (https://github.com/ncw/rclone/issues/1837), which is expected to be fixed in next release.
