@@ -27,9 +27,9 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 ## Requirements
 
 1. `vim`
-    - has('python3') or has('python')
+    - has('python3')
 2. `neovim`
-    - no specific requirement as neovim is shiped with python by default
+    - no specific requirement as neovim is shipped with python3 by default
 
 `rclone`: v1.4.0(v1.3.9) or newer (1.4.0 not yet published, see [Known Issues](#known-issues)). `rclone` is needed if you use remote editing features. However, it will be installed automatically on the first time running `NETRemoteList` command.
 
