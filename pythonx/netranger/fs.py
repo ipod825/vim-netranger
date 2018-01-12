@@ -266,7 +266,6 @@ class Rclone(FS):
             return True
         else:
             rclone_dir = VimUserInput('Rclone not in PATH. Install it at (modify/enter)', os.path.expanduser('~/rclone'))
-            log(rclone_dir)
             Shell.mkdir(rclone_dir)
 
             system = platform.system().lower()
