@@ -1,3 +1,11 @@
+if exists("g:loaded_netranger") || &cp
+  finish
+endif
+let g:loaded_netranger = 1
+
+let s:save_cpo = &cpo
+set cpo&vim
+
 if !has('python3')
     echo "Error: Required vim compiled with +python3"
     finish
@@ -23,3 +31,6 @@ endfunc
 
 command! NETRemoteList exec s:pyx 'ranger.NETRemoteList()'
 command! NETRemotePull exec s:pyx 'ranger.NETRemotePull()'
+
+
+let &cpo = s:save_cpo
