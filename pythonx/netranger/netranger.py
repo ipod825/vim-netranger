@@ -104,13 +104,20 @@ class EntryNode(Node):
 
         try:
             self.stat = os.stat(self.fullpath)
-            self.size = fs.size_str(self.fullpath, self.stat)
-            self.acl = fs.acl_str(self.stat)
-            self.user = pwd.getpwuid(self.stat.st_uid)[0]
-            self.group = grp.getgrgid(self.stat.st_gid)[0]
         except FileNotFoundError:
             assert self.linkto is not None
             self.stat = None
+
+        if self.stat:
+            self.size = fs.size_str(self.fullpath, self.stat)
+            self.acl = fs.acl_str(self.stat)
+            try:
+                self.user = pwd.getpwuid(self.stat.st_uid)[0]
+                self.group = grp.getgrgid(self.stat.st_gid)[0]
+            except KeyError:
+                self.user = self.stat.st_uid
+                self.group = self.stat.st_gid
+        else:
             self.size = ''
             self.acl = ''
             self.user = ''
