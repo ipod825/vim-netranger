@@ -33,37 +33,6 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 
 `rclone`: v1.4.0(v1.3.9) or newer (1.4.0 not yet published, see [Known Issues](#known-issues)). `rclone` is needed if you use remote editing features. However, it will be installed automatically on the first time running `NETRemoteList` command.
 
-## Contributing
-Pull request is welcomed. However, please run tests and coding style check before sending pull request.
-
-Additional requirement: `pytest-flake8`
-
-~~~{.bash}
-$ pip3 install pytest-flake8
-~~~
-
-### Testing
-~~~{.bash}
-$ cd test
-$ bash test.sh
-~~~
-
-### Coding Style
-~~~{.bash}
-$ cd test
-$ py.test --flake8 .
-~~~
-If you fail on syntax check, you could use `autopep8` to fix it:
-~~~{.bash}
-$ pip install autopep8
-$ autopep8 --recursive -i --select E128 test/netranger # fix all error no.128
-~~~
-
-It is highly recommend you avoid these errors when writing them using. I recommend installing `flake8` and adopt the (vim) settings in this [gist](https://gist.github.com/ipod825/fbee70d8bd063f228951cd4b6f38f4df). Note that `flask8` is required:
-~~~{.bash}
-$ pip install flask8
-~~~
-
 ## Usage
 
 ### Opening a `vim-netranger` buffer
@@ -82,7 +51,7 @@ $ pip install flask8
 1. Press `l` to change directory/open file for the current directory/file under the cursor.
 2. Press `h` to jump to the parent directory.
 3. Press `<Space>` to toggle expand current directory under cursor.
-4. Press `<Cr>` to set vim's cwd to the directory of the file under cursor (also applies to the first line, i.e. the current directory). This is very useful if you've expanded a directory and want to open an nvim terminal to run a script in the subdirectory. 
+4. Press `<Cr>` to set vim's cwd to the directory of the file under cursor (also applies to the first line, i.e. the current directory). This is very useful if you've expanded a directory and want to open an nvim terminal to run a script in the subdirectory.
 
 ### File Rename
 1. Press `i` to enter edit mode. You can freely modify any file/directory name in this mode.
@@ -96,7 +65,7 @@ $ pip install flask8
     * Press `D` to delete (`rm -r`) all selected files
     * Press `X` to force delete (i.e. `rm -rf`) all selected files
 2. For `y`, `x`, `d`, go to the target directory, press `p` to paste all cut/copied files/directories.
-3. Note that the directory you paste is vim's pwd (`getcwd(0,0)`). Hence, you can press `<Cr>` to change directory to an expanded directory and paste without changing directory into it.
+3. Note that the directory you paste is vim's pwd (`getcwd()`). Hence, you can press `<Cr>` to change directory to an expanded directory and paste without changing directory into it.
 4. Note that you can open multiple vim buffer for different directories and cut (copy) files in one buffer and paste files in another buffer. When you jump back to the source buffer, cut files will disappear as expected.
 5. If only one file is to be cut/copy, you can simply press `yy` (copy) or `dd` (cut). The current file will be marked. You can then continue `yy`,  `dd` other lines.
 6. Similarly, if only one file is to be (force) deleted, you can simply press `DD` or `XX`.
@@ -105,7 +74,7 @@ $ pip install flask8
 1. Press `m` to open the bookmark UI. You'll see the current bookmarks you have. Press [azAZ] (any letters) to bookmark the current directory.
 2. Press `'` to open the bookmark UI again. You'll see that previous entered character appears there. Press the correct character to navigate to the directory you want to go.
 3. Press `em` to edit the bookmark with vim. On saving (e.g. `:x`)the file, your bookmarks will be updated automatically.
-4. Note that you can use `:q` to quit the bookmark ui to abort the aforementioned operation. 
+4. Note that you can use `:q` to quit the bookmark ui to abort the aforementioned operation.
 
 ### Rifle
 1. Rifle is a config file ranger used to open files with external program. vim-netranger mimics its syntax and behavior.
@@ -139,12 +108,44 @@ let g:NETRBookmarkGo = ["m"]
 ```
 
 ### Variables
-| Variable             | Description                                               | Default               |
-| :------------        | :--------------                                           | :----------------     |
-| g:NETRIgnore         | File patterns (bash wild card) to ignore (not displaying) | []                    |
-| g:NETRRootDir        | Directory for storing remote cache and bookmark file      | ['$HOME/.netranger/'] |
-| g:NETROpenCmd        | Vim command to open files from netranger buffer           | 'tab drop'            |
+| Variable      | Description                                               | Default               |
+| :------------ | :--------------                                           | :----------------     |
+| g:NETRIgnore  | File patterns (bash wild card) to ignore (not displaying) | []                    |
+| g:NETRRootDir | Directory for storing remote cache and bookmark file      | ['$HOME/.netranger/'] |
+| g:NETROpenCmd | Vim command to open files from netranger buffer           | 'tab drop'            |
 
 ## Known Issues
 1. In neovim, when opening two vim buffers for the same directory, there is a delay for moving cursor up and down. This seems to be an nvim api [issue](https://github.com/neovim/neovim/issues/7756)
 2. When remote directory is empty, it will not be copied to remote. It is an rclone [bug] (https://github.com/ncw/rclone/issues/1837), which is expected to be fixed in next release.
+
+
+## Contributing
+Pull request is welcomed. However, please run tests and coding style check before sending pull request.
+
+Additional requirement: `pytest-flake8`
+
+~~~{.bash}
+$ pip3 install pytest-flake8
+~~~
+
+### Testing
+~~~{.bash}
+$ cd test
+$ bash test.sh
+~~~
+
+### Coding Style
+~~~{.bash}
+$ cd test
+$ py.test --flake8 .
+~~~
+If you fail on syntax check, you could use `autopep8` to fix it:
+~~~{.bash}
+$ pip install autopep8
+$ autopep8 --recursive -i --select E128 test/netranger # fix all error no.128
+~~~
+
+It is highly recommend you avoid these errors when writing them using. I recommend installing `flake8` and adopt the (vim) settings in this [gist](https://gist.github.com/ipod825/fbee70d8bd063f228951cd4b6f38f4df). Note that `flask8` is required:
+~~~{.bash}
+$ pip install flask8
+~~~
