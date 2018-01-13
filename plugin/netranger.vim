@@ -27,7 +27,7 @@ exec s:pyx "ranger = Netranger(vim)"
 augroup NETRANGER
     autocmd!
     autocmd BufEnter * exec s:pyx 'ranger.on_bufenter('.expand("<abuf>").')'
-    autocmd CursorMoved * if &ft=='netranger' | exec s:pyx 'ranger.on_cursormoved('.expand("<abuf>").')' | fi
+    autocmd CursorMoved * exec s:pyx 'ranger.on_cursormoved('.expand("<abuf>").')'
 augroup END
 
 func! _NETRInvokeMap(fn)
