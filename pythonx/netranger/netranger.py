@@ -799,7 +799,7 @@ class Netranger(object):
                 import _thread as thread
                 thread.start_new_thread(lambda: Shell.run('{} {}'.format(cmd, fullpath)), ())
             else:
-                self.vim.command('{} {}'.format(VimVar('NETROpenCmd'), fullpath))
+                self.vim.command('silent {} {}'.format(VimVar('NETROpenCmd'), fullpath))
 
     def NETRParentDir(self):
         """ Real work is done in on_bufenter """
