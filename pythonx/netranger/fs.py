@@ -1,8 +1,9 @@
+from __future__ import absolute_import
 import os
 from netranger.util import Shell
 from netranger.util import log
 from netranger.Vim import VimUserInput
-from enum import Enum
+from netranger.enum import Enum
 from netranger.config import file_sz_display_wid
 import shutil
 import re
@@ -216,7 +217,7 @@ class Rclone(FS):
     def __init__(self, root_dir, remote_roots):
         if root_dir[-1] == '/':
             root_dir = root_dir[:-1]
-        super().rm(root_dir, force=True)
+        super(Rclone, self).rm(root_dir, force=True)
 
         self.rplen = len(root_dir)+1
         self.root_dir = RcloneDir(root_dir, remote_roots)
@@ -238,7 +239,7 @@ class Rclone(FS):
         Ensure directory entries match remote entries then return local ls result.
         """
         self.lazy_init(dirname)
-        return super().ls(dirname)
+        return super(Rclone, self).ls(dirname)
 
     def lazy_init(self, lpath):
         self.getNode(lpath).lazy_init()

@@ -9,7 +9,6 @@ def log(*msg):
     with open(os.path.join(tempfile.gettempdir(), "netlog"), 'a') as f:
         f.write(' '.join([str(m) for m in msg])+"\n")
 
-
 def spawnDaemon(func):
     # do the UNIX double-fork magic, see Stevens' "Advanced
     # Programming in the UNIX Environment" for details (ISBN 0201563177)

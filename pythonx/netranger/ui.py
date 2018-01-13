@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import string
 import os
 from netranger.util import log
@@ -86,8 +87,16 @@ class SortUI(UI):
         's': lambda n: size(n.fullpath),
     }
 
-    sort_fn = sort_fns['d']
+    sort_fn_ch = 'd'
     reverse = False
+
+    @classmethod
+    def select_sort_fn(cls, ch):
+        SortUI.sort_fn_ch = ch
+
+    @classmethod
+    def get_sort_fn(cls):
+        return SortUI.sort_fns[SortUI.sort_fn_ch]
 
     def __init__(self, vim):
         UI.__init__(self, vim)

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from netranger.config import root_dir, test_remote_dir, test_remote_name
 
 keymap = {
@@ -44,7 +45,6 @@ variables = {
     'NETRIgnore': ['.*'],
     'NETROpenCmd': 'tabedit',
     'NETRDefaultMapSkip': [],
-    'NETRHiCWD': 'yellow',
     'NETRRootDir': root_dir,
     'NETRBookmarkFile': root_dir+'bookmark',
     'NETRRifleFile': root_dir+'rifle.conf',

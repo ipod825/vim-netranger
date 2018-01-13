@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import fnmatch
 from netranger.fs import FS, Rclone
@@ -7,7 +9,7 @@ from netranger.colortbl import colortbl
 from netranger.ui import BookMarkUI, HelpUI, SortUI
 from netranger.rifle import Rifle
 from netranger.Vim import VimVar, VimErrorMsg, VimCurWinWidth
-from enum import Enum
+from netranger.enum import Enum
 from collections import defaultdict
 from netranger.config import file_sz_display_wid
 import pwd
@@ -94,7 +96,7 @@ class EntryNode(Node):
         self.fullpath = fullpath
         self.re_stat(fs)
         highlight = self.decide_hi()
-        super().__init__(fullpath, name, highlight, level=level)
+        super(EntryNode, self).__init__(fullpath, name, highlight, level=level)
         self.ori_highlight = self.highlight
 
     def re_stat(self, fs):
@@ -104,7 +106,7 @@ class EntryNode(Node):
 
         try:
             self.stat = os.stat(self.fullpath)
-        except FileNotFoundError:
+        except IOError:
             assert self.linkto is not None
             self.stat = None
 
@@ -190,7 +192,7 @@ class DirNode(EntryNode):
     """
     def __init__(self, fullpath, name, fs, level=0):
         self.expanded = False
-        super().__init__(fullpath, name, fs, level)
+        super(DirNode, self).__init__(fullpath, name, fs, level)
 
 
 class NetRangerBuf(object):
@@ -246,7 +248,7 @@ class NetRangerBuf(object):
         self.vim.command('lcd ' + wd)
 
         self.nodes = self.createNodes(self.wd)
-        self.nodes.insert(0, Node(wd, Shell.abbrevuser(wd), VimVar('NETRHiCWD')))
+        self.nodes.insert(0, Node(wd, Shell.abbrevuser(wd), default.color['cwd']))
         self.clineNo = self.first_content_lineNo
         self.nodes[self.clineNo].cursor_on()
         self.mtime = defaultdict(None)
@@ -331,7 +333,7 @@ class NetRangerBuf(object):
                 if new_mtime > self.mtime[path]:
                     self.content_outdated = True
                     self.mtime[path] = new_mtime
-            except FileNotFoundError:
+            except IOError:
                 pass
 
         if not self.content_outdated:
@@ -404,7 +406,7 @@ class NetRangerBuf(object):
         """
         Sort the nodes by their path and SortUI.sort_fn. Information of ancestor are accumulated for subnodes as prefix. To sort directories before files, ' '(ascii 32) is put into the prefix for directories and '~' (ascii 127) is put into the prefix for files. An additional ' ' is put before ' ' or '~' to handle tricky case like 'dir, dir/z, dir2', without which will results in 'dir, dir2, dir/z'.
         """
-        sort_fn = SortUI.sort_fn
+        sort_fn = SortUI.get_sort_fn()
         reverse = SortUI.reverse
         header_nodes = []
         sortedNodes = []
@@ -901,7 +903,7 @@ class Netranger(object):
 
     def sort_onuiiquit(self, opt):
         SortUI.reverse = opt.isupper()
-        SortUI.sort_fn = SortUI.sort_fns[opt.lower()]
+        SortUI.select_sort_fn(opt.lower())
         for buf in self.bufs.values():
             buf.Sort_prep()
         self.curBuf.Sort()
