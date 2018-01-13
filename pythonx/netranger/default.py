@@ -5,6 +5,9 @@ keymap = {
     # non-printable characters (e.g. <cr>) should be in small case for NETRDefaultMapSkip feature
     'NETROpen': (['l','<right>'], "Change directory/open file under cursor"),
     'NETRParentDir': (['h','<left>'], "Change to parent directory"),
+    'NETRTabOpen': (['t'], 'Open file in new tab. Skip for directory'),
+    'NETRTabBgOpen': (['T'], 'Same as NETRTabOpen but stay in the current tab.'),
+    'NETRBufOpen': (['e'], 'Open file in new buffer. Skip for directory'),
     'NETRToggleExpand': (['<space>', 'o'], "Toggle expand current directory under cursor"),
     'NETRVimCD': (['<cr>'], "Changing vim's pwd to the directory of the entry under cursor"),
     'NETREdit': (['i'], "Enter edit mode to rename file/directory names"),

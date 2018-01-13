@@ -48,10 +48,13 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 2. This applies in general, You can always manipulate directory content manually and expect the vim-nertanger buffer be updated when you reenter it. For example, you could run `:tabe newfile` in a vim-netranger buffer. After writing file with `:w` and switching back to the vim-netranger buffer, you'll see `newfile` there.
 
 ### Navigation
-1. Press `l` to change directory/open file for the current directory/file under the cursor.
+1. Press `l` to change directory/open file for the current directory/file under the cursor. Default behaviour for opening file is controlled by `g:NETROpenCmd`.
 2. Press `h` to jump to the parent directory.
-3. Press `<Space>` to toggle expand current directory under cursor.
-4. Press `<Cr>` to set vim's cwd to the directory of the file under cursor (also applies to the first line, i.e. the current directory). This is very useful if you've expanded a directory and want to open an nvim terminal to run a script in the subdirectory.
+3. Press `e` to open current file in the current window.
+4. Press `t` to open current file in a new tab.
+5. Press `T` to open current file in a new tab while staying in the current window.
+6. Press `<Space>` to toggle expand current directory under cursor.
+7. Press `<Cr>` to set vim's cwd to the directory of the file under cursor (also applies to the first line, i.e. the current directory). This is very useful if you've expanded a directory and want to open an nvim terminal to run a script in the subdirectory.
 
 ### File Rename
 1. Press `i` to enter edit mode. You can freely modify any file/directory name in this mode.

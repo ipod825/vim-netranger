@@ -125,7 +125,6 @@ class EntryNode(Node):
             self.user = ''
             self.group = ''
 
-
     def decide_hi(self):
         if self.linkto is not None:
             if self.stat is None:
@@ -779,7 +778,7 @@ class Netranger(object):
         self.onuiquit = fn
         self.onuiquitNumArgs = numArgs
 
-    def NETROpen(self):
+    def NETROpen(self, open_dir=True, open_cmd=None):
         """
         The real work for opening directories is handled in on_bufenter. For openning files, we check if there's rifle rule to open the file. Otherwise, open it in vim.
         """
@@ -788,7 +787,7 @@ class Netranger(object):
             return
 
         fullpath = curNode.fullpath
-        if curNode.isDir:
+        if curNode.isDir and open_dir:
             self.vim.command('silent edit {}'.format(fullpath))
         else:
             if self.rclone is not None and self.isRemotePath(fullpath):
@@ -799,7 +798,19 @@ class Netranger(object):
                 import _thread as thread
                 thread.start_new_thread(lambda: Shell.run('{} {}'.format(cmd, fullpath)), ())
             else:
-                self.vim.command('silent {} {}'.format(VimVar('NETROpenCmd'), fullpath))
+                if open_cmd is None:
+                    open_cmd = VimVar('NETROpenCmd')
+                self.vim.command('silent {} {}'.format(open_cmd, fullpath))
+
+    def NETRTabOpen(self):
+        self.NETROpen(False, 'tabedit')
+
+    def NETRTabBgOpen(self):
+        self.NETROpen(False, 'tabedit')
+        self.vim.command('tabprevious')
+
+    def NETRBufOpen(self):
+        self.NETROpen(False, 'edit')
 
     def NETRParentDir(self):
         """ Real work is done in on_bufenter """
