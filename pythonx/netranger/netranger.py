@@ -123,6 +123,7 @@ class EntryNode(Node):
             self.user = ''
             self.group = ''
 
+
     def decide_hi(self):
         if self.linkto is not None:
             if self.stat is None:
