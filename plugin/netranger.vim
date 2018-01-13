@@ -14,11 +14,12 @@ endif
 let g:loaded_netrwPlugin = 0
 let g:loaded_netrw = 0
 
-if has('python3')
-    let s:pyx = 'python3 '
-else
-    let s:pyx = 'python '
-endif
+" if has('python3')
+"     let s:pyx = 'python3 '
+" else
+"     let s:pyx = 'python '
+" endif
+let s:pyx = 'python3 '
 
 exec s:pyx "import vim"
 exec s:pyx "from netranger.netranger import Netranger"
