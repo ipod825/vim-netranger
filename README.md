@@ -1,7 +1,7 @@
 vim-netranger
 =============
 [![Build Status](https://travis-ci.org/ipod825/vim-netranger.svg?branch=master)](https://travis-ci.org/ipod825/vim-netranger)
-![Screenshot](https://user-images.githubusercontent.com/1246394/34659373-009ab882-f3ed-11e7-8d69-8df7db6dcb44.png)
+![Screenshot](https://user-images.githubusercontent.com/1246394/36007869-45dff1bc-0cf9-11e8-9cd5-f0d0e789135a.png)
 
 Vim-netranger is a ranger-like system/cloud storage explorer for Vim/Neovim. It brings together the best of Vim, [ranger](https://github.com/ranger/ranger), and [rclone](https://rclone.org/):
 
