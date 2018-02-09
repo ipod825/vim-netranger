@@ -10,15 +10,16 @@ python:
 
 install:
 #     # https://gist.github.com/lambdalisue/0f461f6a91743895394e63a9a1c65232
-    - curl -sL https://gist.githubusercontent.com/lambdalisue/0f461f6a91743895394e63a9a1c65232/raw/install_nvim_for_ci.sh | bash
-    # - mkdir -p neovim/bin
-    # - curl -o neovim/bin/nvim -L https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
-    # - chmod u+x neovim/bin/nvim
+    # - curl -sL https://gist.githubusercontent.com/lambdalisue/0f461f6a91743895394e63a9a1c65232/raw/install_nvim_for_ci.sh | bash
+    - export NVIMDIR=$HOME/neovim/bin
+    - mkdir -p $NVIMDIR
+    - curl -o $NVIMDIR/nvim -L https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
+    - chmod u+x $NVIMDIR/nvim
     - pip install neovim
     - pip install flake8
 
 script:
-    - PATH="$HOME/neovim/bin:$PATH"
+    - PATH="$NVIMDIR:$PATH"
     - cd test
     - bash test.sh
     - flake8 --ignore E225,E231,E226,E402,E501,E731,F401,F403 test pythonx --exclude=colortbl.py
