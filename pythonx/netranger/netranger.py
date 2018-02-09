@@ -706,6 +706,8 @@ class Netranger(object):
         curBuf.refresh_highlight()
         curBuf.Sort()
         curBuf.render_if_winwidth_changed()
+        # ensure pwd is correct
+        self.vim.command('lcd ' + curBuf.wd)
 
     def show_existing_buf(self, bufname):
         ori_bufnum = self.vim.current.buffer.number
@@ -819,7 +821,12 @@ class Netranger(object):
         if cwd in self.pinnedRoots:
             return
         pdir = self.fs.parent_dir(cwd)
-        self.vim.command('silent edit {}'.format(pdir))
+        try:
+            self.vim.command('silent edit {}'.format(pdir))
+        except Exception as e:
+            VimErrorMsg("Permission Denied: {}".format(pdir))
+            self.vim.command('silent edit {}'.format(cwd))
+            return
         curBuf = self.curBuf
         curBuf.setClineNoByPath(cwd)
         # manually call on_cursormoved as synchronous on_bufenter block on_cursormoved event handler
