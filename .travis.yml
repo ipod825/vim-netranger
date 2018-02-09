@@ -13,7 +13,7 @@ install:
     - curl -sL https://gist.githubusercontent.com/lambdalisue/0f461f6a91743895394e63a9a1c65232/raw/install_nvim_for_ci.sh | bash
     # - mkdir -p neovim/bin
     # - curl -o neovim/bin/nvim -L https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
-    - chmod u+x neovim/bin/nvim
+    # - chmod u+x neovim/bin/nvim
     - pip install neovim
     - pip install flake8
 
