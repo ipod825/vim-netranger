@@ -9,8 +9,8 @@ python:
     - 3.5
 
 before_install:
-    - sudo add-apt-repository ppa:neovim-ppa/stable
-    - sudo apt-get update
+    - sudo add-apt-repository ppa:neovim-ppa/stable -y
+    - sudo apt-get update -y
 
 install:
     # Install Neovim via Gist
