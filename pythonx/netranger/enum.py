@@ -5,8 +5,9 @@ class SuperEnum(object):
                 if item == self.__dict__[item]:
                     yield item
 
-def Enum(name, members):                
+
+def Enum(name, members):
     """Builds a class <name> with <class_members> having the name as value."""
 
     members = [m.strip() for m in members.split(',')]
-    return type(name, (SuperEnum, ), { val : val for val in members})
+    return type(name, (SuperEnum, ), {val: val for val in members})
