@@ -20,6 +20,7 @@ install:
 
 script:
     - PATH="$NVIMDIR:$PATH"
+    - whereis nvim
     - cd test
     - bash test.sh
     - flake8 --ignore E225,E231,E226,E402,E501,E731,F401,F403 test pythonx --exclude=colortbl.py
