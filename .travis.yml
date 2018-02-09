@@ -12,6 +12,7 @@ install:
     - mkdir neovim
     - curl -o neovim/nvim -L https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
     - chmod u+x neovim/nvim
+    - pip install neovim
     - pip install flake8
 
 script:
