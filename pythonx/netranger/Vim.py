@@ -22,7 +22,8 @@ def decode_if_bytes(obj, mode=True):
     return obj
 
 
-VimVar = lambda name: walk(decode_if_bytes, vim.vars[name])
+def VimVar(name):
+    return walk(decode_if_bytes, vim.vars[name])
 
 
 def VimErrorMsg(exception):
