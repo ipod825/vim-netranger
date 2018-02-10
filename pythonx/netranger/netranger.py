@@ -802,7 +802,7 @@ class Netranger(object):
             else:
                 if open_cmd is None:
                     open_cmd = VimVar('NETROpenCmd')
-                self.vim.command('silent {} {}'.format(open_cmd, fullpath))
+                self.vim.command('{} {}'.format(open_cmd, fullpath))
 
     def NETRTabOpen(self):
         self.NETROpen(False, 'tabedit')
