@@ -69,5 +69,18 @@ class Rifle(object):
             for test in tests:
                 if not test(fname):
                     succ = False
+                    break
             if succ:
                 return command
+
+    def list_available_cmd(self, fname):
+        res = []
+        for tests, command in self.rules:
+            succ = True
+            for test in tests:
+                if not test(fname):
+                    succ = False
+                    break
+            if succ:
+                res.append(command)
+        return res

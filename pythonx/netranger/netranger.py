@@ -6,7 +6,7 @@ from netranger.fs import FS, Rclone
 from netranger.util import log, Shell
 from netranger import default
 from netranger.colortbl import colortbl
-from netranger.ui import BookMarkUI, HelpUI, SortUI
+from netranger.ui import BookMarkUI, HelpUI, SortUI, AskUI
 from netranger.rifle import Rifle
 from netranger.Vim import VimVar, VimErrorMsg, VimCurWinWidth
 from netranger.enum import Enum
@@ -623,6 +623,7 @@ class Netranger(object):
         self.bookmarkUI = None
         self.helpUI = None
         self.sortUI = None
+        self.askUI = None
         self.onuiquit = None
         self.onuiquitNumArgs = 0
         self.fs = FS()
@@ -780,7 +781,7 @@ class Netranger(object):
         self.onuiquit = fn
         self.onuiquitNumArgs = numArgs
 
-    def NETROpen(self, open_dir=True, open_cmd=None):
+    def NETROpen(self, open_cmd=None, rifle_cmd=None, use_rifle=True):
         """
         The real work for opening directories is handled in on_bufenter. For openning files, we check if there's rifle rule to open the file. Otherwise, open it in vim.
         """
@@ -788,20 +789,25 @@ class Netranger(object):
         if curNode.isHeader:
             return
 
+        if open_cmd is None:
+            if curNode.isDir:
+                open_cmd = 'edit'
+            else:
+                open_cmd = VimVar('NETROpenCmd')
+
         fullpath = curNode.fullpath
-        if curNode.isDir and open_dir:
-            self.vim.command('silent edit {}'.format(fullpath))
+        if curNode.isDir:
+            self.vim.command('silent {} {}'.format(open_cmd, fullpath))
         else:
             if self.rclone is not None and self.isRemotePath(fullpath):
                 self.rclone.lazy_init(fullpath)
-            cmd = self.rifle.decide_open_cmd(fullpath)
 
-            if cmd:
-                import _thread as thread
-                thread.start_new_thread(lambda: Shell.run(cmd.format(fullpath)), ())
+            if rifle_cmd is None:
+                rifle_cmd = self.rifle.decide_open_cmd(fullpath)
+
+            if use_rifle and rifle_cmd is not None:
+                Shell.run_async(rifle_cmd.format(fullpath))
             else:
-                if open_cmd is None:
-                    open_cmd = VimVar('NETROpenCmd')
                 try:
                     self.vim.command('{} {}'.format(open_cmd, fullpath))
                 except Exception as e:
@@ -810,14 +816,20 @@ class Netranger(object):
                         VimErrorMsg(err_msg)
 
     def NETRTabOpen(self):
-        self.NETROpen(False, 'tabedit')
+        self.NETROpen('tabedit', use_rifle=False)
 
     def NETRTabBgOpen(self):
-        self.NETROpen(False, 'tabedit')
-        self.vim.command('tabprevious')
+        self.NETROpen('tabedit')
+        self.vim.command('tabprevious', use_rifle=False)
 
     def NETRBufOpen(self):
-        self.NETROpen(False, 'edit')
+        self.NETROpen('edit', use_rifle=False)
+
+    def NETRAskOpen(self):
+        fullpath = self.curNode.fullpath
+        if self.askUI is None:
+            self.askUI = AskUI(self.vim, self)
+        self.askUI.ask(self.rifle.list_available_cmd(fullpath), fullpath)
 
     def NETRParentDir(self):
         """ Real work is done in on_bufenter """
@@ -920,8 +932,7 @@ class Netranger(object):
     def NETRSort(self):
         if self.sortUI is None:
             self.sortUI = SortUI(self.vim)
-        else:
-            self.sortUI.show()
+        self.sortUI.show()
         self.pend_onuiquit(self.sort_onuiiquit, numArgs=1)
 
     def sort_onuiiquit(self, opt):
@@ -934,8 +945,7 @@ class Netranger(object):
     def NETRHelp(self):
         if self.helpUI is None:
             self.helpUI = HelpUI(self.vim, self.keymap_doc)
-        else:
-            self.helpUI.show()
+        self.helpUI.show()
 
     def NETRTogglePick(self):
         """

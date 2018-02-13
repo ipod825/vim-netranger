@@ -3,6 +3,7 @@ import string
 import os
 from netranger.util import log
 from netranger.Vim import VimVar
+from netranger.Vim import VimWarningMsg
 
 log('')
 
@@ -42,6 +43,7 @@ class UI(object):
         new_buf.options['modifiable'] = True
         new_buf[:] = content
         new_buf.options['modifiable'] = False
+        self.vim.command('quit')
 
     def set_buf_common_option(self, modifiable=False):
         self.vim.command('setlocal noswapfile')
@@ -60,6 +62,45 @@ class HelpUI(UI):
         UI.__init__(self, vim)
 
         self.create_buf(content=['{:<25} {:<10} {}'.format(fn, ','.join(keys), desc) for fn, (keys, desc) in keymap_doc.items()])
+
+
+class AskUI(UI):
+    def __init__(self, vim, netranger):
+        UI.__init__(self, vim)
+        self.netranger = netranger
+        self.options = None
+        self.fullpath = None
+        self.create_buf(content=[], mappings=[(chr(ind),chr(ind)) for ind in range(97,123)])
+
+    def ask(self, content, fullpath):
+        self.show()
+        if len(content) > 26:
+            VimWarningMsg('Ask only supports up to 26 commands.')
+            content = content[:26]
+
+        ind = 97
+        self.options = content[:]
+        self.options.append('vim')
+        self.fullpath = fullpath
+        for i, c in enumerate(content):
+            content[i] = '{}. {}'.format(chr(ind), c)
+            ind += 1
+        content.append('{}. {}'.format(chr(ind), 'vim'))
+
+        buf = self.bufs['default']
+        buf.api.set_option('modifiable', True)
+        buf[:] = content
+        buf.api.set_option('modifiable', False)
+        self.netranger.pend_onuiquit(self._ask, 1)
+
+    def _ask(self, char):
+        cmd = self.options[ord(char)-97]
+        log(self.options)
+        log(char, cmd, cmd=='vim')
+        if cmd == 'vim':
+            self.netranger.NETROpen(use_rifle=False)
+        else:
+            self.netranger.NETROpen(rifle_cmd=cmd)
 
 
 def size(path):
@@ -139,8 +180,7 @@ class BookMarkUI(UI):
             self.create_buf(mappings=zip(self.valid_mark, self.valid_mark),
                             content=['{}:{}'.format(k, p) for k,p in self.mark_dict.items()],
                             name='set')
-        else:
-            self.show('set')
+        self.show('set')
         self.path_to_mark = path
         self.netranger.pend_onuiquit(self._set, 1)
 
@@ -177,8 +217,7 @@ class BookMarkUI(UI):
             self.create_buf(mappings=self.mark_dict.items(),
                             content=['{}:{}'.format(k, p) for k,p in self.mark_dict.items()],
                             name='go')
-        else:
-            self.show('go')
+        self.show('go')
         self.netranger.pend_onuiquit(self.netranger.bookmarkgo_onuiquit, 1)
 
     def edit(self):

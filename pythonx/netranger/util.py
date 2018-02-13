@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import _thread as thread
 
 
 def log(*msg):
@@ -55,6 +56,10 @@ class Shell():
     @classmethod
     def run(cls, cmd):
         return subprocess.check_output(cmd, shell=True).decode('utf-8')
+
+    @classmethod
+    def run_async(cls, cmd):
+        thread.start_new_thread(lambda: Shell.run(cmd), ())
 
     @classmethod
     def touch(cls, name):

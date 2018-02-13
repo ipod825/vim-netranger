@@ -34,6 +34,10 @@ def VimErrorMsg(exception):
     vim.command('echohl ErrorMsg | echo "{}" | echohl None '.format(msg.replace('"','\\"')))
 
 
+def VimWarningMsg(msg):
+    vim.command('echohl WarningMsg | echo "{}" | echohl None '.format(msg.replace('"','\\"')))
+
+
 def VimUserInput(hint, default=''):
     vim.command('let g:NETRRegister=input("{}: ", "{}")'.format(hint, default))
     return decode_if_bytes(vim.vars['NETRRegister'])

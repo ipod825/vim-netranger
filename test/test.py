@@ -361,7 +361,7 @@ def test_sort():
     assert_content('dir2', ind=6, hi='dir', level=0)
 
 
-def test_ftype():
+def test_rifle():
     # TODO
     pass
 
@@ -392,5 +392,5 @@ if __name__ == '__main__':
         do_test(test_detect_fs_change)
         do_test(test_size_display)
         do_test(test_sort)
-        do_test(test_ftype)
+        do_test(test_rifle)
         nvim.options['timeoutlen'] = ori_timeoutlen

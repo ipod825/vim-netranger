@@ -8,6 +8,7 @@ keymap = {
     'NETRTabOpen': (['t'], 'Open file in new tab. Skip for directory'),
     'NETRTabBgOpen': (['T'], 'Same as NETRTabOpen but stay in the current tab.'),
     'NETRBufOpen': (['e'], 'Open file in new buffer. Skip for directory'),
+    'NETRAskOpen': (['a'], 'Open file with rifle. Ask for command'),
     'NETRToggleExpand': (['<space>', 'o'], "Toggle expand current directory under cursor"),
     'NETRVimCD': (['<cr>'], "Changing vim's pwd to the directory of the entry under cursor"),
     'NETREdit': (['i'], "Enter edit mode to rename file/directory names"),
