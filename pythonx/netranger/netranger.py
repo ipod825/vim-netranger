@@ -798,7 +798,7 @@ class Netranger(object):
 
             if cmd:
                 import _thread as thread
-                thread.start_new_thread(lambda: Shell.run('{} {}'.format(cmd, fullpath)), ())
+                thread.start_new_thread(lambda: Shell.run(cmd.format(fullpath)), ())
             else:
                 if open_cmd is None:
                     open_cmd = VimVar('NETROpenCmd')

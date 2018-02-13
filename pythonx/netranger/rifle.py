@@ -36,12 +36,18 @@ class Rifle(object):
 
         with open(path, 'r') as f:
             for i, line in enumerate(f):
+                try:
+                    # remove things after the first # (including)
+                    line = line[:line.index('#')]
+                except ValueError:
+                    pass
+
                 line = line.strip()
-                if len(line)==0 or line[0] == '#':
+                if len(line)==0:
                     continue
                 sp = line.split('=')
                 if len(sp) != 2:
-                    VimErrorMsg('invalid rule: rifle.conf line {}'.format(i+1))
+                    VimErrorMsg('invalid rule: rifle.conf line {}. There should be one and only one "=" for each line'.format(i+1))
                     continue
 
                 tests = []
@@ -49,6 +55,12 @@ class Rifle(object):
                     testSp = [e for e in test.split(' ') if e!='']
                     tests.append(globals()[testSp[0]](testSp[1]))
                 command = sp[1].strip()
+
+                # simple case, used specify only the command
+                # For sophisicated command like bash -c "command {}"
+                # user should add '{}' themselves
+                if '{}' not in command:
+                    command = command + ' {}'
                 self.rules.append((tests, command))
 
     def decide_open_cmd(self, fname):
