@@ -866,7 +866,6 @@ class Netranger(object):
         self.curBuf.render(plain=True)
         self.vim.command('setlocal modifiable')
         self.vim.command('setlocal wrap')
-        self.vim.command('startinsert')
 
     def NETRToggleExpand(self):
         self.curBuf.ToggleExpand()
