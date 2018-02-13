@@ -802,7 +802,12 @@ class Netranger(object):
             else:
                 if open_cmd is None:
                     open_cmd = VimVar('NETROpenCmd')
-                self.vim.command('{} {}'.format(open_cmd, fullpath))
+                try:
+                    self.vim.command('{} {}'.format(open_cmd, fullpath))
+                except Exception as e:
+                    err_msg = str(e)
+                    if 'E325' not in err_msg:
+                        VimErrorMsg(err_msg)
 
     def NETRTabOpen(self):
         self.NETROpen(False, 'tabedit')
