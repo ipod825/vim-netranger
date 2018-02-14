@@ -85,9 +85,9 @@ class FS(object):
 
     def rm(self, target, force=False):
         if force:
-            Shell.run('rm -rf {}'.format(target))
+            Shell.run('rm -rf "{}"'.format(target))
         else:
-            Shell.run('rm -r {}'.format(target))
+            Shell.run('rm -r "{}"'.format(target))
 
     def mtime(self, fname):
         return os.stat(fname).st_mtime
@@ -157,7 +157,7 @@ class RcloneDir(object):
             self.inited = True
 
     def lsd(self):
-        info = Shell.run('rclone lsd {} --max-depth 1'.format(self.rpath))
+        info = Shell.run('rclone lsd "{}" --max-depth 1'.format(self.rpath))
 
         for line in info.split('\n'):
             line = line.strip()
@@ -166,7 +166,7 @@ class RcloneDir(object):
                 self.children[name] = RcloneDir(os.path.join(self.lpath, name), os.path.join(self.rpath, name))
 
     def lsl(self):
-        info = Shell.run('rclone lsl {} --max-depth 1'.format(self.rpath))
+        info = Shell.run('rclone lsl "{}" --max-depth 1'.format(self.rpath))
 
         for line in info.split('\n'):
             line = line.strip()
