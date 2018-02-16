@@ -143,7 +143,7 @@ def test_navigation():
 
 def test_edit():
     nvim.input(' ')
-    nvim.input('iz<Left><Down>')
+    nvim.input('iiz<Left><Down>')
     nvim.input('y<Left><Down>')
     nvim.input('x<Left><Down>')
     nvim.input('w')
