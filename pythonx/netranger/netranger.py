@@ -111,7 +111,11 @@ class EntryNode(Node):
             self.stat = None
 
         if self.stat:
-            self.size = fs.size_str(self.fullpath, self.stat)
+            try:
+                self.size = fs.size_str(self.fullpath, self.stat)
+            except PermissionError:
+                self.size = '?'
+
             self.acl = fs.acl_str(self.stat)
             try:
                 self.user = pwd.getpwuid(self.stat.st_uid)[0]
@@ -667,7 +671,6 @@ class Netranger(object):
     def map_keys(self):
         for fn, keys in self.keymaps.items():
             for k in keys:
-                # self.vim.command('nnoremap <silent> <buffer> {} :exe ":silent call _NETRInvokeMap({})"<CR>'.format(k, "'" + fn + "'"))
                 self.vim.command('nnoremap <silent> <buffer> {} :exe ":call _NETRInvokeMap({})"<CR>'.format(k, "'" + fn + "'"))
 
     def on_bufenter(self, bufnum):
@@ -797,6 +800,9 @@ class Netranger(object):
 
         fullpath = curNode.fullpath
         if curNode.isDir:
+            if curNode.size == '?' or curNode.size == '':
+                VimErrorMsg('Permission Denied: {}'.format(curNode.name))
+                return
             self.vim.command('silent {} {}'.format(open_cmd, fullpath))
         else:
             if self.rclone is not None and self.isRemotePath(fullpath):
@@ -838,12 +844,7 @@ class Netranger(object):
         if cwd in self.pinnedRoots:
             return
         pdir = self.fs.parent_dir(cwd)
-        try:
-            self.vim.command('silent edit {}'.format(pdir))
-        except Exception as e:
-            VimErrorMsg("Permission Denied: {}".format(pdir))
-            self.vim.command('silent edit {}'.format(cwd))
-            return
+        self.vim.command('silent edit {}'.format(pdir))
         curBuf = self.curBuf
         curBuf.setClineNoByPath(cwd)
         # manually call on_cursormoved as synchronous on_bufenter block on_cursormoved event handler
