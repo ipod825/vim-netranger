@@ -156,9 +156,13 @@ class EntryNode(Node):
 
     def rename(self, name):
         ori = self.fullpath
-        self.fullpath = os.path.join(os.path.dirname(self.fullpath), name)
+        dirname = os.path.dirname(self.fullpath)
+        self.fullpath = os.path.join(dirname, name)
         self.name = name
         return ori
+
+    def change_dirname(self, oridirname, dirname):
+        self.fullpath = os.path.join(dirname, self.fullpath[len(oridirname)+1:])
 
     def toggle_pick(self):
         if self.state == Node.State.NORMAL:
@@ -558,12 +562,25 @@ class NetRangerBuf(object):
             return
 
         oriNode = self.curNode
-        # We need to rename subdirectory/subfiles first, so we rename from bottom nodes to top nodes.
-        for i in range(len(vimBuf)-1, -1, -1):
+
+        change = {}
+        i = 0
+        for i in range(len(vimBuf)):
             line = vimBuf[i].strip()
             if not self.nodes[i].isHeader and line != self.nodes[i].name:
+                # change name of the i'th node
                 oripath = self.nodes[i].rename(line)
-                self.fs.mv(oripath, self.nodes[i].fullpath)
+                change[oripath] = self.nodes[i].fullpath
+
+                # change dirname of subnodes
+                endInd = self.next_lesseq_level_ind(begInd=i)
+                for j in range(i+1, endInd):
+                    self.nodes[j].change_dirname(oripath, self.nodes[i].fullpath)
+
+        # apply the changes
+        for oripath, fullpath in change.items():
+            self.fs.mv(oripath, fullpath)
+
         self.nodes = self.sortNodes(self.nodes)
         self.render()
         self.setClineNoByNode(oriNode)
