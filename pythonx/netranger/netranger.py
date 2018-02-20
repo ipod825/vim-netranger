@@ -842,8 +842,8 @@ class Netranger(object):
         self.NETROpen('tabedit', use_rifle=False)
 
     def NETRTabBgOpen(self):
-        self.NETROpen('tabedit')
-        self.vim.command('tabprevious', use_rifle=False)
+        self.NETROpen('tabedit', use_rifle=False)
+        self.vim.command('tabprevious')
 
     def NETRBufOpen(self):
         self.NETROpen('edit', use_rifle=False)
