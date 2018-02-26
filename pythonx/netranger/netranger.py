@@ -688,7 +688,7 @@ class Netranger(object):
     def map_keys(self):
         for fn, keys in self.keymaps.items():
             for k in keys:
-                self.vim.command('nnoremap <silent> <buffer> {} :exe ":call _NETRInvokeMap({})"<CR>'.format(k, "'" + fn + "'"))
+                self.vim.command('nnoremap <nowait> <silent> <buffer> {} :exe ":call _NETRInvokeMap({})"<CR>'.format(k, "'" + fn + "'"))
 
     def on_bufenter(self, bufnum):
         """
