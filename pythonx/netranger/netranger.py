@@ -43,7 +43,7 @@ class Node(object):
 
     @property
     def highlight_content(self):
-        return '{}m{}'.format(self.highlight, self.name)
+        return '{}m{}[0m'.format(self.highlight, self.name)
 
     @property
     def isDir(self):
@@ -90,7 +90,7 @@ class EntryNode(Node):
         width = VimCurWinWidth()
         left = '  '*self.level
         right = self.size.rjust(file_sz_display_wid+1)
-        return '{}m{}{}{}'.format(self.highlight, left, self.abbrev_name(width-len(left)-len(right)), right).strip()
+        return '{}m{}{}{}[0m'.format(self.highlight, left, self.abbrev_name(width-len(left)-len(right)), right).strip()
 
     def __init__(self, fullpath, name, fs, level=0):
         self.fullpath = fullpath

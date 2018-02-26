@@ -297,15 +297,20 @@ def test_misc():
 
 def test_size_display():
     width = nvim.current.window.width
-    assert nvim.current.line.endswith('3'), 'size display dir fail: {}'.format(nvim.current.line[-10:])
+
+    def cLine_ends_with(s):
+        # line[-4:] = [0m
+        return nvim.current.line[:-4].endswith(s)
+
+    assert cLine_ends_with('3'), 'size display dir fail: {}'.format('a'+nvim.current.line[-1]+'a')
     Shell.run('echo {} > {}'.format('a'*1035, 'a'*width +'.pdf'))
     Shell.run('echo {} > {}'.format('b'*1024, 'b'*width))
 
     nvim.command('edit .')
     nvim.input('Gk')
-    assert nvim.current.line.endswith('~.pdf 1.01 K'), 'size display abbreviation fail: a~.pdf {}'.format(nvim.current.line[-10:])
+    assert cLine_ends_with('~.pdf 1.01 K'), 'size display abbreviation fail: a~.pdf {}'.format(nvim.current.line[-10:])
     nvim.input('j')
-    assert nvim.current.line.endswith('b~    1 K'), 'size display abbreviation fail: b~ {}'.format(nvim.current.line[-10:])
+    assert cLine_ends_with('b~    1 K'), 'size display abbreviation fail: b~ {}'.format(nvim.current.line[-10:])
 
 
 def test_sort():
