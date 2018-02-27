@@ -52,11 +52,13 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 1. Press `l` to change directory/open file for the current directory/file under the cursor. A file is opened by rifle if available (see [Rifle](#rifle)). Otherwise, the default behaviour is to open the file in vim by `g:NETROpenCmd`.
 2. Press `h` to jump to the parent directory.
 3. Press `e` to open current file/directory in the current window.
-4. Press `t` to open current file/directory in a new tab.
-5. Press `T` to open current file/directory in a new tab while staying in the current window.
-6. Press `a` to select a program to open the current file via rifle (see [Rifle](#rifle))
-7. Press `<Space>` to toggle expand current directory under cursor.
-8. Press `<Cr>` to set vim's cwd to the directory of the file under cursor (also applies to the first line, i.e. the current directory). This is very useful if you've expanded a directory and want to open an nvim terminal to run a script in the subdirectory.
+4. Press `ev` to open current file/directory in a vertical split buffer.
+5. Press `eo` to open current file/directory in a horizontal split buffer.
+6. Press `t` to open current file/directory in a new tab.
+7. Press `T` to open current file/directory in a new tab while staying in the current window.
+8. Press `a` to select a program to open the current file via rifle (see [Rifle](#rifle))
+9. Press `<Space>` to toggle expand current directory under cursor.
+10. Press `<Cr>` to set vim's cwd to the directory of the file under cursor (also applies to the first line, i.e. the current directory). This is very useful if you've expanded a directory and want to open an nvim terminal to run a script in the subdirectory.
 
 ### File Rename
 1. Press `i` to enter edit mode. You can freely modify any file/directory name in this mode. Note that after pressing `i`, you are in normal mode, you need to press `i` again to enter insert mode.
