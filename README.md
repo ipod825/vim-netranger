@@ -120,6 +120,7 @@ let g:NETRBookmarkGo = ["m"]
 | g:NETRIgnore  | File patterns (bash wild card) to ignore (not displaying) | []                    |
 | g:NETRRootDir | Directory for storing remote cache and bookmark file      | ['$HOME/.netranger/'] |
 | g:NETROpenCmd | Vim command to open files from netranger buffer           | 'tab drop'            |
+| g:NETRSplitOrientation | Split orientation when a split buffer is created | 'belowright'          |
 
 ## Known Issues
 1. In neovim, when opening two vim buffers for the same directory, there is a delay for moving cursor up and down. This seems to be an nvim api [issue](https://github.com/neovim/neovim/issues/7756)

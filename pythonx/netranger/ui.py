@@ -11,7 +11,7 @@ log('')
 class UI(object):
     @property
     def position(self):
-        return 'belowright'
+        return VimVar('NETRSplitOrientation')
 
     def __init__(self, vim):
         self.bufs = {}

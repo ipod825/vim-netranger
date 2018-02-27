@@ -7,7 +7,9 @@ keymap = {
     'NETRParentDir': (['h','<left>'], "Change to parent directory"),
     'NETRTabOpen': (['t'], 'Open file in new tab. Skip for directory'),
     'NETRTabBgOpen': (['T'], 'Same as NETRTabOpen but stay in the current tab.'),
-    'NETRBufOpen': (['e'], 'Open file in new buffer. Skip for directory'),
+    'NETRBufOpen': (['e'], 'Open file in current window.'),
+    'NETRBufVSplitOpen': (['ev'], 'Open file in new vertical split buffer.'),
+    'NETRBufHSplitOpen': (['eo'], 'Open file in new horizontal split buffer.'),
     'NETRAskOpen': (['a'], 'Open file with rifle. Ask for command'),
     'NETRToggleExpand': (['<space>', 'o'], "Toggle expand current directory under cursor"),
     'NETRVimCD': (['<cr>'], "Changing vim's pwd to the directory of the entry under cursor"),
@@ -54,6 +56,7 @@ variables = {
     'NETRRifleFile': root_dir+'rifle.conf',
     'NETRemoteCacheDir': root_dir+'remote',
     'NETRemoteRoots': {test_remote_name: test_remote_dir},
+    'NETRSplitOrientation': 'belowright',
 }
 
 internal_variables = {

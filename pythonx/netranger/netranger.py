@@ -848,6 +848,12 @@ class Netranger(object):
     def NETRBufOpen(self):
         self.NETROpen('edit', use_rifle=False)
 
+    def NETRBufVSplitOpen(self):
+        self.NETROpen(VimVar('NETRSplitOrientation') + ' vsplit', use_rifle=False)
+
+    def NETRBufHSplitOpen(self):
+        self.NETROpen(VimVar('NETRSplitOrientation') + ' split', use_rifle=False)
+
     def NETRAskOpen(self):
         fullpath = self.curNode.fullpath
         if self.askUI is None:
