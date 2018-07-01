@@ -8,7 +8,7 @@ from netranger.util import Shell
 from netranger import default
 from netranger.colortbl import colortbl
 from neovim import attach
-from netranger.config import test_dir, test_local_dir, test_remote_dir, test_remote_name
+from netranger.config import test_dir, test_local_dir, test_remote_dir, test_remote_name, test_remote_cache_dir
 
 
 def assert_content(expected, level=0, ind=None, hi=None):
@@ -19,8 +19,8 @@ def assert_content(expected, level=0, ind=None, hi=None):
         line = nvim.current.buffer[ind]
 
     m = re.search('\[38;5;([0-9]+)(;7)?m( *)([^ ]+)', line)
-    assert m.group(3) == '  '*level, "level mismatch:expected:{}, real:{}".format('"{}"'.format('  '*level), '"{}"'.format(m.group(3)))
     assert m.group(4) == expected, 'expected:"{}", real: "{}"'.format(expected, m.group(4))
+    assert m.group(3) == '  '*level, "level mismatch:expected:{}, real:{}".format('"{}"'.format('  '*level), '"{}"'.format(m.group(3)))
 
     if hi is not None:
         expected_hi = str(colortbl[default.color[hi]])
@@ -54,6 +54,11 @@ def assert_num_content_line(numLine):
 
 
 def assert_fs(d, expected):
+    """
+    Test whether 'expected' exists in directory cwd/d, where
+    cwd is /tmp/netrtest/local when testing local functions and
+    cwd is /tmp/netrtest/remote when testing remote functions.
+    """
     real = None
     for i in range(10):
         real = Shell.run('ls --group-directories-first '+d).split()
@@ -64,11 +69,36 @@ def assert_fs(d, expected):
     assert real == expected, 'expected: {}, real: {}'.format(expected, real)
 
 
+def assert_fs_remote(d, expected):
+    """
+    Test whether 'expected' exists in directory test_remote_cache_dir/d
+    (defaults to $HOME/.netranger/remote/netrtest/d)
+    """
+    assert_fs(os.path.join(test_remote_cache_dir, d), expected)
+
+
+def print_vim_buffer():
+    for l in nvim.current.buffer:
+        print(l)
+    print('======')
+
+
 def do_test(fn=None, fn_remote=None):
+    """
+    Note on the mecahnism of testing rclone on localhost:
+    1. Tester run rclone to create a "local" remote named netrtest (must be exact this name)
+    2. In default.py, the vim variable 'NETRemoteRoots' is set to
+       {test_remote_name: test_remote_dir}, which defaults to
+       {'netrtest', '/tmp/netrtest/remote'}.
+    3. 'NETRemoteRoots' is passed to Rclone constructor, so that the rpath
+       of the netrtest remote is mapped to '/tmp/netrtest/remote'.
+    4. This just works in netranger. In cmd line, running 'rclone lsl netranger:/'
+       still shows you the content of the root directory of the localhost.
+    """
     old_cwd = os.getcwd()
     Shell.run('rm -rf {}'.format(test_dir))
 
-    def chdir(dirname):
+    def prepare_test_dir(dirname):
         Shell.mkdir(dirname)
         os.chdir(dirname)
         Shell.mkdir('dir/subdir')
@@ -83,14 +113,14 @@ def do_test(fn=None, fn_remote=None):
         Shell.touch('dir/subdir2/placeholder')
         Shell.touch('dir/subdir2/placeholder')
 
-    chdir(test_local_dir)
+    prepare_test_dir(test_local_dir)
     if fn is not None:
         nvim.command('silent tabe {}'.format(test_local_dir))
         fn()
         nvim.command('bwipeout')
         print('== {} success =='.format(str(fn.__name__)))
 
-    chdir(test_remote_dir)
+    prepare_test_dir(test_remote_dir)
     if fn_remote is not None:
         nvim.command('NETRemoteList')
         found_remote = False
@@ -102,6 +132,8 @@ def do_test(fn=None, fn_remote=None):
 
         assert found_remote, 'You must set up an rclone remote named "{}" to test remote function'.format(test_remote_name)
         nvim.input('l')
+        nvim.command('NETRemotePull')
+        nvim.command('call cursor(2, 1)')
         fn_remote()
         nvim.command('bwipeout')
         print('== {} success =='.format(str(fn_remote.__name__)))
@@ -159,8 +191,9 @@ def test_edit():
 
 
 def test_edit_remote():
+    return
     nvim.input(' ')
-    nvim.input('iz<Left><Down>')
+    nvim.input('iiz<Left><Down>')
     nvim.input('y<Left><Down>')
     nvim.input('x<Left><Down>')
     nvim.input('w')
@@ -168,6 +201,8 @@ def test_edit_remote():
 
     assert_fs('', ['dir2', 'zdir'])
     assert_fs('zdir', ['xsubdir2', 'ysubdir', 'wa'])
+    assert_fs_remote('', ['dir2', 'zdir'])
+    assert_fs_remote('zdir', ['xsubdir2', 'ysubdir', 'wa'])
 
 
 def test_pickCutCopyPaste():
@@ -227,6 +262,67 @@ def test_pickCutCopyPaste():
     assert_fs('dir2/subdir2', ['dir', 'placeholder'])
 
 
+def test_pickCutCopyPaste_remote_r2r():
+    nvim.input(' jvjjvjlh')
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('subdir', ind=1, level=1, hi='pick')
+    assert_content('subdir2', ind=2, level=1, hi='dir')
+    assert_content('a', ind=3, level=1, hi='pick')
+
+    nvim.input('x')
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('subdir', ind=1, level=1, hi='cut')
+    assert_content('subdir2', ind=2, level=1, hi='dir')
+    assert_content('a', ind=3, level=1, hi='cut')
+
+    nvim.input('lp')
+    assert_content('subdir', ind=0, hi='dir')
+    assert_content('a', ind=1, hi='file')
+    assert_fs('dir2', ['subdir', 'a'])
+    assert_fs_remote('dir2', ['subdir', 'a'])
+
+    nvim.input('hkddkdd')
+    assert_content('dir', ind=0, hi='cut')
+    assert_content('subdir2', ind=1, level=1, hi='cut')
+
+    nvim.input('jjlp')
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('subdir', ind=1, hi='dir')
+    assert_content('subdir2', ind=2, hi='dir')
+    assert_content('a', ind=3, hi='file')
+    assert_fs('dir2', ['dir', 'subdir', 'subdir2', 'a'])
+    assert_fs_remote('dir2', ['dir', 'subdir', 'subdir2', 'a'])
+
+    nvim.input('Gvkkvjyy')
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('subdir', ind=1, hi='pick')
+    assert_content('subdir2', ind=2, hi='copy')
+    assert_content('a', ind=3, hi='pick')
+
+    nvim.input('x')
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('subdir', ind=1, hi='cut')
+    assert_content('subdir2', ind=2, hi='copy')
+    assert_content('a', ind=3, hi='cut')
+
+    nvim.command('wincmd v')
+    nvim.command('wincmd l')
+    nvim.input('hp')
+    assert_content('dir2', ind=0, hi='dir')
+    assert_content('subdir', ind=1, hi='dir')
+    assert_content('subdir2', ind=2, hi='dir')
+    assert_content('a', ind=3, hi='file')
+    assert_fs('', ['dir2', 'subdir', 'subdir2', 'a'])
+    assert_fs('dir2', ['dir', 'subdir2'])
+    assert_fs_remote('', ['dir2', 'subdir', 'subdir2', 'a'])
+    assert_fs_remote('dir2', ['dir', 'subdir2'])
+
+    nvim.input(' jddj<Cr>p')
+    assert_content('subdir2', ind=1, hi='dir', level=1)
+    assert_fs('dir2/subdir2', ['dir', 'placeholder'])
+    assert_fs_remote('dir2/subdir2', ['dir', 'placeholder'])
+
+
 def test_delete():
     nvim.input(' jvjjvD')
     assert_fs('dir', ['subdir2'])
@@ -241,8 +337,17 @@ def test_delete():
 def test_delete_remote():
     nvim.input(' jvjjvD')
     assert_fs('dir', ['subdir2'])
+    assert_fs_remote('dir', ['subdir2'])
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('subdir2', ind=1, level=1, hi='dir')
+    assert_content('dir2', ind=2, hi='dir')
+
+    nvim.input('kk  ')
+    assert_content('subdir2', ind=1, level=1, hi='dir')
     nvim.input('XX')
+    assert_content('dir2', ind=0, hi='dir')
     assert_fs('', ['dir2'])
+    assert_fs_remote('', ['dir2'])
 
 
 def test_detect_fs_change():
@@ -321,6 +426,7 @@ def test_sort():
     Shell.run('echo {} > dir/{}'.format('a'*3, 'a'))
     Shell.run('echo {} > dir/{}'.format('a'*2, 'a.a'))
     Shell.run('echo {} > dir/{}'.format('a'*1, 'a.b'))
+    time.sleep(0.01)
     Shell.run('touch dir/a.a')
 
     nvim.input(' Se')
@@ -388,14 +494,16 @@ if __name__ == '__main__':
 
         do_test(test_navigation)
         do_test(test_edit)
-        # do_test(fn_remote=test_edit_remote)
+        do_test(fn_remote=test_edit_remote)
         do_test(test_delete)
-        # do_test(fn_remote=test_delete_remote)
+        do_test(fn_remote=test_delete_remote)
         do_test(test_pickCutCopyPaste)
+        # do_test(fn_remote=test_pickCutCopyPaste_remote_r2r)
         do_test(test_bookmark)
         do_test(test_misc)
         do_test(test_detect_fs_change)
         do_test(test_size_display)
         do_test(test_sort)
         do_test(test_rifle)
+
         nvim.options['timeoutlen'] = ori_timeoutlen

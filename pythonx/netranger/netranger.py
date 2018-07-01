@@ -258,6 +258,8 @@ class NetRangerBuf(object):
         self.nodes.insert(0, Node(wd, Shell.abbrevuser(wd), default.color['cwd']))
         self.clineNo = self.first_content_lineNo
         self.nodes[self.clineNo].cursor_on()
+        # TODO mtime should be just recorded in Entry nodes and updated
+        # in refresh_nodes. As we plan to always show mtime of files
         self.mtime = defaultdict(None)
         self.mtime[wd] = fs.mtime(wd)
         self.winwidth = VimCurWinWidth()
@@ -316,9 +318,9 @@ class NetRangerBuf(object):
         else:
             return EntryNode(fullpath, basename, self.fs, level=level)
 
-    def creat_nodes_if_not_exist(self, nodes, dirpath, level):
+    def creat_nodes_if_not_exist(self, nodes, dirpath, level, cheap_remote_ls):
         old_paths = set([node.fullpath for node in nodes if not node.isHeader])
-        new_paths = set([os.path.join(dirpath, name) for name in self.fs.ls(dirpath)])
+        new_paths = set([os.path.join(dirpath, name) for name in self.fs.ls(dirpath, cheap_remote_ls)])
         new_nodes = []
         for path in new_paths.difference(old_paths):
             name = os.path.basename(path)
@@ -327,12 +329,11 @@ class NetRangerBuf(object):
             new_nodes.append(self.createNode(dirpath, name, level+1))
         return new_nodes
 
-    def refresh_nodes(self):
+    def refresh_nodes(self, cheap_remote_ls=False):
         """
         1. Check the mtime of wd or any expanded subdir changed. If so, set content_outdated true, which could also be set manually (e.g. NETRToggleShowHidden).
         2. For each file/directory in the file system, including those in expanded directories, if no current node corresponds to it, add a new node to the node list so that it will be visible next time.
         3. For each current node, including nodes in expanded directories, if no files/directories corresponds to it or it should be ignore, remove it from the node list so that it will be invisible next time.
-        4. Refresh remote content if applicable.
         """
         for path in self.mtime:
             try:
@@ -349,33 +350,47 @@ class NetRangerBuf(object):
         oriNode = self.curNode
 
         self.content_outdated = False
-        new_nodes = self.creat_nodes_if_not_exist(self.nodes, self.wd, -1)
-        fs_files = [set(self.fs.ls(self.wd))]
+
+        # create nodes corresponding to new files
+        new_nodes = self.creat_nodes_if_not_exist(self.nodes, self.wd, -1, cheap_remote_ls)
+        fs_files = [set(self.fs.ls(self.wd, cheap_remote_ls))]
+        nextValidInd = -1
         for i in range(len(self.nodes)):
+            if i<nextValidInd:
+                continue
+
             curNode = self.nodes[i]
             if curNode.isHeader:
                 new_nodes.append(curNode)
                 continue
 
+            # When the first child of a parent node (directory) is
+            # encountered, we push the "context" including the list
+            # of existing  files in the parent directory.
+            # When curNode is no more a decendent of prevNode,
+            # We should reset the "context" to the corresponding parent
+            # node.
             prevNode = self.nodes[i-1]
-            if curNode.level > prevNode.level:
-                fs_files.append(set(self.fs.ls(prevNode.fullpath)))
+            if curNode.level > prevNode.level and os.path:
+                fs_files.append(set(self.fs.ls(prevNode.fullpath, cheap_remote_ls)))
             else:
                 fs_files = fs_files[:curNode.level+1]
 
+            # The children of an invalid node will all be invalid
+            # Hence, we will start with the next valid node
             if self.shouldIgnore(curNode.name) or curNode.name not in fs_files[-1]:
+                nextValidInd = self.next_lesseq_level_ind(i)
                 continue
 
+            # create nodes corresponding to new files in expanded directories
             new_nodes.append(curNode)
             if curNode.isDir and curNode.expanded:
                 nextInd = self.next_lesseq_level_ind(i)
-                new_nodes += self.creat_nodes_if_not_exist(self.nodes[i+1:nextInd+1], curNode.fullpath, curNode.level)
+                new_nodes += self.creat_nodes_if_not_exist(self.nodes[i+1:nextInd+1], curNode.fullpath, curNode.level, cheap_remote_ls)
 
         self.nodes = self.sortNodes(new_nodes)
         self.render()
         self.setClineNoByNode(oriNode)
-        if self.fs.isRemote:
-            self.fs.refresh_remote(self.wd)
 
     def reverse_sorted_nodes(self, nodes):
         rev = []
@@ -553,7 +568,7 @@ class NetRangerBuf(object):
 
     def Save(self):
         """
-        Rename the files according to current buffer content. Refresh remote content if applicable.
+        Rename the files according to current buffer content.
         """
         vimBuf = self.vim.current.buffer
         if len(self.nodes) != len(vimBuf):
@@ -568,6 +583,11 @@ class NetRangerBuf(object):
         for i in range(len(vimBuf)):
             line = vimBuf[i].strip()
             if not self.nodes[i].isHeader and line != self.nodes[i].name:
+
+                if self.nodes[i].name in self.mtime:
+                    self.mtime[line] = self.mtime[self.nodes[i].name]
+                    del self.mtime[self.nodes[i].name]
+
                 # change name of the i'th node
                 oripath = self.nodes[i].rename(line)
                 change[oripath] = self.nodes[i].fullpath
@@ -579,14 +599,11 @@ class NetRangerBuf(object):
 
         # apply the changes
         for oripath, fullpath in change.items():
-            self.fs.mv(oripath, fullpath)
+            self.fs.rename(oripath, fullpath)
 
         self.nodes = self.sortNodes(self.nodes)
         self.render()
         self.setClineNoByNode(oriNode)
-
-        if self.fs.isRemote:
-            self.fs.refresh_remote(self.wd)
 
     def Cut(self, nodes):
         for node in nodes:
@@ -823,7 +840,7 @@ class Netranger(object):
             self.vim.command('silent {} {}'.format(open_cmd, fullpath))
         else:
             if self.rclone is not None and self.isRemotePath(fullpath):
-                self.rclone.lazy_init(fullpath)
+                self.rclone.ensure_downloaded(fullpath)
 
             if rifle_cmd is None:
                 rifle_cmd = self.rifle.decide_open_cmd(fullpath)
@@ -837,6 +854,11 @@ class Netranger(object):
                     err_msg = str(e)
                     if 'E325' not in err_msg:
                         VimErrorMsg(err_msg)
+
+    def NETRefresh(self):
+        clineNo = self.curBuf.clineNo
+        self.gen_new_buf(self.curBuf.wd)
+        self.curBuf.moveVimCursor(clineNo)
 
     def NETRTabOpen(self):
         self.NETROpen('tabedit', use_rifle=False)
@@ -1019,14 +1041,19 @@ class Netranger(object):
 
     def NETRPaste(self):
         """
-        Perform mv from cut_nodes or cp from copied_nodes to cwd. For each source (cut/copy) buffer, reset the highlight of the cut/copied nodes and mark the buffer as highlight_outdated so that the highlight will be updated when entered again. We also need to refresh remote content if applicable.
+        Perform mv from cut_nodes or cp from copied_nodes to cwd. For each source (cut/copy) buffer, reset the highlight of the cut/copied nodes and mark the buffer as highlight_outdated so that the highlight will be updated when entered again.
         """
         cwd = self.vim.eval('getcwd()')
+        cwd_is_remote = self.isRemotePath(cwd)
         alreday_moved = set()
         for buf, nodes in self.cut_nodes.items():
-            wd = buf.wd
-            # We need to reset highlight when mv fails.
+            # TODO do we really need to update buf.highlight_outdated here?
             buf.highlight_outdated_nodes.update(nodes)
+
+            # For all ancestor directories of the source directory,
+            # It's possible that their content contains the cutted
+            # entry (by expansion). Hence we also mark them as content_outdated
+            wd = buf.wd
             while True:
                 if wd in self.wd2bufnum:
                     self.bufs[self.wd2bufnum[wd]].content_outdated = True
@@ -1039,49 +1066,37 @@ class Netranger(object):
             for node in nodes:
                 node.reset_highlight()
                 if node.fullpath not in alreday_moved:
-                    try:
-                        self.fs.mv(node.fullpath, cwd)
-                    except Exception as e:
-                        VimErrorMsg(e)
+                    fs = self.rclone if cwd_is_remote else buf.fs
+                    fs.mv(node.fullpath, cwd)
                     alreday_moved.add(node.fullpath)
 
         for buf, nodes in self.copied_nodes.items():
             buf.highlight_outdated_nodes.update(nodes)
             for node in nodes:
                 node.reset_highlight()
-                try:
-                    self.fs.cp(node.fullpath, cwd)
-                except Exception as e:
-                    VimErrorMsg(e)
-
-        for buf in self.cut_nodes.keys():
-            src_dir = buf.wd
-            if self.isRemotePath(src_dir):
-                self.rclone.refresh_remote(src_dir)
-
-        if self.isRemotePath(cwd):
-            self.rclone.refresh_remote(cwd)
+                fs = self.rclone if cwd_is_remote else buf.fs
+                fs.cp(node.fullpath, cwd)
 
         self.cut_nodes = defaultdict(set)
         self.copied_nodes = defaultdict(set)
-        self.curBuf.refresh_nodes()
+        self.curBuf.refresh_nodes(cheap_remote_ls=True)
         self.curBuf.refresh_highlight()
 
     def NETRDelete(self, force=False):
         for buf, nodes in self.picked_nodes.items():
             buf.content_outdated = True
             for node in nodes:
-                self.fs.rm(node.fullpath, force)
+                buf.fs.rm(node.fullpath, force)
         curBuf = self.curBuf
         clineNo = curBuf.clineNo
-        curBuf.refresh_nodes()
+        curBuf.refresh_nodes(cheap_remote_ls=True)
         curBuf.moveVimCursor(clineNo)
         self.picked_nodes = defaultdict(set)
 
     def NETRDeleteSingle(self, force=False):
         curBuf = self.curBuf
-        self.fs.rm(self.curNode.fullpath, force)
-        curBuf.refresh_nodes()
+        curBuf.fs.rm(self.curNode.fullpath, force)
+        curBuf.refresh_nodes(cheap_remote_ls=True)
         curBuf.moveVimCursor(curBuf.clineNo)
 
     def NETRForceDelete(self):
@@ -1095,7 +1110,7 @@ class Netranger(object):
 
     def NETRemotePull(self):
         """
-        Sync remote so that the local content of the current directory will be the same as the remote content.
+        Sync local so that the local content of the current directory will be the same as the remote content.
         """
         try:
             curBuf = self.curBuf
@@ -1107,7 +1122,22 @@ class Netranger(object):
             VimErrorMsg('Not a remote directory')
         else:
             self.rclone.sync(curBuf.wd, Rclone.SyncDirection.DOWN)
-        curBuf.refresh_nodes()
+        curBuf.refresh_nodes(cheap_remote_ls=True)
+
+    def NETRemotePush(self):
+        """
+        Sync remote so that the remote content of the current directory will be the same as the local content.
+        """
+        try:
+            curBuf = self.curBuf
+        except KeyError:
+            VimErrorMsg('Not a netranger buffer')
+            return
+
+        if not self.isRemotePath(curBuf.wd):
+            VimErrorMsg('Not a remote directory')
+        else:
+            self.rclone.sync(curBuf.wd, Rclone.SyncDirection.UP)
 
     def NETRemoteList(self):
         if self.rclone is None:

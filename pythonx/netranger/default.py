@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from netranger.config import root_dir, test_remote_dir, test_remote_name
+from netranger.config import root_dir, remote_cache_dir, test_remote_dir, test_remote_name
 
 keymap = {
     # non-printable characters (e.g. <cr>) should be in small case for NETRDefaultMapSkip feature
@@ -31,7 +31,8 @@ keymap = {
     'NETRBookmarkGo': (["'"], "Bookmark current directory, pending for single character"),
     'NETRBookmarkEdit': (["em"], "Open bookmark file to edit"),
     'NETRSort': (['S'], 'Sort contnet in current directory, pending for single (double) character'),
-    'NETRHelp':(['?'], "Show help message")
+    'NETRHelp': (['?'], "Show help message"),
+    'NETRefresh': (['r'], "Force refresh netranger buffer to be the same as the file system"),
 }
 
 color = {
@@ -54,7 +55,7 @@ variables = {
     'NETRRootDir': root_dir,
     'NETRBookmarkFile': root_dir+'bookmark',
     'NETRRifleFile': root_dir+'rifle.conf',
-    'NETRemoteCacheDir': root_dir+'remote',
+    'NETRemoteCacheDir': remote_cache_dir,
     'NETRemoteRoots': {test_remote_name: test_remote_dir},
     'NETRSplitOrientation': 'belowright',
 }

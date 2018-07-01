@@ -50,13 +50,7 @@ class FS(object):
         'o1': 'p',
     }
 
-    @property
-    def isRemote(self):
-        return type(self) is Rclone
-
-    def ls(self, dirname):
-        if not os.access(dirname, os.R_OK):
-            return []
+    def ls(self, dirname, cheap_remote_ls=False):
         return sorted(os.listdir(dirname), key=lambda x: os.path.isdir(x))
 
     def parent_dir(self, cwd):
@@ -72,6 +66,9 @@ class FS(object):
         else:
             catlog = 'file'
         return catlog
+
+    def rename(self, src, dst):
+        shutil.move(src, dst)
 
     def mv(self, src, dst):
         shutil.move(src, dst)
@@ -118,148 +115,102 @@ class FS(object):
         return ''.join(rwx)
 
 
-class RcloneFile(object):
-    def __init__(self, lpath, rpath):
-        self.lpath = lpath
-        self.rpath = rpath
-        self.inited = os.path.isfile(lpath)
-
-        if not self.inited:
-            Shell.touch(lpath)
-
-    def lazy_init(self):
-        if self.inited:
-            return
-        self.inited = True
-        self.sync(Rclone.SyncDirection.DOWN)
-
-    def sync(self, direction):
-        src, dst = Rclone.sync_src_dst(self.lpath, self.rpath, direction)
-        Shell.run('rclone copyto "{}" "{}"'.format(src, dst))
-
-
-class RcloneDir(object):
-    def __init__(self, lpath, rpath):
-        Shell.mkdir(lpath)
-        self.lpath = lpath
-
-        self.children = {}
-        self.inited = False
-        self.rpath = rpath
-
-        if type(rpath) is dict:
-            remotes = Shell.run('rclone listremotes').split(':\n')
-            for remote in remotes:
-                if len(remote)==0:
-                    continue
-                root = rpath.get(remote, '')
-                self.children[remote] = RcloneDir(os.path.join(lpath, remote), remote+':'+root)
-            self.inited = True
-
-    def lsd(self):
-        info = Shell.run('rclone lsd "{}" --max-depth 1'.format(self.rpath))
-
-        for line in info.split('\n'):
-            line = line.strip()
-            if len(line)>0:
-                name = line.split()[-1]
-                self.children[name] = RcloneDir(os.path.join(self.lpath, name), os.path.join(self.rpath, name))
-
-    def lsl(self):
-        info = Shell.run('rclone lsl "{}" --max-depth 1'.format(self.rpath))
-
-        for line in info.split('\n'):
-            line = line.strip()
-            if len(line)>0:
-                name = line.split()[-1]
-                self.children[name] = RcloneFile(os.path.join(self.lpath, name), os.path.join(self.rpath, name))
-
-    def lazy_init(self):
-        if self.inited:
-            return
-        self.inited = True
-        self.lsd()
-        self.lsl()
-
-    def sync(self, direction):
-        src, dst = Rclone.sync_src_dst(self.lpath, self.rpath, direction)
-        Shell.run('rclone sync "{}" "{}"'.format(src, dst))
-
-    def refresh_children(self):
-        fs_files = set(Shell.ls(self.lpath))
-        cur_files = set(self.children.keys())
-
-        for name in cur_files.difference(fs_files):
-            del self.children[name]
-
-        for name in fs_files.difference(cur_files):
-            fullpath = os.path.join(self.lpath, name)
-            if os.path.isdir(fullpath):
-                self.children[name] = RcloneDir(fullpath, os.path.join(self.rpath, name))
-            else:
-                self.children[name] = RcloneFile(fullpath, os.path.join(self.rpath, name))
-
-
 class Rclone(FS):
     SyncDirection = Enum('SyncDirection', 'DOWN, UP')
 
-    @classmethod
-    def sync_src_dst(self, lpath, rpath, direction):
+    def sync_src_dst(self, lpath, direction):
+        rpath = self.rpath(lpath)
         if direction == Rclone.SyncDirection.UP:
             return lpath, rpath
         else:
             return rpath, lpath
 
-    @property
-    def has_remote(self):
-        return len(self.root_dir.children)>0
-
-    def __init__(self, root_dir, remote_roots):
+    def __init__(self, root_dir, remote_remap):
         if root_dir[-1] == '/':
             root_dir = root_dir[:-1]
-        super(Rclone, self).rm(root_dir, force=True)
 
+        self.root_dir = root_dir
         self.rplen = len(root_dir)+1
-        self.root_dir = RcloneDir(root_dir, remote_roots)
+        for remote, root in remote_remap.items():
+            if root[-1] != '/':
+                remote_remap[remote] += '/'
+        self.remote_remap = remote_remap
+        Shell.mkdir(root_dir)
+        remotes = set(Shell.run('rclone listremotes').split(':\n'))
+        local_remotes = set(super(Rclone, self).ls(root_dir))
+        for remote in remotes.difference(local_remotes):
+            Shell.mkdir(os.path.join(root_dir, remote))
+        for remote in local_remotes.difference(remotes):
+            super(Rclone, self).rm(os.path.join(root_dir, remote), True)
 
-    def getNode(self, lpath):
-        """
-        Reutrn the RcloneDir/RcloneFile node corresponding to lpath.
-        """
-        curNode = self.root_dir
+        self.has_remote = len(remotes)>0
+        self.ls_time_stamp = {}
 
-        for name in lpath[self.rplen:].split('/'):
-            if len(name) == 0:
-                continue
-            curNode = curNode.children[name]
-        return curNode
+    def isRemotePath(self, lpath):
+        return lpath.startswith(self.root_dir)
 
-    def ls(self, dirname):
-        """
-        Ensure directory entries match remote entries then return local ls result.
-        """
-        self.lazy_init(dirname)
+    def rpath(self, lpath):
+        if not lpath.startswith(self.root_dir):
+            return lpath
+        rpath = lpath[self.rplen:]
+        if '/' not in rpath:
+            rpath += ':/'
+        else:
+            rpath = rpath.replace('/', ':/', 1)
+
+        for remote, root in self.remote_remap.items():
+            if rpath.startswith(remote):
+                rpath = rpath.replace('/', root, 1)
+        return rpath
+
+    def ls(self, dirname, cheap_remote_ls=False):
+        if not cheap_remote_ls and len(dirname) > len(self.root_dir):
+            local_files = set([name for name in Shell.run('ls -p {}'.format(dirname)).split('\n') if len(name)>0])
+            remote_files = set([name for name in Shell.run('rclone lsf "{}"'.format(self.rpath(dirname))).split('\n') if len(name)>0])
+
+            for name in remote_files.difference(local_files):
+                if name[-1] == '/':
+                    Shell.mkdir(os.path.join(dirname, name))
+                else:
+                    Shell.touch(os.path.join(dirname, name))
+
+            for name in local_files.difference(remote_files):
+                log('rclone copyto "{}" "{}"'.format(os.path.join(dirname, name), os.path.join(self.rpath(dirname), name)))
+                Shell.run('rclone copyto "{}" "{}"'.format(os.path.join(dirname, name), os.path.join(self.rpath(dirname), name)))
         return super(Rclone, self).ls(dirname)
 
-    def lazy_init(self, lpath):
-        self.getNode(lpath).lazy_init()
+    def ensure_downloaded(self, lpath):
+        if os.stat(lpath).st_size == 0:
+            src, dst = self.sync_src_dst(lpath, Rclone.SyncDirection.DOWN)
+            Shell.run('rclone copyto "{}" "{}"'.format(src, dst))
+
+    def rename(self, src, dst):
+        Shell.run('rclone moveto "{}" "{}"'.format(self.rpath(src), self.rpath(dst)))
+        super(Rclone, self).rename(src, dst)
+
+    def mv(self, src, dst):
+        # TODO could be more efficient without calling rclone two times
+        self.cp(src, dst)
+        self.rm(src)
+
+    def cp(self, src, dst):
+        Shell.run('rclone copyto "{}" "{}"'.format(self.rpath(src),
+                                                   os.path.join(self.rpath(dst), os.path.basename(src))))
+        super(Rclone, self).cp(src, dst)
+
+    def rm(self, target, force=False):
+        cmd = 'purge' if os.path.isdir(target) else 'delete'
+        Shell.run('rclone {} "{}"'.format(cmd, self.rpath(target)))
+        super(Rclone, self).rm(target, force=True)
 
     def sync(self, lpath, direction):
-        self.getNode(lpath).sync(direction)
+        src, dst = self.sync_src_dst(lpath, direction)
+        Shell.run('rclone sync "{}" "{}"'.format(src, dst))
 
     def parent_dir(self, cwd):
         if len(cwd) == self.rplen-1:
             return cwd
         return os.path.abspath(os.path.join(cwd, os.pardir))
-
-    def refresh_remote(self, lpath):
-        """
-        Sync remote so that remote content is the same as local content. If lpath is a directory, we also need to update its children data structure.
-        """
-        node = self.getNode(lpath)
-        node.sync(Rclone.SyncDirection.UP)
-        if type(node) is RcloneDir:
-            node.refresh_children()
 
     @classmethod
     def valid_or_install(cls, vim):

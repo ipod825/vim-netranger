@@ -31,11 +31,11 @@ def VimErrorMsg(exception):
         msg = exception.output.decode('utf-8')
     else:
         msg = str(exception)
-    vim.command('echohl ErrorMsg | echo "{}" | echohl None '.format(msg.replace('"','\\"')))
+    vim.command('echohl ErrorMsg | unsilent echo "{}" | echohl None '.format(msg.replace('"','\\"')))
 
 
 def VimWarningMsg(msg):
-    vim.command('echohl WarningMsg | echo "{}" | echohl None '.format(msg.replace('"','\\"')))
+    vim.command('unsilent echohl WarningMsg | unsilent echo "{}" | echohl None '.format(msg.replace('"','\\"')))
 
 
 def VimUserInput(hint, default=''):

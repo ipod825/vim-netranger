@@ -47,6 +47,7 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 ### Automatic Update
 1. vim-netranger does not provide any function or key-binding for creating directories, touching new files, etc. The reason is because it's cheap to open a terminal to get this jobs done. However, when the directory content is changed elsewhere, the vim-netranger buffer will be updated when you reenter it.
 2. This applies in general, You can always manipulate directory content manually and expect the vim-nertanger buffer be updated when you reenter it. For example, you could run `:tabe newfile` in a vim-netranger buffer. After writing file with `:w` and switching back to the vim-netranger buffer, you'll see `newfile` there.
+3. It is possible that the mechanism to detect file changes might fail on some remotefs. Hence, the user can still press `r` to force syncing the vim-netranger buffer content to be the same as the file system.
 
 ### Navigation
 1. Press `l` to change directory/open file for the current directory/file under the cursor. A file is opened by rifle if available (see [Rifle](#rifle)). Otherwise, the default behaviour is to open the file in vim by `g:NETROpenCmd`.
@@ -98,13 +99,14 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 2. Press `zh` to (toggle) show hidden files.
 
 ### Remote storage
+__Note__ Due to a bug (see known issue), remote operations haven't been fully tested. You might encounter weird behavior of cp/mv. So please use it with caution.
 1. Run `NETRemoteList` command to open a `vim-netranger` buffer showing all configured remote storage.
 2. If `rclone` is not in your `PATH`, on first time running `NETRemoteList`. It will be automatically downloaded and installed.
-3. Remote files are downloaded on demand and cached in `g:NETRRootDir/remote`. Other than that, it's just like browsing local files.
-4. Run `NETRemotePull` to sync the current directory to be the same as the remote directory. Use this command when remote directory is modified elsewhere.
-5. Netranger does not provide `NETRemotePush` command. When any file in a remote directory is modified. You must reenter that directory to sync remote content to be the same as the local content.
+3. You can navigate to any remote directory just as local directories. Files are downloaded on demand to save bandwidth.
+4. Every time you enter a remote directory, vim-netranger does two things at the background. If a file/directory exists at remote, but not at local, vim-netranger put a placeholder (by touch/mkdir) at local side. On the other hand, if a file/directory exists at local but not at remote, vim-netranger upload the file/directory automatically.
+5. For the case that both remote and local contains the same file, vim-netranger does not do anything automatically. Instead, you need to run `:NETRemotePush` or `:NETRemotePull` to overwrite either the remote or local manually.
+6. Both `:NETRemotePush` and `:NETRemotePull` sync the current directory between remote and local, while the push command overwrites the remote with the local contents and the pull command does the other way around.
 
-__Note__ Remote functions hasn't been fully tested. You might lose your data in current implementation. Use it with caution.
 
 ## Customization
 ### Key mappings:
@@ -155,7 +157,7 @@ $ pip install autopep8
 $ autopep8 --recursive -i --select E128 test/netranger # fix all error no.128
 ~~~
 
-It is highly recommend you avoid these errors when writing them using. I recommend installing `flake8` and adopt the (vim) settings in this [gist](https://gist.github.com/ipod825/fbee70d8bd063f228951cd4b6f38f4df). Note that `flask8` is required:
+It is highly recommend you avoid these errors when writing them using. I recommend installing `flake8` and adopt the (vim) settings in this [gist](https://gist.github.com/ipod825/fbee70d8bd063f228951cd4b6f38f4df). Note that `flake8` is required:
 ~~~{.bash}
-$ pip install flask8
+$ pip install flake8
 ~~~

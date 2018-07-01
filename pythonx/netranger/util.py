@@ -4,6 +4,10 @@ import subprocess
 import sys
 import tempfile
 import _thread as thread
+try:
+    from netranger.Vim import VimErrorMsg as CmdFailLog
+except Exception:
+    CmdFailLog = print
 
 
 def log(*msg):
@@ -55,7 +59,12 @@ class Shell():
 
     @classmethod
     def run(cls, cmd):
-        return subprocess.check_output(cmd, shell=True).decode('utf-8')
+        try:
+            return subprocess.check_output(cmd,
+                                           shell=True,
+                                           stderr=subprocess.STDOUT).decode('utf-8')
+        except subprocess.CalledProcessError as e:
+            CmdFailLog(e)
 
     @classmethod
     def run_async(cls, cmd):
@@ -63,7 +72,7 @@ class Shell():
 
     @classmethod
     def touch(cls, name):
-        Shell.run('touch ' + name)
+        Shell.run('touch "{}"'.format(name))
 
     @classmethod
     def rm(cls, name):

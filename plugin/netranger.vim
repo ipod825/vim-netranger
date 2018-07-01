@@ -37,6 +37,7 @@ endfunc
 
 command! NETRemoteList exec s:pyx 'ranger.NETRemoteList()'
 command! NETRemotePull exec s:pyx 'ranger.NETRemotePull()'
+command! NETRemotePush exec s:pyx 'ranger.NETRemotePush()'
 
 
 let &cpo = s:save_cpo
