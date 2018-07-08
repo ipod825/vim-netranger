@@ -8,7 +8,7 @@ from netranger import default
 from netranger.colortbl import colortbl
 from netranger.ui import BookMarkUI, HelpUI, SortUI, AskUI
 from netranger.rifle import Rifle
-from netranger.Vim import VimVar, VimErrorMsg, VimCurWinWidth
+from netranger.Vim import VimVar, VimErrorMsg, VimCurWinWidth, pbar
 from netranger.enum import Enum
 from collections import defaultdict
 from netranger.config import file_sz_display_wid
@@ -297,12 +297,12 @@ class NetRangerBuf(object):
 
     def createNodes(self, wd, level=0):
         nodes = []
-        for f in self.fs.ls(wd):
+        files = self.fs.ls(wd)
+        for f in pbar(files):
             if self.shouldIgnore(f):
                 continue
             node = self.createNode(wd, f, level)
-            if node:
-                nodes.append(node)
+            nodes.append(node)
         return self.sortNodes(nodes)
 
     def shouldIgnore(self, basename):
