@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 import os
 import fnmatch
+import datetime
 from netranger.fs import FS, Rclone
 from netranger.util import log, Shell
 from netranger import default
@@ -99,11 +100,16 @@ class EntryNode(Node):
 
     @property
     def highlight_content(self):
-        # work around, should think a better idea to access vim
         width = VimCurWinWidth()
-        left = '  '*self.level
-        right = self.size.rjust(file_sz_display_wid+1)
-        return '{}m{}{}{}[0m'.format(self.highlight, left, self.abbrev_name(width-len(left)-len(right)), right).strip()
+        levelPad = '  '*self.level
+        size_info = self.size.rjust(file_sz_display_wid+1)
+
+        left = levelPad
+        right = size_info
+        return '{}m{}{}{}[0m'.format(self.highlight,
+                                      left,
+                                      self.abbrev_name(width-len(left)-len(right)),
+                                      right).strip()
 
     def __init__(self, fullpath, name, fs, level=0):
         self.fullpath = fullpath
@@ -302,7 +308,9 @@ class NetRangerBuf(object):
         meta = ''
         curNode = self.curNode
         if not curNode.isHeader:
-            meta =' {} {} {}'.format(curNode.user, curNode.group, curNode.acl)
+            curNode.re_stat(self.fs)
+            mtime = str(datetime.datetime.fromtimestamp(curNode.stat.st_mtime))[:-7]
+            meta =' {} {} {} {}'.format(curNode.user, curNode.group, mtime, curNode.acl)
         left = self.abbrevcwd(self.winwidth-len(meta)-1)
         self.vim.command("setlocal modifiable")
         self.nodes[0].name = '{} {}'.format(left, meta).strip()
