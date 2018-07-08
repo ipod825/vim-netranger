@@ -283,6 +283,7 @@ class NetRangerBuf(object):
         # In refresh_buf we need to check the mtime of all expanded nodes to see if any content in the buffer is changed. Adding the CWDNode simply means we check the mtime of the wd everytime.
         self.expanded_nodes = set([self.nodes[0]])
         self.winwidth = VimCurWinWidth()
+        self.temp_header_line = 0
         self.render()
 
     def abbrevcwd(self, width):
@@ -309,7 +310,8 @@ class NetRangerBuf(object):
         curNode = self.curNode
         if not curNode.isHeader:
             curNode.re_stat(self.fs)
-            mtime = str(datetime.datetime.fromtimestamp(curNode.stat.st_mtime))[:-7]
+            log(str(datetime.datetime.fromtimestamp(curNode.stat.st_mtime)))
+            mtime = str(datetime.datetime.fromtimestamp(curNode.stat.st_mtime))[:19]
             meta =' {} {} {} {}'.format(curNode.user, curNode.group, mtime, curNode.acl)
         left = self.abbrevcwd(self.winwidth-len(meta)-1)
         self.vim.command("setlocal modifiable")
@@ -502,6 +504,17 @@ class NetRangerBuf(object):
         lineNo = int(self.vim.eval("line('.')")) - 1
         self.setClineNo(lineNo)
         self.set_header_content()
+        self.vim.command("setlocal modifiable")
+        self.vim.current.buffer[self.temp_header_line] = self.nodes[self.temp_header_line].highlight_content
+        first_visible_line = int(self.vim.eval('line("w0")'))-1
+        if first_visible_line > 0:
+            if first_visible_line == int(self.vim.eval("line('.')")) - 1:
+                # keep current line to be 2nd line if current line is 1st line
+                self.vim.command("normal! ")
+                first_visible_line -= 1
+            self.temp_header_line = first_visible_line
+            self.vim.current.buffer[first_visible_line] = self.nodes[0].highlight_content
+        self.vim.command("setlocal nomodifiable")
 
     def moveVimCursor(self, lineNo):
         """
