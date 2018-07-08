@@ -58,7 +58,7 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 6. Press `t` to open current file/directory in a new tab.
 7. Press `T` to open current file/directory in a new tab while staying in the current window.
 8. Press `a` to select a program to open the current file via rifle (see [Rifle](#rifle))
-9. Press `<Space>` to toggle expand current directory under cursor.
+9. Press `za` to toggle expand current directory under cursor.
 10. Press `<Cr>` to set vim's cwd to the directory of the file under cursor (also applies to the first line, i.e. the current directory). This is very useful if you've expanded a directory and want to open an nvim terminal to run a script in the subdirectory.
 
 ### File Rename

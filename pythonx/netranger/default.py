@@ -11,7 +11,7 @@ keymap = {
     'NETRBufVSplitOpen': (['ev'], 'Open file in new vertical split buffer.'),
     'NETRBufHSplitOpen': (['eo'], 'Open file in new horizontal split buffer.'),
     'NETRAskOpen': (['a'], 'Open file with rifle. Ask for command'),
-    'NETRToggleExpand': (['<space>', 'o'], "Toggle expand current directory under cursor"),
+    'NETRToggleExpand': (['za'], "Toggle expand current directory under cursor"),
     'NETRVimCD': (['<cr>'], "Changing vim's pwd to the directory of the entry under cursor"),
     'NETREdit': (['i'], "Enter edit mode to rename file/directory names"),
     'NETRSave': (['<esc>'], "Leave edit mode to save changes made in edit mode"),
