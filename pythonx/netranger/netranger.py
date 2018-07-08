@@ -872,6 +872,7 @@ class Netranger(object):
                 VimErrorMsg('Permission Denied: {}'.format(curNode.name))
                 return
             self.vim.command('silent {} {}'.format(open_cmd, fullpath))
+            # manually call on_bufenter as vim might not trigger BufEnter with the above command
             self.on_bufenter(self.vim.eval("winnr()"))
         else:
             if self.rclone is not None and self.isRemotePath(fullpath):
@@ -925,6 +926,7 @@ class Netranger(object):
             return
         pdir = self.fs.parent_dir(cwd)
         self.vim.command('silent edit {}'.format(pdir))
+        # manually call on_bufenter as vim might not trigger BufEnter with the above command
         self.on_bufenter(self.vim.eval("winnr()"))
         curBuf = self.curBuf
         curBuf.setClineNoByPath(cwd)
