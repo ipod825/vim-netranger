@@ -21,7 +21,7 @@ log('')
 
 class Node(object):
     """
-    General node. Could be header node or content node.
+    General node. Inherited by header nodes or entry nodes.
     """
     State = Enum('NodeState', 'NORMAL, PICKED, UNDEROP')
     ToggleOpRes = Enum('NodeToggleOpRes', 'INVALID, ON, OFF')
@@ -47,11 +47,11 @@ class Node(object):
 
     @property
     def isDir(self):
-        return type(self) is DirNode
+        return False
 
     @property
     def isHeader(self):
-        return type(self) is Node
+        return False
 
     def cursor_on(self):
         pass
@@ -61,6 +61,19 @@ class Node(object):
 
     def toggle_pick(self):
         return Node.ToggleOpRes.INVALID
+
+
+class CWDNode(Node):
+    def __init__(self, fullpath):
+        super(CWDNode, self).__init__(fullpath, Shell.abbrevuser(fullpath), default.color['cwd'], level=0)
+        self.re_stat()
+
+    def re_stat(self, fs=None):
+        self.stat = os.stat(self.fullpath)
+
+    @property
+    def isHeader(self):
+        return True
 
 
 class EntryNode(Node):
@@ -201,6 +214,10 @@ class DirNode(EntryNode):
         self.expanded = False
         super(DirNode, self).__init__(fullpath, name, fs, level)
 
+    @property
+    def isDir(self):
+        return True
+
 
 class NetRangerBuf(object):
     """
@@ -254,14 +271,11 @@ class NetRangerBuf(object):
         self.vim.command('silent file N:{}'.format(os.path.basename(wd)))
         self.vim.command('lcd ' + wd)
 
-        self.nodes = self.createNodes(self.wd)
-        self.nodes.insert(0, Node(wd, Shell.abbrevuser(wd), default.color['cwd']))
+        self.nodes = [CWDNode(wd)] + self.createNodes(self.wd)
         self.clineNo = self.first_content_lineNo
         self.nodes[self.clineNo].cursor_on()
-        # TODO mtime should be just recorded in Entry nodes and updated
-        # in refresh_nodes. As we plan to always show mtime of files
-        self.mtime = defaultdict(None)
-        self.mtime[wd] = fs.mtime(wd)
+        # In refresh_buf we need to check the mtime of all expanded nodes to see if any content in the buffer is changed. Adding the CWDNode simply means we check the mtime of the wd everytime.
+        self.expanded_nodes = set([self.nodes[0]])
         self.winwidth = VimCurWinWidth()
         self.render()
 
@@ -335,14 +349,13 @@ class NetRangerBuf(object):
         2. For each file/directory in the file system, including those in expanded directories, if no current node corresponds to it, add a new node to the node list so that it will be visible next time.
         3. For each current node, including nodes in expanded directories, if no files/directories corresponds to it or it should be ignore, remove it from the node list so that it will be invisible next time.
         """
-        for path in self.mtime:
-            try:
-                new_mtime = self.fs.mtime(path)
-                if new_mtime > self.mtime[path]:
+        for node in self.expanded_nodes:
+            if os.access(node.fullpath, os.R_OK):
+                ori_mtime = node.stat.st_mtime
+                node.re_stat(self.fs)
+                new_mtime = node.stat.st_mtime
+                if new_mtime > ori_mtime:
                     self.content_outdated = True
-                    self.mtime[path] = new_mtime
-            except IOError:
-                pass
 
         if not self.content_outdated:
             return
@@ -555,11 +568,11 @@ class NetRangerBuf(object):
         if not curNode.isDir:
             return
         if curNode.expanded:
-            del self.mtime[curNode.fullpath]
+            self.expanded_nodes.remove(curNode)
             endInd = self.next_lesseq_level_ind(self.clineNo)
             self.nodes = self.nodes[:self.clineNo+1] + self.nodes[endInd:]
         else:
-            self.mtime[curNode.fullpath] = self.fs.mtime(curNode.fullpath)
+            self.expanded_nodes.add(curNode)
             newNodes = self.createNodes(self.curNode.fullpath, curNode.level+1)
             if len(newNodes)>0:
                 self.nodes = self.nodes[:self.clineNo+1] + newNodes + self.nodes[self.clineNo+1:]
@@ -584,9 +597,9 @@ class NetRangerBuf(object):
             line = vimBuf[i].strip()
             if not self.nodes[i].isHeader and line != self.nodes[i].name:
 
-                if self.nodes[i].name in self.mtime:
-                    self.mtime[line] = self.mtime[self.nodes[i].name]
-                    del self.mtime[self.nodes[i].name]
+                # if self.nodes[i].name in self.mtime:
+                #     self.mtime[line] = self.mtime[self.nodes[i].name]
+                #     del self.mtime[self.nodes[i].name]
 
                 # change name of the i'th node
                 oripath = self.nodes[i].rename(line)

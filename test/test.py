@@ -168,7 +168,7 @@ def test_navigation():
     assert_content('dir2', ind=4, hi='dir')
 
     nvim.input(' j<Cr>')
-    assert os.path.basename(nvim.command_output('pwd')) == 'dir2'
+    assert os.path.basename(nvim.command_output('pwd')) == 'dir2', os.path.basename(nvim.command_output('pwd'))
     nvim.input('k 3j<Cr>')
     assert os.path.basename(nvim.command_output('pwd')) == 'dir'
 
