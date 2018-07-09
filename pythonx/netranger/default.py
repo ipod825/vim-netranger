@@ -58,6 +58,7 @@ variables = {
     'NETRemoteCacheDir': remote_cache_dir,
     'NETRemoteRoots': {test_remote_name: test_remote_dir},
     'NETRSplitOrientation': 'belowright',
+    'NETRColors': {},
 }
 
 internal_variables = {

@@ -125,6 +125,26 @@ let g:NETRBookmarkGo = ["m"]
 | g:NETRRootDir | Directory for storing remote cache and bookmark file      | ['$HOME/.netranger/'] |
 | g:NETROpenCmd | Vim command to open files from netranger buffer           | 'tab drop'            |
 | g:NETRSplitOrientation | Split orientation when a split buffer is created | 'belowright'          |
+| g:NETRColors  | Colors for nodes in vim-netranger buffer. See below.      | {}                    |
+
+### Colors
+1. Set `g:NETRColors` to a dictionary to overwrite the default colors. Possible keys are:
+```
+'cwd': the first line
+'pick': node color after pressing `v`
+'copy': node color after pressing `yy`
+'cut': node color after pressing `dd`
+'exe': executable file node color
+'dir': directory node color
+'link': link node color
+'brokenlink': link node color
+'file': file node color
+```
+2. Values can be either string or integer between 0~255. Please refer to [https://jonasjacek.github.io/colors/](https://jonasjacek.github.io/colors/). For example, in your `.vimrc`:
+```
+let g:NETRColors = {'pick': 'maroon', 'cut': 95}
+```
+
 
 ## Known Issues
 1. In neovim, when opening two vim buffers for the same directory, there is a delay for moving cursor up and down. This seems to be an nvim api [issue](https://github.com/neovim/neovim/issues/7756)

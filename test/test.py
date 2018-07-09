@@ -11,6 +11,13 @@ from neovim import attach
 from netranger.config import test_dir, test_local_dir, test_remote_dir, test_remote_name, test_remote_cache_dir
 
 
+def color_str(hi_key):
+    hi = default.color[hi_key]
+    if type(hi) is str:
+        hi = colortbl[hi]
+    return str(hi)
+
+
 def assert_content(expected, level=0, ind=None, hi=None):
     if ind is None:
         line = nvim.current.line
@@ -23,7 +30,7 @@ def assert_content(expected, level=0, ind=None, hi=None):
     assert m.group(3) == '  '*level, "level mismatch:expected:{}, real:{}".format('"{}"'.format('  '*level), '"{}"'.format(m.group(3)))
 
     if hi is not None:
-        expected_hi = str(colortbl[default.color[hi]])
+        expected_hi = color_str(hi)
         assert m.group(1) == expected_hi, 'expected_hi: "{}", real_hi: "{}"'.format(expected_hi, m.group(1))
 
     cLineNo = nvim.eval("line('.')") - 1
@@ -41,7 +48,7 @@ def assert_highlight(expected, ind=None):
         line = nvim.current.buffer[ind]
 
     m = re.search('\[38;5;([0-9]+)(;7)?m', line)
-    expected = str(colortbl[default.color[expected]])
+    expected = color_str(expected)
     assert m.group(1) == expected, 'expected: "{}", real: "{}"'.format(expected, m.group(1))
     if ind == nvim.current.buffer.number:
         assert m.group(2) is not None
@@ -491,6 +498,7 @@ if __name__ == '__main__':
         nvim = attach('socket', path=os.path.join(tempfile.gettempdir(), 'netrangertest'))
         ori_timeoutlen = nvim.options['timeoutlen']
         nvim.options['timeoutlen'] = 1
+        default.color.update(nvim.vars['NETRColors'])
 
         do_test(test_navigation)
         do_test(test_edit)

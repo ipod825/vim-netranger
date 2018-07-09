@@ -310,7 +310,6 @@ class NetRangerBuf(object):
         curNode = self.curNode
         if not curNode.isHeader:
             curNode.re_stat(self.fs)
-            log(str(datetime.datetime.fromtimestamp(curNode.stat.st_mtime)))
             mtime = str(datetime.datetime.fromtimestamp(curNode.stat.st_mtime))[:19]
             meta =' {} {} {} {}'.format(curNode.user, curNode.group, mtime, curNode.acl)
         left = self.abbrevcwd(self.winwidth-len(meta)-1)
@@ -715,10 +714,25 @@ class Netranger(object):
         for k, v in default.variables.items():
             if k not in self.vim.vars:
                 self.vim.vars[k] = v
+        self.reset_default_colors()
 
         for k,v in default.internal_variables.items():
             if k not in self.vim.vars:
                 self.vim.vars[k] = v
+
+    def reset_default_colors(self):
+        for name, color in VimVar('NETRColors').items():
+            if name not in default.color:
+                VimErrorMsg('netranger: {} is not a valid NETRColors key!')
+                continue
+            if type(color) is int and (color<0 or color>255):
+                VimErrorMsg('netranger: Color value should be within 0~255')
+                continue
+            elif type(color) is str and color not in colortbl:
+                VimErrorMsg('netranger: {} is not a valid color name!')
+                continue
+
+            default.color[name] = color
 
     def initKeymaps(self):
         """
