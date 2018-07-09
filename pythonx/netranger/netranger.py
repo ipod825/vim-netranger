@@ -13,8 +13,13 @@ from netranger.Vim import VimVar, VimErrorMsg, VimCurWinWidth, pbar
 from netranger.enum import Enum
 from collections import defaultdict
 from netranger.config import file_sz_display_wid
-import pwd
-import grp
+
+from sys import platform
+if platform == "win32":
+    from os import getenv
+else:
+    import pwd
+    import grp
 
 
 log('')
@@ -137,8 +142,12 @@ class EntryNode(Node):
 
             self.acl = fs.acl_str(self.stat)
             try:
-                self.user = pwd.getpwuid(self.stat.st_uid)[0]
-                self.group = grp.getgrgid(self.stat.st_gid)[0]
+                if platform == "win32":
+                    self.user = getenv("USERNAME")
+                    self.group = getenv("USERDOMAIN")
+                else:
+                    self.user = pwd.getpwuid(self.stat.st_uid)[0]
+                    self.group = grp.getgrgid(self.stat.st_gid)[0]
             except KeyError:
                 self.user = self.stat.st_uid
                 self.group = self.stat.st_gid
