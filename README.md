@@ -144,6 +144,10 @@ let g:NETRBookmarkGo = ["m"]
 ```
 let g:NETRColors = {'pick': 'maroon', 'cut': 95}
 ```
+3. Or you could add the following to your shell rc and run `palette` to see directly how the colors look in your terminal:
+```sh
+alias palette='for i in {0..255}; do echo -e "\e[38;05;${i}m${i}"; done | column -c 180 -s "  "; echo -e "\e[m"'
+```
 
 
 ## Known Issues
