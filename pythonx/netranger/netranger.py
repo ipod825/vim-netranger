@@ -509,10 +509,17 @@ class NetRangerBuf(object):
         """
         Remember the current line no. and refresh the highlight of the current line no.
         """
+        log('on_cursormoved')
         lineNo = int(self.vim.eval("line('.')")) - 1
         self.setClineNo(lineNo)
         self.set_header_content()
         self.vim.command("setlocal modifiable")
+
+        # Afer the number of nodes decrease (e.g. toggle show hidden), temp_header_line
+        # might exceeds total number of line. In such case, reset it to 0.
+        if self.temp_header_line >= len(self.nodes):
+            self.temp_header_line = 0
+
         self.vim.current.buffer[self.temp_header_line] = self.nodes[self.temp_header_line].highlight_content
         first_visible_line = int(self.vim.eval('line("w0")'))-1
         if first_visible_line > 0:
