@@ -293,6 +293,7 @@ class NetRangerBuf(object):
         self.expanded_nodes = set([self.nodes[0]])
         self.winwidth = VimCurWinWidth()
         self.temp_header_line = 0
+        self.is_editing = False
         self.render()
 
     def abbrevcwd(self, width):
@@ -509,6 +510,8 @@ class NetRangerBuf(object):
         """
         Remember the current line no. and refresh the highlight of the current line no.
         """
+        if self.is_editing:
+            return
         lineNo = int(self.vim.eval("line('.')")) - 1
         self.setClineNo(lineNo)
         self.set_header_content()
@@ -614,15 +617,26 @@ class NetRangerBuf(object):
         curNode.expanded = not curNode.expanded
         self.render()
 
+    def Edit(self):
+        self.is_editing = True
+        self.render(plain=True)
+        self.vim.command('setlocal modifiable')
+        self.vim.command('setlocal wrap')
+
     def Save(self):
         """
         Rename the files according to current buffer content.
+        Retur false if called but is_editing is false. Otherwise return true.
         """
+        if not self.is_editing:
+            return False
+        self.is_editing = False
+
         vimBuf = self.vim.current.buffer
         if len(self.nodes) != len(vimBuf):
             VimErrorMsg('Edit mode can not add/delete files!')
             self.render()
-            return
+            return True
 
         oriNode = self.curNode
 
@@ -631,10 +645,6 @@ class NetRangerBuf(object):
         for i in range(len(vimBuf)):
             line = vimBuf[i].strip()
             if not self.nodes[i].isHeader and line != self.nodes[i].name:
-
-                # if self.nodes[i].name in self.mtime:
-                #     self.mtime[line] = self.mtime[self.nodes[i].name]
-                #     del self.mtime[self.nodes[i].name]
 
                 # change name of the i'th node
                 oripath = self.nodes[i].rename(line)
@@ -652,6 +662,9 @@ class NetRangerBuf(object):
         self.nodes = self.sortNodes(self.nodes)
         self.render()
         self.setClineNoByNode(oriNode)
+        self.vim.command('setlocal nowrap')
+        self.vim.command('setlocal nomodifiable')
+        return True
 
     def Cut(self, nodes):
         for node in nodes:
@@ -702,7 +715,6 @@ class Netranger(object):
         self.inited = False
         self.bufs = {}
         self.wd2bufnum = {}
-        self.isEditing = False
         self.pinnedRoots = set()
         self.picked_nodes = defaultdict(set)
         self.cut_nodes, self.copied_nodes= defaultdict(set), defaultdict(set)
@@ -868,8 +880,6 @@ class Netranger(object):
         @param bufnum: current buffer number
         """
         if bufnum in self.bufs:
-            if self.isEditing:
-                return
             self.bufs[bufnum].on_cursormoved()
 
     def pend_onuiquit(self, fn, numArgs=0):
@@ -969,28 +979,20 @@ class Netranger(object):
         else:
             self.vim.command('silent lcd {}'.format(os.path.dirname(curName)))
 
+    def NETRToggleExpand(self):
+        self.curBuf.ToggleExpand()
+
     def NETREdit(self):
-        self.isEditing = True
         for fn, keys in self.keymaps.items():
             if fn == 'NETRSave':
                 continue
             for k in keys:
                 self.vim.command("nunmap <silent> <buffer> {}".format(k))
-        self.curBuf.render(plain=True)
-        self.vim.command('setlocal modifiable')
-        self.vim.command('setlocal wrap')
-
-    def NETRToggleExpand(self):
-        self.curBuf.ToggleExpand()
+        self.curBuf.Edit()
 
     def NETRSave(self):
-        if not self.isEditing:
-            return
-        self.curBuf.Save()
-        self.map_keys()
-        self.isEditing = False
-        self.vim.command('setlocal nowrap')
-        self.vim.command('setlocal nomodifiable')
+        if self.curBuf.Save():
+            self.map_keys()
 
     def NETRTogglePinRoot(self):
         cwd = self.cwd
