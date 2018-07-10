@@ -509,7 +509,6 @@ class NetRangerBuf(object):
         """
         Remember the current line no. and refresh the highlight of the current line no.
         """
-        log('on_cursormoved')
         lineNo = int(self.vim.eval("line('.')")) - 1
         self.setClineNo(lineNo)
         self.set_header_content()
