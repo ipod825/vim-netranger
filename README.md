@@ -97,7 +97,7 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 
 
 ### Panel Mode
-NERDTrre enables users to have a single panel on the left side that always open files on the right side when pressing enter. vim-netranger provides a similar functionality. In a vim-netranger buffer, press `ep` to open the file under cursor on the right. The size of the right panel can be customized by the `g:NETRPanelSize`, which is the ratio between the actual size of the right panel to half of the screen width (e.g. setting it to `1` you'll get a equal split.)
+NERDTree enables users to have a single panel on the left side that always open files on the right side when pressing enter. vim-netranger provides a similar functionality. In a vim-netranger buffer, press `ep` to open the file under cursor on the right. The size of the right panel can be customized by the `g:NETRPanelSize`, which is the ratio between the actual size of the right panel to half of the screen width (e.g. setting it to `1` you'll get a equal split.)
 
 ### Misc
 1. Press `zp` to (toggle) pin current directory as the project root, which means you can't use `h` to jump to the parent directory. I think it might be useful when developing a project.
