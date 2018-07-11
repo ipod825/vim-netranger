@@ -4,7 +4,7 @@ import os
 import fnmatch
 import datetime
 from netranger.fs import FS, Rclone
-from netranger.util import log, Shell
+from netranger.util import log, Shell, c256
 from netranger import default
 from netranger.colortbl import colortbl
 from netranger.ui import BookMarkUI, HelpUI, SortUI, AskUI
@@ -13,6 +13,7 @@ from netranger.Vim import VimVar, VimErrorMsg, VimCurWinWidth, pbar
 from netranger.enum import Enum
 from collections import defaultdict
 from netranger.config import file_sz_display_wid
+from netranger.hooker import Hookers, has_hooker
 
 from sys import platform
 if platform == "win32":
@@ -38,18 +39,16 @@ class Node(object):
         self.set_highlight(highlight)
         self.level = level
         self.state = Node.State.NORMAL
+        self.is_cursor_on = False
 
-    def set_highlight(self, highlight, cursor_on=False):
+    def set_highlight(self, highlight):
         if type(highlight) is str:
             highlight = colortbl[highlight]
-        if cursor_on:
-            self.highlight = '[38;5;{};7'.format(highlight)
-        else:
-            self.highlight = '[38;5;{}'.format(highlight)
+        self.highlight = highlight
 
     @property
     def highlight_content(self):
-        return '{}m{}[0m'.format(self.highlight, self.name)
+        return c256(self.name, self.highlight, self.is_cursor_on)
 
     @property
     def isDir(self):
@@ -60,10 +59,10 @@ class Node(object):
         return False
 
     def cursor_on(self):
-        pass
+        self.is_cursor_on = True
 
     def cursor_off(self):
-        pass
+        self.is_cursor_on = False
 
     def toggle_pick(self):
         return Node.ToggleOpRes.INVALID
@@ -76,6 +75,10 @@ class CWDNode(Node):
 
     def re_stat(self, fs=None):
         self.stat = os.stat(self.fullpath)
+
+    @property
+    def highlight_content(self):
+        return c256(self.name, self.highlight, False)
 
     @property
     def isHeader(self):
@@ -111,10 +114,32 @@ class EntryNode(Node):
 
         left = levelPad
         right = size_info
-        return '{}m{}{}{}[0m'.format(self.highlight,
-                                      left,
-                                      self.abbrev_name(width-len(left)-len(right)),
-                                      right).strip()
+
+        def c(msg):
+            return c256(msg, self.highlight, self.is_cursor_on)
+
+        if has_hooker('node_highlight_content_l', 'node_highlight_content_r'):
+            left_extra = ''
+            left_extra_len = 0
+            for hooker in Hookers['node_highlight_content_l']:
+                l_s, l_h = hooker(self)
+                left_extra_len += len(l_s)
+                left_extra += c256(l_s, l_h, False)
+
+            right_extra = ''
+            right_extra_len = 0
+            for hooker in Hookers['node_highlight_content_r']:
+                r_s, r_h = hooker(self)
+                right_extra_len += len(r_s)
+                right_extra += c256(r_s, r_h, False)
+
+            return c(left) +\
+                left_extra +\
+                c(self.abbrev_name(width-len(left)-len(right)-left_extra_len-right_extra_len)) +\
+                c(right) +\
+                right_extra
+        else:
+            return c('{}{}{}'.format(left, self.abbrev_name(width-len(left)-len(right)), right))
 
     def __init__(self, fullpath, name, fs, level=0):
         self.fullpath = fullpath
@@ -170,18 +195,6 @@ class EntryNode(Node):
         else:
             return default.color['file']
 
-    def cursor_on(self):
-        hiArr = self.highlight.split(';')
-        if len(hiArr) == 3:
-            hiArr.append('7')
-            self.highlight = ';'.join(hiArr)
-
-    def cursor_off(self):
-        hiArr = self.highlight.split(';')
-        if len(hiArr) == 4:
-            hiArr = hiArr[:-1]
-            self.highlight = ';'.join(hiArr)
-
     def rename(self, name):
         ori = self.fullpath
         dirname = os.path.dirname(self.fullpath)
@@ -195,7 +208,7 @@ class EntryNode(Node):
     def toggle_pick(self):
         if self.state == Node.State.NORMAL:
             self.state = Node.State.PICKED
-            self.set_highlight(default.color['pick'], cursor_on=True)
+            self.set_highlight(default.color['pick'])
             return Node.ToggleOpRes.ON
         elif self.state == Node.State.PICKED:
             self.state = Node.State.NORMAL

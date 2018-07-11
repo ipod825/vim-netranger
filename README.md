@@ -156,9 +156,22 @@ alias palette='for i in {0..255}; do echo -e "\e[38;05;${i}m${i}"; done | column
 ```
 
 
+### Writing plugin for vim-netranger
+vim-netranger will expose some api so that users can write (python) code to customize the appearance of vim-netranger. An example plugin is [netranger-diricon](https://github.com/ipod825/netranger-diricon), which shows a small icon indicating whether a directory is expanded or not. Generally, in you `plugin/YOURPLUGIN.vim` file, you'll have the following boilplate code:
+```vim
+let s:pyx = 'python3 '
+exec s:pyx 'from netranger.hooker import RegisterHooker'
+exec s:pyx 'from YOURPLUGIN.YOURPLUGIN import node_highlight_content_l'
+exec s:pyx 'RegisterHooker(node_highlight_content_l)'
+```
+Your registered function name must be a valid vim-netranger api.
+
+
 ## Known Issues
 1. In neovim, when opening two vim buffers for the same directory, there is a delay for moving cursor up and down. This seems to be an nvim api [issue](https://github.com/neovim/neovim/issues/7756)
 2. When remote directory is empty, it will not be copied to remote. It is an rclone [bug] (https://github.com/ncw/rclone/issues/1837), which is expected to be fixed in next release.
+
+
 
 
 ## Contributing

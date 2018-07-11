@@ -114,3 +114,10 @@ class Shell():
         hstream = urllib.urlopen(url)
         with open(dst, 'wb') as f:
             f.write(hstream.read())
+
+
+def c256(msg, c, background):
+    if background:
+        return '[38;5;{};7m{}[0m'.format(c, msg)
+    else:
+        return '[38;5;{}m{}[0m'.format(c, msg)
