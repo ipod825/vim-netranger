@@ -951,6 +951,19 @@ class Netranger(object):
     def NETRBufHSplitOpen(self):
         self.NETROpen(VimVar('NETRSplitOrientation') + ' split', use_rifle=False)
 
+    def NETRBufPanelOpen(self):
+        if self.curNode.isDir:
+            return
+
+        if len(self.vim.current.tabpage.windows) == 1:
+            self.NETROpen(VimVar('NETRSplitOrientation') + ' vsplit', use_rifle=False)
+            newsize = VimCurWinWidth()*VimVar('NETRPanelSize')
+            self.vim.command('vertical resize {}'.format(newsize))
+        else:
+            fpath = self.curNode.fullpath
+            self.vim.command('wincmd l')
+            self.vim.command('edit {}'.format(fpath))
+
     def NETRAskOpen(self):
         fullpath = self.curNode.fullpath
         if self.askUI is None:

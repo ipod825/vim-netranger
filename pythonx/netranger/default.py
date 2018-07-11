@@ -10,6 +10,7 @@ keymap = {
     'NETRBufOpen': (['e'], 'Open file in current window.'),
     'NETRBufVSplitOpen': (['ev'], 'Open file in new vertical split buffer.'),
     'NETRBufHSplitOpen': (['eo'], 'Open file in new horizontal split buffer.'),
+    'NETRBufPanelOpen': (['ep'], 'Open file in new vertical split buffer (panel mode).'),
     'NETRAskOpen': (['a'], 'Open file with rifle. Ask for command'),
     'NETRToggleExpand': (['za'], "Toggle expand current directory under cursor"),
     'NETRVimCD': (['<cr>'], "Changing vim's pwd to the directory of the entry under cursor"),
@@ -58,6 +59,7 @@ variables = {
     'NETRemoteCacheDir': remote_cache_dir,
     'NETRemoteRoots': {test_remote_name: test_remote_dir},
     'NETRSplitOrientation': 'belowright',
+    'NETRPanelSize': 1.5,
     'NETRColors': {},
 }
 

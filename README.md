@@ -55,11 +55,12 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 3. Press `e` to open current file/directory in the current window.
 4. Press `ev` to open current file/directory in a vertical split buffer.
 5. Press `eo` to open current file/directory in a horizontal split buffer.
-6. Press `t` to open current file/directory in a new tab.
-7. Press `T` to open current file/directory in a new tab while staying in the current window.
-8. Press `a` to select a program to open the current file via rifle (see [Rifle](#rifle))
-9. Press `za` to toggle expand current directory under cursor (`za` in vim is used to fold/unfold code).
-10. Press `<Cr>` to set vim's cwd to the directory of the file under cursor (also applies to the first line, i.e. the current directory). This is very useful if you've expanded a directory and want to open an nvim terminal to run a script in the subdirectory.
+6. Press `ep` to open current file/directory in a vertical split buffer in [panel mode](#panel_mode) (in resemblance to NERDTreeToggle command).
+7. Press `t` to open current file/directory in a new tab.
+8. Press `T` to open current file/directory in a new tab while staying in the current window.
+9. Press `a` to select a program to open the current file via rifle (see [Rifle](#rifle))
+10. Press `za` to toggle expand current directory under cursor (`za` in vim is used to fold/unfold code).
+11. Press `<Cr>` to set vim's cwd to the directory of the file under cursor (also applies to the first line, i.e. the current directory). This is very useful if you've expanded a directory and want to open an nvim terminal to run a script in the subdirectory.
 
 ### File Rename
 1. Press `i` to enter edit mode. You can freely modify any file/directory name in this mode. Note that after pressing `i`, you are in normal mode, you need to press `i` again to enter insert mode.
@@ -94,6 +95,10 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 ### Sort
 1. Press `S` to sort.
 
+
+### Panel Mode
+NERDTrre enables users to have a single panel on the left side that always open files on the right side when pressing enter. vim-netranger provides a similar functionality. In a vim-netranger buffer, press `ep` to open the file under cursor on the right. The size of the right panel can be customized by the `g:NETRPanelSize`, which is the ratio between the actual size of the right panel to half of the screen width (e.g. setting it to `1` you'll get a equal split.) 
+
 ### Misc
 1. Press `zp` to (toggle) pin current directory as the project root, which means you can't use `h` to jump to the parent directory. I think it might be useful when developing a project.
 2. Press `zh` to (toggle) show hidden files.
@@ -126,6 +131,7 @@ let g:NETRBookmarkGo = ["m"]
 | g:NETROpenCmd | Vim command to open files from netranger buffer           | 'tab drop'            |
 | g:NETRSplitOrientation | Split orientation when a split buffer is created | 'belowright'          |
 | g:NETRColors  | Colors for nodes in vim-netranger buffer. See below.      | {}                    |
+| g:NETRPanelSize| Controls the size of split in [panel mode](#panel_mode). | 1.5                   |
 
 ### Colors
 1. Set `g:NETRColors` to a dictionary to overwrite the default colors. Possible keys are:
