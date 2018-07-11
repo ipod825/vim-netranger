@@ -55,7 +55,7 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 3. Press `e` to open current file/directory in the current window.
 4. Press `ev` to open current file/directory in a vertical split buffer.
 5. Press `eo` to open current file/directory in a horizontal split buffer.
-6. Press `ep` to open current file/directory in a vertical split buffer in [panel mode](#panel_mode) (in resemblance to NERDTreeToggle command).
+6. Press `ep` to open current file/directory in a vertical split buffer in [panel mode](#panel-mode) (in resemblance to NERDTreeToggle command).
 7. Press `t` to open current file/directory in a new tab.
 8. Press `T` to open current file/directory in a new tab while staying in the current window.
 9. Press `a` to select a program to open the current file via rifle (see [Rifle](#rifle))
@@ -97,7 +97,7 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 
 
 ### Panel Mode
-NERDTrre enables users to have a single panel on the left side that always open files on the right side when pressing enter. vim-netranger provides a similar functionality. In a vim-netranger buffer, press `ep` to open the file under cursor on the right. The size of the right panel can be customized by the `g:NETRPanelSize`, which is the ratio between the actual size of the right panel to half of the screen width (e.g. setting it to `1` you'll get a equal split.) 
+NERDTrre enables users to have a single panel on the left side that always open files on the right side when pressing enter. vim-netranger provides a similar functionality. In a vim-netranger buffer, press `ep` to open the file under cursor on the right. The size of the right panel can be customized by the `g:NETRPanelSize`, which is the ratio between the actual size of the right panel to half of the screen width (e.g. setting it to `1` you'll get a equal split.)
 
 ### Misc
 1. Press `zp` to (toggle) pin current directory as the project root, which means you can't use `h` to jump to the parent directory. I think it might be useful when developing a project.
@@ -131,7 +131,7 @@ let g:NETRBookmarkGo = ["m"]
 | g:NETROpenCmd | Vim command to open files from netranger buffer           | 'tab drop'            |
 | g:NETRSplitOrientation | Split orientation when a split buffer is created | 'belowright'          |
 | g:NETRColors  | Colors for nodes in vim-netranger buffer. See below.      | {}                    |
-| g:NETRPanelSize| Controls the size of split in [panel mode](#panel_mode). | 1.5                   |
+| g:NETRPanelSize| Controls the size of split in [panel mode](#panel-mode). | 1.5                   |
 
 ### Colors
 1. Set `g:NETRColors` to a dictionary to overwrite the default colors. Possible keys are:
