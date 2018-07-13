@@ -146,7 +146,7 @@ let g:NETRBookmarkGo = ["m"]
 'brokenlink': link node color
 'file': file node color
 ```
-2. Values can be either string or integer between 0~255. Please refer to [https://jonasjacek.github.io/colors/](https://jonasjacek.github.io/colors/). For example, in your `.vimrc`:
+2. Values can be either string or integer between 0~255. Please refer to [this page](https://jonasjacek.github.io/colors/). For example, in your `.vimrc`:
 ```
 let g:NETRColors = {'pick': 'maroon', 'cut': 95}
 ```
@@ -157,14 +157,21 @@ alias palette='for i in {0..255}; do echo -e "\e[38;05;${i}m${i}"; done | column
 
 
 ### Writing plugin for vim-netranger
-vim-netranger will expose some api so that users can write (python) code to customize the appearance of vim-netranger. An example plugin is [netranger-diricon](https://github.com/ipod825/netranger-diricon), which shows a small icon indicating whether a directory is expanded or not. Generally, in you `plugin/YOURPLUGIN.vim` file, you'll have the following boilplate code:
+vim-netranger will expose some api so that users can write (python) code to customize the appearance of vim-netranger. An example plugin is [netranger-diricon](https://github.com/ipod825/netranger-diricon), which shows a small icon indicating whether a directory is expanded or not. Generally, in your `plugin/YOURPLUGIN.vim` file, you'll have the following boilplate code:
 ```vim
 let s:pyx = 'python3 '
-exec s:pyx 'from netranger.hooker import RegisterHooker'
-exec s:pyx 'from YOURPLUGIN.YOURPLUGIN import node_highlight_content_l'
-exec s:pyx 'RegisterHooker(node_highlight_content_l)'
+exec s:pyx 'from netranger.api import RegisterHooker'
+exec s:pyx 'from netranger.api import NETRApi'
+exec s:pyx 'from netrangerPlugin.netrangerPlugin import NETRPlugin'
+exec s:pyx 'netrPlugin = NETRPlugin(NETRApi)'
+exec s:pyx 'RegisterHooker(netrPlugin.node_highlight_content_l)'
 ```
-Your registered function name must be a valid vim-netranger api.
+In your `pythonx/netrangerPlugin/netrangerPlugin.py` (you should change netrangerPlugin to a different name), you should implemnt a `NETRPlugin` class (again, change it to proper name), whose constructor has the following signature: 
+```py
+def __init__(self, api):
+    pass
+```
+The api argument passed to you give you access to netranger internal. See `api.py` in vim-netranger repo for newest api.  Your can then register some hookers to control the behavior of vim-netrange. Hookers function name must be a valid vim-netranger hooker name.
 
 
 ## Known Issues

@@ -13,7 +13,7 @@ from netranger.Vim import VimVar, VimErrorMsg, VimCurWinWidth, pbar
 from netranger.enum import Enum
 from collections import defaultdict
 from netranger.config import file_sz_display_wid
-from netranger.hooker import Hookers, has_hooker
+from netranger.api import Hookers, has_hooker
 
 from sys import platform
 if platform == "win32":

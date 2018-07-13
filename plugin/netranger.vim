@@ -24,6 +24,8 @@ let s:pyx = 'python3 '
 exec s:pyx "import vim"
 exec s:pyx "from netranger.netranger import Netranger"
 exec s:pyx "ranger = Netranger(vim)"
+exec s:pyx "from netranger.api import NETRApi"
+exec s:pyx "NETRApi.set_ranger(ranger)"
 
 augroup NETRANGER
     autocmd!
