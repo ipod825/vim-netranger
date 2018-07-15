@@ -499,6 +499,8 @@ if __name__ == '__main__':
         ori_timeoutlen = nvim.options['timeoutlen']
         nvim.options['timeoutlen'] = 1
         default.color.update(nvim.vars['NETRColors'])
+        # disable all plugins
+        nvim.command('py3 ranger._NETRTest()')
 
         do_test(test_navigation)
         do_test(test_edit)
