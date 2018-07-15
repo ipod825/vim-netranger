@@ -951,9 +951,9 @@ class Netranger(object):
                         VimErrorMsg(err_msg)
 
     def NETRefresh(self):
-        clineNo = self.curBuf.clineNo
-        self.gen_new_buf(self.curBuf.wd)
-        self.curBuf.moveVimCursor(clineNo)
+        curBuf = self.curBuf
+        curBuf.content_outdated = True
+        curBuf.refresh_nodes()
 
     def NETRTabOpen(self):
         self.NETROpen('tabedit', use_rifle=False)
