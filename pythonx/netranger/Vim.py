@@ -22,7 +22,9 @@ def decode_if_bytes(obj, mode=True):
     return obj
 
 
-def VimVar(name):
+def VimVar(name, default=None):
+    if name not in vim.vars:
+        return default
     return walk(decode_if_bytes, vim.vars[name])
 
 

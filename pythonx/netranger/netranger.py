@@ -797,13 +797,12 @@ class Netranger(object):
         self.keymap_doc = {}
         skip = []
         for k in VimVar('NETRDefaultMapSkip'):
-            if k[0]=='<' and k[-1]=='>':
-                skip = [k.lower()]
+            skip.append(k.lower())
         for fn, (keys, desc) in default.keymap.items():
-            user_keys = self.vim.vars.get(fn, [])
+            user_keys = VimVar(fn, [])
             user_keys += [k for k in keys if k not in skip]
             self.keymaps[fn] = user_keys
-            self.keymap_doc[fn] = (keys, desc)
+            self.keymap_doc[fn] = (user_keys, desc)
 
     def map_keys(self):
         for fn, keys in self.keymaps.items():
