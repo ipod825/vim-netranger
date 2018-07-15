@@ -506,6 +506,9 @@ class NetRangerBuf(object):
         return header_nodes + sortedNodes
 
     def render(self, plain=False):
+        for hooker in Hookers['render_begin']:
+            hooker(self)
+
         self.vim.command('setlocal modifiable')
         if plain:
             self.vim.current.buffer[:] = self.plain_content
@@ -514,6 +517,9 @@ class NetRangerBuf(object):
         self.vim.command('setlocal nomodifiable')
         self.moveVimCursor(self.clineNo)
         self.winwidth = VimCurWinWidth()
+
+        for hooker in Hookers['render_end']:
+            hooker(self)
 
     def render_if_winwidth_changed(self):
         if self.winwidth != VimCurWinWidth():
@@ -525,6 +531,7 @@ class NetRangerBuf(object):
         """
         if self.is_editing:
             return
+
         lineNo = int(self.vim.eval("line('.')")) - 1
         self.setClineNo(lineNo)
         self.set_header_content()

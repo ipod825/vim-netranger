@@ -1,6 +1,8 @@
 Hookers = {
     'node_highlight_content_l': [],
     'node_highlight_content_r': [],
+    'render_begin': [],
+    'render_end': [],
 }
 
 
