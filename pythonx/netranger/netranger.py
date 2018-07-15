@@ -141,6 +141,13 @@ class EntryNode(Node):
         else:
             return c('{}{}{}'.format(left, self.abbrev_name(width-len(left)-len(right)), right))
 
+    @property
+    def mtime(self):
+        if self.stat:
+            return str(datetime.datetime.fromtimestamp(self.stat.st_mtime))[:19]
+        else:
+            return ''
+
     def __init__(self, fullpath, name, fs, level=0):
         self.fullpath = fullpath
         self.re_stat(fs)
@@ -333,8 +340,7 @@ class NetRangerBuf(object):
         curNode = self.curNode
         if not curNode.isHeader:
             curNode.re_stat(self.fs)
-            mtime = str(datetime.datetime.fromtimestamp(curNode.stat.st_mtime))[:19]
-            meta =' {} {} {} {}'.format(curNode.user, curNode.group, mtime, curNode.acl)
+            meta =' {} {} {} {}'.format(curNode.user, curNode.group, curNode.mtime, curNode.acl)
         left = self.abbrevcwd(self.winwidth-len(meta)-1)
         self.vim.command("setlocal modifiable")
         self.nodes[0].name = '{} {}'.format(left, meta).strip()
