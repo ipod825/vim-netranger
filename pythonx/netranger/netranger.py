@@ -162,8 +162,7 @@ class EntryNode(Node):
 
         try:
             self.stat = os.stat(self.fullpath)
-        except IOError:
-            assert self.linkto is not None
+        except FileNotFoundError:
             self.stat = None
 
         if self.stat:
@@ -381,7 +380,7 @@ class NetRangerBuf(object):
             new_nodes.append(self.createNode(dirpath, name, level+1))
         return new_nodes
 
-    def refresh_nodes(self, cheap_remote_ls=False):
+    def refresh_nodes(self, force_refreh=False, cheap_remote_ls=False):
         """
         1. Check the mtime of wd or any expanded subdir changed. If so, set content_outdated true, which could also be set manually (e.g. NETRToggleShowHidden).
         2. For each file/directory in the file system, including those in expanded directories, if no current node corresponds to it, add a new node to the node list so that it will be visible next time.
@@ -395,7 +394,7 @@ class NetRangerBuf(object):
                 if new_mtime > ori_mtime:
                     self.content_outdated = True
 
-        if not self.content_outdated:
+        if not self.content_outdated and not force_refreh:
             return
 
         oriNode = self.curNode
@@ -958,8 +957,7 @@ class Netranger(object):
 
     def NETRefresh(self):
         curBuf = self.curBuf
-        curBuf.content_outdated = True
-        curBuf.refresh_nodes()
+        curBuf.refresh_nodes(force_refreh=True)
 
     def NETRTabOpen(self):
         self.NETROpen('tabedit', use_rifle=False)
@@ -1052,7 +1050,7 @@ class Netranger(object):
         self.vim.vars['NETRIgnore'] = ignore_pat
         for buf in self.bufs.values():
             buf.content_outdated = True
-        self.curBuf.refresh_nodes()
+        self.curBuf.refresh_nodes(force_refreh=True)
 
     def invoke_map(self, fn):
         if hasattr(self, fn):
@@ -1187,7 +1185,7 @@ class Netranger(object):
 
         self.cut_nodes = defaultdict(set)
         self.copied_nodes = defaultdict(set)
-        self.curBuf.refresh_nodes(cheap_remote_ls=True)
+        self.curBuf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
         self.curBuf.refresh_highlight()
 
     def NETRDelete(self, force=False):
@@ -1197,14 +1195,14 @@ class Netranger(object):
                 buf.fs.rm(node.fullpath, force)
         curBuf = self.curBuf
         clineNo = curBuf.clineNo
-        curBuf.refresh_nodes(cheap_remote_ls=True)
+        curBuf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
         curBuf.moveVimCursor(clineNo)
         self.picked_nodes = defaultdict(set)
 
     def NETRDeleteSingle(self, force=False):
         curBuf = self.curBuf
         curBuf.fs.rm(self.curNode.fullpath, force)
-        curBuf.refresh_nodes(cheap_remote_ls=True)
+        curBuf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
         curBuf.moveVimCursor(curBuf.clineNo)
 
     def NETRForceDelete(self):
@@ -1230,7 +1228,7 @@ class Netranger(object):
             VimErrorMsg('Not a remote directory')
         else:
             self.rclone.sync(curBuf.wd, Rclone.SyncDirection.DOWN)
-        curBuf.refresh_nodes(cheap_remote_ls=True)
+        curBuf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
 
     def NETRemotePush(self):
         """
