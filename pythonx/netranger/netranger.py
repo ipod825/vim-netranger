@@ -55,7 +55,7 @@ class Node(object):
         return False
 
     @property
-    def isHeader(self):
+    def isINFO(self):
         return False
 
     def cursor_on(self):
@@ -67,10 +67,22 @@ class Node(object):
     def toggle_pick(self):
         return Node.ToggleOpRes.INVALID
 
+    def re_stat(self, fs):
+        pass
 
-class CWDNode(Node):
+
+class FooterNode(Node):
+    def __init__(self):
+        super(FooterNode, self).__init__("METAINFO", "METAINFO", default.color['footer'])
+
+    @property
+    def isINFO(self):
+        return True
+
+
+class HeaderNode(Node):
     def __init__(self, fullpath):
-        super(CWDNode, self).__init__(fullpath, Shell.abbrevuser(fullpath), default.color['cwd'], level=0)
+        super(HeaderNode, self).__init__(fullpath, Shell.abbrevuser(fullpath), default.color['cwd'], level=0)
         self.re_stat()
 
     def re_stat(self, fs=None):
@@ -81,7 +93,7 @@ class CWDNode(Node):
         return c256(self.name, self.highlight, False)
 
     @property
-    def isHeader(self):
+    def isINFO(self):
         return True
 
 
@@ -108,7 +120,7 @@ class EntryNode(Node):
 
     @property
     def highlight_content(self):
-        width = VimCurWinWidth()
+        width = VimCurWinWidth(cache=True)
         levelPad = '  '*self.level
         size_info = self.size.rjust(file_sz_display_wid+1)
 
@@ -257,26 +269,6 @@ class NetRangerBuf(object):
     """
     Main (mvc) model/view. Each netranger buffer corresponds to a directory and keeps a list of file/directory nodes and display them in a vim buffer.
     """
-    header_height = None
-
-    @property
-    def first_content_lineNo(self):
-        """
-        Return the height of header (or minus 1 if the content is empty).
-        """
-        if NetRangerBuf.header_height is None:
-            i = 0
-            sz = len(self.nodes)
-            while i < sz:
-                if not self.nodes[i].isHeader:
-                    break
-                i = i + 1
-            NetRangerBuf.header_height = i
-        if len(self.nodes) == NetRangerBuf.header_height:
-            return NetRangerBuf.header_height - 1
-        else:
-            return NetRangerBuf.header_height
-
     @property
     def highlight_content(self):
         return [n.highlight_content for n in self.nodes]
@@ -305,13 +297,16 @@ class NetRangerBuf(object):
         self.vim.command('silent file N:{}'.format(os.path.basename(wd)))
         self.vim.command('lcd ' + wd)
 
-        self.nodes = [CWDNode(wd)] + self.createNodes(self.wd)
-        self.clineNo = self.first_content_lineNo
+        self.header_node = HeaderNode(wd)
+        self.footer_node = FooterNode()
+        self.nodes = [self.header_node] + self.createNodes(self.wd) + [self.footer_node]
+        self.clineNo = 1
         self.nodes[self.clineNo].cursor_on()
-        # In refresh_buf we need to check the mtime of all expanded nodes to see if any content in the buffer is changed. Adding the CWDNode simply means we check the mtime of the wd everytime.
-        self.expanded_nodes = set([self.nodes[0]])
+        # In refresh_buf we need to check the mtime of all expanded nodes to see if any content in the buffer is changed. Adding the HeaderNode simply means we check the mtime of the wd everytime.
+        self.expanded_nodes = set([self.header_node])
         self.winwidth = VimCurWinWidth()
-        self.temp_header_line = 0
+        self.pseudo_header_lineNo = None
+        self.pseudo_footer_lineNo = None
         self.is_editing = False
         self.render()
 
@@ -335,16 +330,61 @@ class NetRangerBuf(object):
                 total += len(sp[i]) - 1
 
     def set_header_content(self):
+        self.header_node.name = self.abbrevcwd(self.winwidth).strip()
+        self.vim.current.buffer[0] = self.header_node.highlight_content
+
+    def set_footer_content(self):
         meta = ''
         curNode = self.curNode
-        if not curNode.isHeader:
+        if not curNode.isINFO:
             curNode.re_stat(self.fs)
-            meta =' {} {} {} {}'.format(curNode.user, curNode.group, curNode.mtime, curNode.acl)
-        left = self.abbrevcwd(self.winwidth-len(meta)-1)
-        self.vim.command("setlocal modifiable")
-        self.nodes[0].name = '{} {}'.format(left, meta).strip()
-        self.vim.current.buffer[0] = self.nodes[0].highlight_content
-        self.vim.command("setlocal nomodifiable")
+            meta =' {} {} {} {}'.format(curNode.acl, curNode.user, curNode.group, curNode.mtime)
+        self.footer_node.name = meta.strip()
+        self.vim.current.buffer[-1] = self.footer_node.highlight_content
+
+    def set_pseudo_header_content(self, clineNo):
+        # recover content for the last line occupied by pseudo header
+        # ignore error when buffer no longer has the last line
+        if self.pseudo_header_lineNo is not None:
+            try:
+                self.vim.current.buffer[self.pseudo_header_lineNo] = self.nodes[self.pseudo_header_lineNo].highlight_content
+            except IndexError:
+                pass
+
+        # if first visible line is not the first line
+        # we need to put header content on the first visible line
+        first_visible_line = int(self.vim.eval('line("w0")'))-1
+        if first_visible_line > 0:
+            # if current line is at the header we need to keep the current line to be 2nd visible line
+            if first_visible_line == clineNo:
+                self.vim.command("normal! ")
+                first_visible_line -= 1
+            self.pseudo_header_lineNo = first_visible_line
+            self.vim.current.buffer[first_visible_line] = self.header_node.highlight_content
+        else:
+            self.pseudo_header_lineNo = None
+
+    def set_pseudo_footer_content(self, clineNo):
+        # recover content for the last line occupied by pseudo footer
+        # ignore error when buffer no longer has the last line
+        if self.pseudo_footer_lineNo is not None:
+            try:
+                self.vim.current.buffer[self.pseudo_footer_lineNo] = self.nodes[self.pseudo_footer_lineNo].highlight_content
+            except IndexError:
+                pass
+
+        # if last visible line is not the last line
+        # we need to put footer content on the last visible line
+        last_visible_line = int(self.vim.eval('line("w$")'))-1
+        if last_visible_line < int(self.vim.eval("line('$')")) - 1:
+            # if current line is at the footer we need to keep the current line to be penultimate visible line
+            if last_visible_line == clineNo:
+                self.vim.command("normal! ")
+                last_visible_line += 1
+            self.pseudo_footer_lineNo = last_visible_line
+            self.vim.current.buffer[last_visible_line] = self.footer_node.highlight_content
+        else:
+            self.pseudo_footer_lineNo = None
 
     def createNodes(self, wd, level=0):
         nodes = []
@@ -357,6 +397,7 @@ class NetRangerBuf(object):
         return self.sortNodes(nodes)
 
     def shouldIgnore(self, basename):
+        # TODO this is not efficient for neovim
         for ig in VimVar('NETRIgnore'):
             if fnmatch.fnmatch(basename, ig):
                 return True
@@ -370,7 +411,7 @@ class NetRangerBuf(object):
             return EntryNode(fullpath, basename, self.fs, level=level)
 
     def creat_nodes_if_not_exist(self, nodes, dirpath, level, cheap_remote_ls):
-        old_paths = set([node.fullpath for node in nodes if not node.isHeader])
+        old_paths = set([node.fullpath for node in nodes if not node.isINFO])
         new_paths = set([os.path.join(dirpath, name) for name in self.fs.ls(dirpath, cheap_remote_ls)])
         new_nodes = []
         for path in new_paths.difference(old_paths):
@@ -410,7 +451,7 @@ class NetRangerBuf(object):
                 continue
 
             curNode = self.nodes[i]
-            if curNode.isHeader:
+            if curNode.isINFO:
                 new_nodes.append(curNode)
                 continue
 
@@ -438,7 +479,7 @@ class NetRangerBuf(object):
                 nextInd = self.next_lesseq_level_ind(i)
                 new_nodes += self.creat_nodes_if_not_exist(self.nodes[i+1:nextInd+1], curNode.fullpath, curNode.level, cheap_remote_ls)
 
-        self.nodes = self.sortNodes(new_nodes)
+        self.nodes = [self.header_node] + self.sortNodes(new_nodes) + [self.footer_node]
         self.render()
         self.setClineNoByNode(oriNode)
 
@@ -468,9 +509,9 @@ class NetRangerBuf(object):
         if not self.nodes_order_outdated:
             return
         self.nodes_order_outdated = False
-        for i in range(self.header_height, len(self.nodes)):
-            self.nodes[i].re_stat(self.fs)
-        self.nodes = self.sortNodes(self.nodes)
+        for node in self.nodes:
+            node.re_stat(self.fs)
+        self.nodes = [self.header_node] + self.sortNodes(self.nodes) + [self.footer_node]
         self.render()
         self.setClineNoByNode(self.lastNodeId)
 
@@ -480,14 +521,12 @@ class NetRangerBuf(object):
         """
         sort_fn = SortUI.get_sort_fn()
         reverse = SortUI.reverse
-        header_nodes = []
         sortedNodes = []
         prefix =''
         prefixEndInd = [0]
         for i in range(len(nodes)):
             curNode = nodes[i]
-            if curNode.isHeader:
-                header_nodes.append(curNode)
+            if curNode.isINFO:
                 continue
 
             prevNode = nodes[i-1]
@@ -508,7 +547,7 @@ class NetRangerBuf(object):
         if reverse:
             sortedNodes = self.reverse_sorted_nodes(sortedNodes)
 
-        return header_nodes + sortedNodes
+        return sortedNodes
 
     def render(self, plain=False):
         for hooker in Hookers['render_begin']:
@@ -537,25 +576,20 @@ class NetRangerBuf(object):
         if self.is_editing:
             return
 
-        lineNo = int(self.vim.eval("line('.')")) - 1
-        self.setClineNo(lineNo)
-        self.set_header_content()
+        clineNo = int(self.vim.eval("line('.')")) - 1
+
+        # do not stay on footer
+        if clineNo == len(self.nodes)-1:
+            self.vim.command('normal! k')
+            clineNo -= 1
+
+        self.setClineNo(clineNo)
+
         self.vim.command("setlocal modifiable")
-
-        # Afer the number of nodes decrease (e.g. toggle show hidden), temp_header_line
-        # might exceeds total number of line. In such case, reset it to 0.
-        if self.temp_header_line >= len(self.nodes):
-            self.temp_header_line = 0
-
-        self.vim.current.buffer[self.temp_header_line] = self.nodes[self.temp_header_line].highlight_content
-        first_visible_line = int(self.vim.eval('line("w0")'))-1
-        if first_visible_line > 0:
-            if first_visible_line == int(self.vim.eval("line('.')")) - 1:
-                # keep current line to be 2nd line if current line is 1st line
-                self.vim.command("normal! ")
-                first_visible_line -= 1
-            self.temp_header_line = first_visible_line
-            self.vim.current.buffer[first_visible_line] = self.nodes[0].highlight_content
+        self.set_header_content()
+        self.set_footer_content()
+        self.set_pseudo_header_content(clineNo)
+        self.set_pseudo_footer_content(clineNo)
         self.vim.command("setlocal nomodifiable")
 
     def moveVimCursor(self, lineNo):
@@ -566,9 +600,9 @@ class NetRangerBuf(object):
 
     def setClineNoByPath(self, path):
         """ Real work is done in on_cursormoved. Eventually call setClineNo. """
-        for i in range(self.header_height, len(self.nodes)):
-            if self.nodes[i].fullpath == path:
-                self.moveVimCursor(i)
+        for ind, node in enumerate(self.nodes):
+            if node.fullpath == path:
+                self.moveVimCursor(ind)
                 break
 
     def setClineNoByNode(self, node):
@@ -576,7 +610,7 @@ class NetRangerBuf(object):
         if node in self.nodes:
             self.moveVimCursor(self.nodes.index(node))
         else:
-            self.moveVimCursor(self.first_content_lineNo)
+            self.moveVimCursor(0)
 
     def setClineNo(self, newLineNo):
         """
@@ -669,7 +703,7 @@ class NetRangerBuf(object):
         i = 0
         for i in range(len(vimBuf)):
             line = vimBuf[i].strip()
-            if not self.nodes[i].isHeader and line != self.nodes[i].name:
+            if not self.nodes[i].isINFO and line != self.nodes[i].name:
 
                 # change name of the i'th node
                 oripath = self.nodes[i].rename(line)
@@ -684,7 +718,7 @@ class NetRangerBuf(object):
         for oripath, fullpath in change.items():
             self.fs.rename(oripath, fullpath)
 
-        self.nodes = self.sortNodes(self.nodes)
+        self.nodes = [self.header_node] + self.sortNodes(self.nodes) + [self.footer_node]
         self.render()
         self.setClineNoByNode(oriNode)
         self.vim.command('setlocal nowrap')
@@ -809,6 +843,26 @@ class Netranger(object):
             for k in keys:
                 self.vim.command('nnoremap <nowait> <silent> <buffer> {} :exe ":call _NETRInvokeMap({})"<CR>'.format(k, "'" + fn + "'"))
 
+    def register_keymap(self, keys_fns):
+        mapped_keys = []
+        for keys in self.keymaps.values():
+            mapped_keys += keys
+        mapped_keys = set(mapped_keys)
+
+        for keys, fn in keys_fns:
+            if type(keys) is str:
+                keys = [keys]
+            real_keys = []
+            name = fn.__name__
+            for key in keys:
+                if key in mapped_keys:
+                    VimErrorMsg("netranger: Fail to bind key {} to {} because it has been mapped to other function.".format(key, name))
+                    continue
+                real_keys.append(key)
+            self.keymaps[name] = real_keys
+            assert not hasattr(self, name), "Plugin of vim-netranger should not register a keymap with a function name already defined by vim-netranger."
+            setattr(self, name, fn)
+
     def on_bufenter(self, bufnum):
         """
         There are four cases on bufenter:
@@ -923,7 +977,7 @@ class Netranger(object):
         The real work for opening directories is handled in on_bufenter. For openning files, we check if there's rifle rule to open the file. Otherwise, open it in vim.
         """
         curNode = self.curNode
-        if curNode.isHeader:
+        if curNode.isINFO:
             return
 
         if open_cmd is None:

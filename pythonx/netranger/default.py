@@ -38,6 +38,7 @@ keymap = {
 
 color = {
     'cwd': 'yellow',
+    'footer': 'darkgreen',
     'pick': 'yellow',
     'copy': 'fuchsia',
     'cut': 'grey',

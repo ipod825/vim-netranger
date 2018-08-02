@@ -57,7 +57,7 @@ def assert_highlight(expected, ind=None):
 
 
 def assert_num_content_line(numLine):
-    assert numLine == len(nvim.current.buffer)-1, 'expected line #: {}, real line #: {}'.format(numLine, len(nvim.current.buffer)-1)
+    assert numLine == len(nvim.current.buffer)-2, 'expected line #: {}, real line #: {}'.format(numLine, len(nvim.current.buffer)-1)
 
 
 def assert_fs(d, expected):

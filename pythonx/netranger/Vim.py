@@ -45,8 +45,20 @@ def VimUserInput(hint, default=''):
     return decode_if_bytes(vim.vars['NETRRegister'])
 
 
-def VimCurWinWidth():
-    return vim.current.window.width
+lastWidth = None
+
+
+def VimCurWinWidth(cache=False):
+    global lastWidth
+    if cache:
+        return lastWidth
+    ve = vim.options['virtualedit']
+    vim.options['virtualedit'] = 'all'
+    vim.command('norm! g$')
+    lastWidth = int(vim.eval('virtcol(".")'))
+    vim.command('norm! g0')
+    vim.options['virtualedit'] = ve
+    return lastWidth
 
 
 class pbar(object):

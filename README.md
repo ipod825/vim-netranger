@@ -1,7 +1,8 @@
 vim-netranger
 =============
 [![Build Status](https://travis-ci.org/ipod825/vim-netranger.svg?branch=master)](https://travis-ci.org/ipod825/vim-netranger)
-![Screenshot](https://user-images.githubusercontent.com/1246394/36007869-45dff1bc-0cf9-11e8-9cd5-f0d0e789135a.png)
+![Screenshot](https://user-images.githubusercontent.com/1246394/43560750-3c559f28-95d1-11e8-85e4-a05d6f44e97e.png)
+
 
 Vim-netranger is a ranger-like system/cloud storage explorer for Vim/Neovim. It brings together the best of Vim, [ranger](https://github.com/ranger/ranger), and [rclone](https://rclone.org/):
 
@@ -27,12 +28,11 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 
 ## Requirements
 
-1. `vim`
-    - has('python3')
-2. `neovim`
-    - no specific requirement as neovim is shipped with python3 by default
+1. `vim` & `neovim`
+    - `echo has('python3')` should output 1
+    - `echo has('virtualedit')` should output 1
 
-`rclone`: v1.4.0(v1.3.9) or newer (1.4.0 not yet published, see [Known Issues](#known-issues)). `rclone` is needed if you use remote editing features. However, it will be installed automatically on the first time running `NETRemoteList` command.
+2. `rclone`: v1.4.0(v1.3.9) or newer (1.4.0 not yet published, see [Known Issues](#known-issues)). `rclone` is needed if you use remote editing features. However, it will be installed automatically on the first time running `NETRemoteList` command.
 
 ## Usage
 
@@ -137,6 +137,7 @@ let g:NETRBookmarkGo = ["m"]
 1. Set `g:NETRColors` to a dictionary to overwrite the default colors. Possible keys are:
 ```
 'cwd': the first line
+'footer': the last line
 'pick': node color after pressing `v`
 'copy': node color after pressing `yy`
 'cut': node color after pressing `dd`
