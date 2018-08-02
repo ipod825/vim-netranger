@@ -954,6 +954,7 @@ class Netranger(object):
         self.vim.command('setlocal conceallevel=3')
         self.vim.command('set concealcursor=nvic')
         self.vim.command('setlocal nocursorline')
+        self.vim.command('setlocal nolist')
 
     def on_cursormoved(self, bufnum):
         """
