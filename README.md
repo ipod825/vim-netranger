@@ -178,6 +178,7 @@ The api argument passed to you give you access to netranger internal. See `api.p
 ## Known Issues
 1. In neovim, when opening two vim buffers for the same directory, there is a delay for moving cursor up and down. This seems to be an nvim api [issue](https://github.com/neovim/neovim/issues/7756)
 2. When remote directory is empty, it will not be copied to remote. It is an rclone [bug] (https://github.com/ncw/rclone/issues/1837), which is expected to be fixed in next release.
+3. In some cases when `listchars` is set, `vim-netranger` buffer does not display correctly. For possible solutions, see the comment in this [issue](https://github.com/ipod825/vim-netranger/issues/14).
 
 
 
