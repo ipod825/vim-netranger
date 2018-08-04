@@ -68,16 +68,17 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 3. After you are done, back into normal mode (i.e. press `<Esc>` or whatever mapping you prefer), then press `<Esc>` again. All files will be renamed as you've modified.
 
 ### File Selection/Copy/Cut/Paste/Deletion
-1. Press `v` or `V` to select a file for further processing. You can select multiple files and then do one of the following
+1. Press `v` to select a file for further processing. You can select multiple files and then do one of the following
     * Press `y` to copy all selected files
     * Press `x` or `d` to cut all selected files
     * Press `D` to delete (`rm -r`) all selected files
     * Press `X` to force delete (i.e. `rm -rf`) all selected files
-2. For `y`, `x`, `d`, go to the target directory, press `p` to paste all cut/copied files/directories.
-3. Note that the directory you paste is vim's pwd (`getcwd()`). Hence, you can press `<Cr>` to change directory to an expanded directory and paste without changing directory into it.
-4. Note that you can open multiple vim buffer for different directories and cut (copy) files in one buffer and paste files in another buffer. When you jump back to the source buffer, cut files will disappear as expected.
-5. If only one file is to be cut/copy, you can simply press `yy` (copy) or `dd` (cut). The current file will be marked. You can then continue `yy`,  `dd` other lines.
-6. Similarly, if only one file is to be (force) deleted, you can simply press `DD` or `XX`.
+2. An easier way of selecting multiple files is to first press `V` to enter vim's visual mode and then press `v` to select all files highlighted.
+3. For `y`, `x`, `d`, go to the target directory, press `p` to paste all cut/copied files/directories.
+4. Note that the directory you paste is vim's pwd (`getcwd()`). Hence, you can press `<Cr>` to change directory to an expanded directory and paste without changing directory into it.
+5. Note that you can open multiple vim buffer for different directories and cut (copy) files in one buffer and paste files in another buffer. When you jump back to the source buffer, cut files will disappear as expected.
+6. If only one file is to be cut/copy, you can simply press `yy` (copy) or `dd` (cut). The current file will be marked. You can then continue `yy`,  `dd` other lines.
+7. Similarly, if only one file is to be (force) deleted, you can simply press `DD` or `XX`.
 
 ### Bookmark
 1. Press `m` to open the bookmark UI. You'll see the current bookmarks you have. Press [azAZ] (any letters) to bookmark the current directory.

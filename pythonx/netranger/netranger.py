@@ -308,6 +308,7 @@ class NetRangerBuf(object):
         self.pseudo_header_lineNo = None
         self.pseudo_footer_lineNo = None
         self.is_editing = False
+        self.visual_start_line = 0
         self.render()
 
     def abbrevcwd(self, width):
@@ -573,6 +574,7 @@ class NetRangerBuf(object):
         """
         Remember the current line no. and refresh the highlight of the current line no.
         """
+        log('on_cursormoved')
         if self.is_editing:
             return
 
@@ -842,6 +844,9 @@ class Netranger(object):
         for fn, keys in self.keymaps.items():
             for k in keys:
                 self.vim.command('nnoremap <nowait> <silent> <buffer> {} :exe ":call _NETRInvokeMap({})"<CR>'.format(k, "'" + fn + "'"))
+
+        for k in self.keymaps['NETRTogglePick']:
+            self.vim.command('vnoremap <nowait> <silent> <buffer> {} <Esc>:exe ":call _NETRInvokeMap({})"<CR>'.format(k, "'NETRTogglePickVisual'"))
 
     def register_keymap(self, keys_fns):
         mapped_keys = []
@@ -1167,6 +1172,21 @@ class Netranger(object):
         elif res == Node.ToggleOpRes.OFF:
             self.picked_nodes[curBuf].remove(curNode)
         self.curBuf.refresh_cur_line_hi()
+
+    def NETRTogglePickVisual(self):
+        self.vim.command('normal! gv')
+        beg = int(self.vim.eval('line("\'<")')) - 1
+        end = int(self.vim.eval('line("\'>")'))
+        curBuf = self.curBuf
+        for i in range(beg, end):
+            node = curBuf.nodes[i]
+            res = node.toggle_pick()
+            if res == Node.ToggleOpRes.ON:
+                self.picked_nodes[curBuf].add(node)
+            else:
+                self.picked_nodes[curBuf].remove(node)
+        curBuf.refresh_lines_hi([i for i in range(beg, end)])
+        self.vim.command('normal! V')
 
     def NETRCut(self):
         """

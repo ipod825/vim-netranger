@@ -269,6 +269,14 @@ def test_pickCutCopyPaste():
     assert_fs('dir2/subdir2', ['dir', 'placeholder'])
 
 
+def test_visual_pick():
+    nvim.input('vVjv')
+    assert_content('dir', ind=0, level=0, hi='dir')
+    assert_content('dir2', ind=1, level=0, hi='pick')
+    nvim.input('D')
+    assert_fs('', ['dir'])
+
+
 def test_pickCutCopyPaste_remote_r2r():
     nvim.input(' jvjjvjlh')
     assert_content('dir', ind=0, hi='dir')
@@ -508,6 +516,7 @@ if __name__ == '__main__':
         do_test(test_delete)
         do_test(fn_remote=test_delete_remote)
         do_test(test_pickCutCopyPaste)
+        do_test(test_visual_pick)
         # do_test(fn_remote=test_pickCutCopyPaste_remote_r2r)
         do_test(test_bookmark)
         do_test(test_misc)
