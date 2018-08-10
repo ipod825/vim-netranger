@@ -68,8 +68,6 @@ class pbar(object):
         self.cur = 0
         self.chunkSize = chunkSize
         self.wid = VimCurWinWidth()
-        # TODO: change back to local statusline when https://github.com/neovim/neovim/issues/8706 is fixxed
-        # self.st_save = vim.current.window.options['statusline']
         self.st_save = vim.options['statusline']
 
     def __iter__(self):

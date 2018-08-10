@@ -9,11 +9,12 @@ from netranger import default
 from netranger.colortbl import colortbl
 from netranger.ui import BookMarkUI, HelpUI, SortUI, AskUI
 from netranger.rifle import Rifle
-from netranger.Vim import VimVar, VimErrorMsg, VimCurWinWidth, pbar
+from netranger.Vim import VimVar, VimErrorMsg, VimCurWinWidth
 from netranger.enum import Enum
 from collections import defaultdict
 from netranger.config import file_sz_display_wid
 from netranger.api import Hookers, has_hooker, disableHookers
+from netranger.config import nodes_process_batch_size
 
 from sys import platform
 if platform == "win32":
@@ -24,6 +25,14 @@ else:
 
 
 log('')
+
+
+def createNode(dirname, basename, level, fs):
+    fullpath = os.path.join(dirname, basename)
+    if os.path.isdir(fullpath):
+        return DirNode(fullpath, basename, fs, level=level)
+    else:
+        return EntryNode(fullpath, basename, fs, level=level)
 
 
 class Node(object):
@@ -389,12 +398,15 @@ class NetRangerBuf(object):
 
     def createNodes(self, wd, level=0):
         nodes = []
-        files = self.fs.ls(wd)
-        for f in pbar(files):
-            if self.shouldIgnore(f):
-                continue
-            node = self.createNode(wd, f, level)
-            nodes.append(node)
+        files = [f for f in self.fs.ls(wd) if not self.shouldIgnore(f)]
+        len_files = len(files)
+        if len_files < nodes_process_batch_size:
+            nodes = [self.createNode(wd, f, level) for f in files]
+        else:
+            from concurrent.futures import ProcessPoolExecutor
+            with ProcessPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as executor:
+                for res in executor.map(createNode, [wd]*len_files, files, [level]*len_files, [self.fs]*len_files, chunksize=int(len_files/nodes_process_batch_size)):
+                    nodes.append(res)
         return self.sortNodes(nodes)
 
     def shouldIgnore(self, basename):
@@ -1131,6 +1143,8 @@ class Netranger(object):
         self.bookmarkUI.go()
 
     def bookmarkgo_onuiquit(self, fullpath):
+        # the following ls ensure that the directory exists on some remote file system
+        Shell.ls(fullpath)
         self.vim.command('silent edit {}'.format(fullpath))
         # manually do the same thing like in on_bufenter as synchronous on_bufenter block (nested) on_bufenter event handler
         if self.buf_existed(fullpath):
