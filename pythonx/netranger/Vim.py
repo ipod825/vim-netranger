@@ -62,9 +62,12 @@ def VimCurWinWidth(cache=False):
 
 
 class pbar(object):
-    def __init__(self, objects, chunkSize=10):
+    def __init__(self, objects, total=None, chunkSize=100):
         self.objects = iter(objects)
-        self.total = len(objects)
+        if total is None:
+            self.total = len(objects)
+        else:
+            self.total = total
         self.cur = 0
         self.chunkSize = chunkSize
         self.wid = VimCurWinWidth()
@@ -75,14 +78,12 @@ class pbar(object):
 
     def __next__(self):
         if self.cur == self.total:
-            # vim.current.window.options['statusline'] = self.st_save
             vim.options['statusline'] = self.st_save
             vim.command("redraw")
             raise StopIteration
         else:
             self.cur += 1
             if self.cur % self.chunkSize == 0:
-                # vim.current.window.options['statusline'] = "%#NETRhiProgressBar#{}%##".format(' '*int(self.cur*self.wid/self.total))
                 vim.options['statusline'] = "%#NETRhiProgressBar#{}%##".format(' '*int(self.cur*self.wid/self.total))
                 vim.command("redraw")
             return next(self.objects)

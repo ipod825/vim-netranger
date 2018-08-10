@@ -27,14 +27,6 @@ else:
 log('')
 
 
-def createNode(dirname, basename, level, fs):
-    fullpath = os.path.join(dirname, basename)
-    if os.path.isdir(fullpath):
-        return DirNode(fullpath, basename, fs, level=level)
-    else:
-        return EntryNode(fullpath, basename, fs, level=level)
-
-
 class Node(object):
     """
     General node. Inherited by header nodes or entry nodes.
@@ -403,10 +395,20 @@ class NetRangerBuf(object):
         if len_files < nodes_process_batch_size:
             nodes = [self.createNode(wd, f, level) for f in files]
         else:
-            from concurrent.futures import ProcessPoolExecutor
-            with ProcessPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as executor:
-                for res in executor.map(createNode, [wd]*len_files, files, [level]*len_files, [self.fs]*len_files, chunksize=int(len_files/nodes_process_batch_size)):
-                    nodes.append(res)
+            def createNode(dirname, basename, level, fs):
+                fullpath = os.path.join(dirname, basename)
+                if os.path.isdir(fullpath):
+                    return DirNode(fullpath, basename, fs, level=level)
+                else:
+                    return EntryNode(fullpath, basename, fs, level=level)
+
+            import concurrent
+            from concurrent.futures import ThreadPoolExecutor
+            from netranger.Vim import pbar
+            with ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as executor:
+                futures = [executor.submit(createNode, wd, f, level, self.fs) for f in files]
+                for future in pbar(concurrent.futures.as_completed(futures), total=len_files):
+                    nodes.append(future.result())
         return self.sortNodes(nodes)
 
     def shouldIgnore(self, basename):
