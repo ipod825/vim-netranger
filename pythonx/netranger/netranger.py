@@ -146,13 +146,15 @@ class EntryNode(Node):
                 right_extra_len += len(r_s)
                 right_extra += c256(r_s, r_h, False)
 
-            return c(left) +\
-                left_extra +\
-                c(self.abbrev_name(width-len(left)-len(right)-left_extra_len-right_extra_len)) +\
-                c(right) +\
-                right_extra
-        else:
-            return c('{}{}{}'.format(left, self.abbrev_name(width-len(left)-len(right)), right))
+            # Calling c and concatenation multiple times is rather expensive. Hence we avoid it if possible.
+            if left_extra_len or right_extra_len:
+                return c(left) +\
+                    left_extra +\
+                    c(self.abbrev_name(width-len(left)-len(right)-left_extra_len-right_extra_len)) +\
+                    c(right) +\
+                    right_extra
+
+        return c('{}{}{}'.format(left, self.abbrev_name(width-len(left)-len(right)), right))
 
     @property
     def mtime(self):
