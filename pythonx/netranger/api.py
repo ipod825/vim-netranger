@@ -40,8 +40,12 @@ class Api(object):
     def curNode(self):
         return self.ranger.curNode
 
-    def render(self):
-        self.ranger.curBuf.render()
+    def render(self, bufNum=None):
+        if bufNum:
+            buf = self.ranger.bufs[int(bufNum)]
+        else:
+            buf = self.ranger.curBuf
+        buf.render()
 
 
 NETRApi = Api()
