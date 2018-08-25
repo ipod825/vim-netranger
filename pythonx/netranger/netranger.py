@@ -398,7 +398,7 @@ class NetRangerBuf(object):
 
     def create_nodes_with_file_names(self, files, dirpath, level, truncate_if_too_many_nodes=False):
         if truncate_if_too_many_nodes:
-            if len(files) > VimVar('NETRMaxFileNumToEagrlyDisplay'):
+            if len(files) > VimVar('NETRMaxFileNumToEagerlyDisplay'):
                 files = files[:VimCurWinHeight()-2]
                 VimErrorMsg('Part of the files are not shown for efficiency. Press r to show all of them\n')
             files = [f for f in files if not self.controler.should_ignore(f)]

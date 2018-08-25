@@ -62,7 +62,7 @@ variables = {
     'NETRSplitOrientation': 'belowright',
     'NETRPanelSize': 1.5,
     'NETRColors': {},
-    'NETRMaxFileNumToEagrlyDisplay': 1000,
+    'NETRMaxFileNumToEagerlyDisplay': 1000,
     'NETRMinFileNumToLoadInParallel': 100,
 }
 
