@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import os
+import re
 import fnmatch
 import datetime
 from netranger.fs import FS, Rclone
@@ -9,12 +10,11 @@ from netranger import default
 from netranger.colortbl import colortbl
 from netranger.ui import BookMarkUI, HelpUI, SortUI, AskUI
 from netranger.rifle import Rifle
-from netranger.Vim import VimVar, VimErrorMsg, VimCurWinWidth
+from netranger.Vim import VimVar, VimErrorMsg, VimCurWinWidth, VimCurWinHeight
 from netranger.enum import Enum
 from collections import defaultdict
 from netranger.config import file_sz_display_wid
 from netranger.api import Hookers, has_hooker, disableHookers
-from netranger.config import nodes_process_batch_size
 
 from sys import platform
 if platform == "win32":
@@ -288,11 +288,12 @@ class NetRangerBuf(object):
     def highlight_outdated(self):
         return 0 < len(self.highlight_outdated_nodes)
 
-    def __init__(self, vim, wd, fs, rifle):
+    def __init__(self, controler, vim, wd, fs):
+        self.controler = controler
         self.vim = vim
+        self.wd = wd
         self.fs = fs
 
-        self.wd = wd
         self.content_outdated = False
         self.highlight_outdated_nodes = set()
         self.nodes_order_outdated = False
@@ -302,7 +303,8 @@ class NetRangerBuf(object):
 
         self.header_node = HeaderNode(wd)
         self.footer_node = FooterNode()
-        self.nodes = [self.header_node] + self.createNodes(self.wd) + [self.footer_node]
+        self.nodes = [self.header_node] + self.create_nodes(self.wd, truncate_if_too_many_nodes=True) + [self.footer_node]
+
         self.clineNo = 1
         self.nodes[self.clineNo].cursor_on()
         # In refresh_buf we need to check the mtime of all expanded nodes to see if any content in the buffer is changed. Adding the HeaderNode simply means we check the mtime of the wd everytime.
@@ -390,30 +392,33 @@ class NetRangerBuf(object):
         else:
             self.pseudo_footer_lineNo = None
 
-    def createNodes(self, wd, level=0):
-        nodes = []
-        files = [f for f in self.fs.ls(wd) if not self.shouldIgnore(f)]
-        len_files = len(files)
-        if len_files < nodes_process_batch_size:
-            nodes = [self.createNode(wd, f, level) for f in files]
-        else:
-            import concurrent
-            from concurrent.futures import ThreadPoolExecutor
-            from netranger.Vim import pbar
-            with ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as executor:
-                futures = [executor.submit(self.createNode, wd, f, level) for f in files]
-                for future in pbar(concurrent.futures.as_completed(futures), total=len_files):
-                    nodes.append(future.result())
+    def create_nodes(self, wd, level=0, truncate_if_too_many_nodes=False):
+        nodes = self.create_nodes_with_file_names(self.fs.ls(wd), wd, level, truncate_if_too_many_nodes)
         return self.sortNodes(nodes)
 
-    def shouldIgnore(self, basename):
-        # TODO this is not efficient for neovim
-        for ig in VimVar('NETRIgnore'):
-            if fnmatch.fnmatch(basename, ig):
-                return True
-        return False
+    def create_nodes_with_file_names(self, files, dirpath, level, truncate_if_too_many_nodes=False):
+        if truncate_if_too_many_nodes:
+            if len(files) > VimVar('NETRMaxFileNumToEagrlyDisplay'):
+                files = files[:VimCurWinHeight()-2]
+                VimErrorMsg('Part of the files are not shown for efficiency. Press r to show all of them\n')
+            files = [f for f in files if not self.controler.shouldIgnore(f)]
+            nodes = [self.create_node(dirpath, f, level) for f in files]
+        else:
+            files = [f for f in files if not self.controler.shouldIgnore(f)]
+            if len(files) > VimVar('NETRMinFileNumToLoadInParallel'):
+                nodes = []
+                import concurrent
+                from concurrent.futures import ThreadPoolExecutor
+                from netranger.Vim import pbar
+                with ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as executor:
+                    futures = [executor.submit(self.create_node, dirpath, f, level) for f in files]
+                    for future in pbar(concurrent.futures.as_completed(futures), total=len(files)):
+                        nodes.append(future.result())
+            else:
+                nodes = [self.create_node(dirpath, f, level) for f in files]
+        return nodes
 
-    def createNode(self, dirname, basename, level):
+    def create_node(self, dirname, basename, level):
         fullpath = os.path.join(dirname, basename)
         if os.path.isdir(fullpath):
             return DirNode(fullpath, basename, self.fs, level=level)
@@ -423,13 +428,8 @@ class NetRangerBuf(object):
     def creat_nodes_if_not_exist(self, nodes, dirpath, level, cheap_remote_ls):
         old_paths = set([node.fullpath for node in nodes if not node.isINFO])
         new_paths = set([os.path.join(dirpath, name) for name in self.fs.ls(dirpath, cheap_remote_ls)])
-        new_nodes = []
-        for path in new_paths.difference(old_paths):
-            name = os.path.basename(path)
-            if self.shouldIgnore(name):
-                continue
-            new_nodes.append(self.createNode(dirpath, name, level+1))
-        return new_nodes
+        file_names = [os.path.basename(path) for path in new_paths.difference(old_paths)]
+        return self.create_nodes_with_file_names(file_names, dirpath, level+1)
 
     def refresh_nodes(self, force_refreh=False, cheap_remote_ls=False):
         """
@@ -479,7 +479,7 @@ class NetRangerBuf(object):
 
             # The children of an invalid node will all be invalid
             # Hence, we will start with the next valid node
-            if self.shouldIgnore(curNode.name) or curNode.name not in fs_files[-1]:
+            if self.controler.shouldIgnore(curNode.name) or curNode.name not in fs_files[-1]:
                 nextValidInd = self.next_lesseq_level_ind(i)
                 continue
 
@@ -681,7 +681,7 @@ class NetRangerBuf(object):
             self.nodes = self.nodes[:self.clineNo+1] + self.nodes[endInd:]
         else:
             self.expanded_nodes.add(curNode)
-            newNodes = self.createNodes(self.curNode.fullpath, curNode.level+1)
+            newNodes = self.create_nodes(self.curNode.fullpath, curNode.level+1)
             if len(newNodes)>0:
                 self.nodes = self.nodes[:self.clineNo+1] + newNodes + self.nodes[self.clineNo+1:]
         curNode.expanded = not curNode.expanded
@@ -804,11 +804,14 @@ class Netranger(object):
         self.initKeymaps()
         Shell.mkdir(default.variables['NETRRootDir'])
         self.rifle = Rifle(self.vim, VimVar('NETRRifleFile'))
+
         ignore_pat = list(VimVar('NETRIgnore'))
-        self.vim.vars['NETRemoteCacheDir'] = os.path.expanduser(VimVar('NETRemoteCacheDir'))
         if '.*' not in ignore_pat:
             ignore_pat.append('.*')
             self.vim.vars['NETRIgnore'] = ignore_pat
+        self.ignore_pattern = re.compile('|'.join(fnmatch.translate(p) for p in ignore_pat))
+
+        self.vim.vars['NETRemoteCacheDir'] = os.path.expanduser(VimVar('NETRemoteCacheDir'))
 
     def initVimVariables(self):
         for k, v in default.variables.items():
@@ -833,6 +836,11 @@ class Netranger(object):
                 continue
 
             default.color[name] = color
+
+    def shouldIgnore(self, basename):
+        if self.ignore_pattern.match(basename):
+            return True
+        return False
 
     def initKeymaps(self):
         """
@@ -932,9 +940,9 @@ class Netranger(object):
     def gen_new_buf(self, bufname):
         bufnum = self.vim.current.buffer.number
         if(bufname.startswith(VimVar('NETRemoteCacheDir'))):
-            self.bufs[bufnum] = NetRangerBuf(self.vim, os.path.abspath(bufname), self.rclone, self.rifle)
+            self.bufs[bufnum] = NetRangerBuf(self, self.vim, os.path.abspath(bufname), self.rclone)
         else:
-            self.bufs[bufnum] = NetRangerBuf(self.vim, os.path.abspath(bufname), self.fs, self.rifle)
+            self.bufs[bufnum] = NetRangerBuf(self, self.vim, os.path.abspath(bufname), self.fs)
 
         self.map_keys()
         self.wd2bufnum[bufname] = bufnum
@@ -1119,6 +1127,7 @@ class Netranger(object):
         else:
             ignore_pat.append('.*')
         self.vim.vars['NETRIgnore'] = ignore_pat
+        self.ignore_pattern = re.compile('|'.join(fnmatch.translate(p) for p in ignore_pat))
         for buf in self.bufs.values():
             buf.content_outdated = True
         self.curBuf.refresh_nodes(force_refreh=True)

@@ -33,7 +33,7 @@ def VimErrorMsg(exception):
         msg = exception.output.decode('utf-8')
     else:
         msg = str(exception)
-    vim.command('echohl ErrorMsg | unsilent echo "{}" | echohl None '.format(msg.replace('"','\\"')))
+    vim.command('unsilent echohl ErrorMsg | unsilent echo "{}" | echohl None '.format(msg.replace('"','\\"')))
 
 
 def VimWarningMsg(msg):
@@ -61,6 +61,10 @@ def VimCurWinWidth(cache=False):
     return lastWidth
 
 
+def VimCurWinHeight():
+    return int(vim.eval("winheight('.')"))
+
+
 class pbar(object):
     def __init__(self, objects, total=None, chunkSize=100):
         self.objects = iter(objects)
@@ -71,19 +75,19 @@ class pbar(object):
         self.cur = 0
         self.chunkSize = chunkSize
         self.wid = VimCurWinWidth()
-        self.st_save = vim.options['statusline']
+        self.st_save = vim.current.window.options['statusline']
 
     def __iter__(self):
         return self
 
     def __next__(self):
         if self.cur == self.total:
-            vim.options['statusline'] = self.st_save
-            vim.command("redraw")
+            vim.current.window.options['statusline'] = self.st_save
+            vim.command("redrawstatus!")
             raise StopIteration
         else:
             self.cur += 1
             if self.cur % self.chunkSize == 0:
-                vim.options['statusline'] = "%#NETRhiProgressBar#{}%##".format(' '*int(self.cur*self.wid/self.total))
-                vim.command("redraw")
+                vim.current.window.options['statusline'] = "%#NETRhiProgressBar#{}%##".format(' '*int(self.cur*self.wid/self.total))
+                vim.command("redrawstatus!")
             return next(self.objects)
