@@ -14,7 +14,7 @@ def RegisterKeyMaps(fn_keys):
     NETRApi.ranger.register_keymap(fn_keys)
 
 
-def has_hooker(*hooker_names):
+def HasHooker(*hooker_names):
     for name in hooker_names:
         if len(Hookers[name]) > 0:
             return True

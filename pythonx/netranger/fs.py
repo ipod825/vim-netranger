@@ -146,9 +146,6 @@ class Rclone(FS):
         self.has_remote = len(remotes)>0
         self.ls_time_stamp = {}
 
-    def isRemotePath(self, lpath):
-        return lpath.startswith(self.root_dir)
-
     def rpath(self, lpath):
         if not lpath.startswith(self.root_dir):
             return lpath
