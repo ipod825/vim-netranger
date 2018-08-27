@@ -49,8 +49,7 @@ class Rifle(object):
                 if len(sp) != 2:
                     VimErrorMsg(
                         'invalid rule: rifle.conf line {}. There should be one'
-                        ' and only one "=" for each line'.
-                        format(i + 1))
+                        ' and only one "=" for each line'.format(i + 1))
                     continue
 
                 tests = []

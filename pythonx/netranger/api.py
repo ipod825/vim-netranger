@@ -31,20 +31,20 @@ class Api(object):
         self.ranger = ranger
 
     def node_index(self, node):
-        return self.ranger.curBuf.nodes.index(node)
+        return self.ranger.cur_buf.nodes.index(node)
 
     def next_lesseq_level_ind(self, begInd):
-        return self.ranger.curBuf.next_lesseq_level_ind(begInd)
+        return self.ranger.cur_buf.next_lesseq_level_ind(begInd)
 
     @property
-    def curNode(self):
-        return self.ranger.curNode
+    def cur_node(self):
+        return self.ranger.cur_node
 
     def render(self, bufNum=None):
         if bufNum:
             buf = self.ranger.bufs[int(bufNum)]
         else:
-            buf = self.ranger.curBuf
+            buf = self.ranger.cur_buf
         buf.render()
 
 

@@ -850,16 +850,16 @@ class Netranger(object):
     """
 
     @property
-    def curBuf(self):
+    def cur_buf(self):
         return self.bufs[self.vim.current.buffer.number]
 
     @property
     def cur_node(self):
-        return self.curBuf.cur_node
+        return self.cur_buf.cur_node
 
     @property
     def cwd(self):
-        return self.curBuf.wd
+        return self.cur_buf.wd
 
     def _NETRTest(self):
         disableHookers()
@@ -968,8 +968,7 @@ class Netranger(object):
                 if key in mapped_keys:
                     VimErrorMsg(
                         "netranger: Fail to bind key {} to {} because it has "
-                        "been mapped to other function.".
-                        format(key, name))
+                        "been mapped to other function.".format(key, name))
                     continue
                 real_keys.append(key)
             self.keymaps[name] = real_keys
@@ -1015,16 +1014,16 @@ class Netranger(object):
                 self.gen_new_buf(bufname)
 
     def refresh_curbuf(self):
-        curBuf = self.curBuf
+        cur_buf = self.cur_buf
         # manually turn off highlight of current linen as synchronous
         # on_bufenter block on_cursormoved event handler
-        curBuf.cur_node.cursor_off()
-        curBuf.refresh_nodes()
-        curBuf.refresh_highlight()
-        curBuf.sort()
-        curBuf.render_if_winwidth_changed()
+        cur_buf.cur_node.cursor_off()
+        cur_buf.refresh_nodes()
+        cur_buf.refresh_highlight()
+        cur_buf.sort()
+        cur_buf.render_if_winwidth_changed()
         # ensure pwd is correct
-        self.vim.command('lcd ' + curBuf.wd)
+        self.vim.command('lcd ' + cur_buf.wd)
 
     def show_existing_buf(self, bufname):
         ori_bufnum = self.vim.current.buffer.number
@@ -1148,8 +1147,8 @@ class Netranger(object):
                         VimErrorMsg(err_msg)
 
     def NETRefresh(self):
-        curBuf = self.curBuf
-        curBuf.refresh_nodes(force_refreh=True)
+        cur_buf = self.cur_buf
+        cur_buf.refresh_nodes(force_refreh=True)
 
     def NETRTabOpen(self):
         self.NETROpen('tabedit', use_rifle=False)
@@ -1191,8 +1190,8 @@ class Netranger(object):
 
     def NETRParentDir(self):
         """Real work is done in on_bufenter."""
-        curBuf = self.curBuf
-        cwd = curBuf.wd
+        cur_buf = self.cur_buf
+        cwd = cur_buf.wd
         if cwd in self.pinnedRoots:
             return
         pdir = self.fs.parent_dir(cwd)
@@ -1200,11 +1199,11 @@ class Netranger(object):
         # manually call on_bufenter as vim might not trigger BufEnter with the
         # above command
         self.on_bufenter(self.vim.eval("winnr()"))
-        curBuf = self.curBuf
-        curBuf.set_clineno_by_path(cwd)
+        cur_buf = self.cur_buf
+        cur_buf.set_clineno_by_path(cwd)
         # manually call on_cursormoved as synchronous on_bufenter block
         # on_cursormoved event handler
-        curBuf.on_cursormoved()
+        cur_buf.on_cursormoved()
 
     def NETRVimCD(self):
         curName = self.cur_node.fullpath
@@ -1214,7 +1213,7 @@ class Netranger(object):
             self.vim.command('silent lcd {}'.format(os.path.dirname(curName)))
 
     def NETRToggleExpand(self):
-        self.curBuf.toggle_expand()
+        self.cur_buf.toggle_expand()
 
     def NETREdit(self):
         for fn, keys in self.keymaps.items():
@@ -1222,10 +1221,10 @@ class Netranger(object):
                 continue
             for k in keys:
                 self.vim.command("nunmap <silent> <buffer> {}".format(k))
-        self.curBuf.edit()
+        self.cur_buf.edit()
 
     def NETRSave(self):
-        if self.curBuf.save():
+        if self.cur_buf.save():
             self.map_keys()
 
     def NETRTogglePinRoot(self):
@@ -1249,7 +1248,7 @@ class Netranger(object):
             fnmatch.translate(p) for p in ignore_pat))
         for buf in self.bufs.values():
             buf.content_outdated = True
-        self.curBuf.refresh_nodes(force_refreh=True)
+        self.cur_buf.refresh_nodes(force_refreh=True)
 
     def invoke_map(self, fn):
         if hasattr(self, fn):
@@ -1294,7 +1293,7 @@ class Netranger(object):
         SortUI.select_sort_fn(opt.lower())
         for buf in self.bufs.values():
             buf.sort_prep()
-        self.curBuf.sort()
+        self.cur_buf.sort()
 
     def NETRHelp(self):
         if self.helpUI is None:
@@ -1307,27 +1306,27 @@ class Netranger(object):
         Also update the highlight of the current line.
         """
         cur_node = self.cur_node
-        curBuf = self.curBuf
+        cur_buf = self.cur_buf
         res = cur_node.toggle_pick()
         if res == Node.ToggleOpRes.ON:
-            self.picked_nodes[curBuf].add(cur_node)
+            self.picked_nodes[cur_buf].add(cur_node)
         elif res == Node.ToggleOpRes.OFF:
-            self.picked_nodes[curBuf].remove(cur_node)
-        self.curBuf.refresh_cur_line_hi()
+            self.picked_nodes[cur_buf].remove(cur_node)
+        self.cur_buf.refresh_cur_line_hi()
 
     def NETRTogglePickVisual(self):
         self.vim.command('normal! gv')
         beg = int(self.vim.eval('line("\'<")')) - 1
         end = int(self.vim.eval('line("\'>")'))
-        curBuf = self.curBuf
+        cur_buf = self.cur_buf
         for i in range(beg, end):
-            node = curBuf.nodes[i]
+            node = cur_buf.nodes[i]
             res = node.toggle_pick()
             if res == Node.ToggleOpRes.ON:
-                self.picked_nodes[curBuf].add(node)
+                self.picked_nodes[cur_buf].add(node)
             else:
-                self.picked_nodes[curBuf].remove(node)
-        curBuf.refresh_lines_hi([i for i in range(beg, end)])
+                self.picked_nodes[cur_buf].remove(node)
+        cur_buf.refresh_lines_hi([i for i in range(beg, end)])
         self.vim.command('normal! V')
 
     def NETRCut(self):
@@ -1341,14 +1340,14 @@ class Netranger(object):
             buf.cut(nodes)
             self.cut_nodes[buf].update(nodes)
         self.picked_nodes = defaultdict(set)
-        self.curBuf.refresh_highlight()
+        self.cur_buf.refresh_highlight()
 
     def NETRCutSingle(self):
-        curBuf = self.curBuf
+        cur_buf = self.cur_buf
         cur_node = self.cur_node
         cur_node.cut()
-        self.cut_nodes[curBuf].add(cur_node)
-        curBuf.refresh_cur_line_hi()
+        self.cut_nodes[cur_buf].add(cur_node)
+        cur_buf.refresh_cur_line_hi()
 
     def NETRCopy(self):
         """Move picked_nodes to copied_nodes.
@@ -1361,14 +1360,14 @@ class Netranger(object):
             buf.copy(nodes)
             self.copied_nodes[buf].update(nodes)
         self.picked_nodes = defaultdict(set)
-        self.curBuf.refresh_highlight()
+        self.cur_buf.refresh_highlight()
 
     def NETRCopySingle(self):
-        curBuf = self.curBuf
+        cur_buf = self.cur_buf
         cur_node = self.cur_node
         cur_node.copy()
-        self.copied_nodes[curBuf].add(cur_node)
-        curBuf.refresh_cur_line_hi()
+        self.copied_nodes[cur_buf].add(cur_node)
+        cur_buf.refresh_cur_line_hi()
 
     def NETRPaste(self):
         """Perform mv from cut_nodes or cp from copied_nodes to cwd.
@@ -1413,25 +1412,25 @@ class Netranger(object):
 
         self.cut_nodes = defaultdict(set)
         self.copied_nodes = defaultdict(set)
-        self.curBuf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
-        self.curBuf.refresh_highlight()
+        self.cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
+        self.cur_buf.refresh_highlight()
 
     def NETRDelete(self, force=False):
         for buf, nodes in self.picked_nodes.items():
             buf.content_outdated = True
             for node in nodes:
                 buf.fs.rm(node.fullpath, force)
-        curBuf = self.curBuf
-        clineNo = curBuf.clineNo
-        curBuf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
-        curBuf.move_vim_cursor(clineNo)
+        cur_buf = self.cur_buf
+        clineNo = cur_buf.clineNo
+        cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
+        cur_buf.move_vim_cursor(clineNo)
         self.picked_nodes = defaultdict(set)
 
     def NETRDeleteSingle(self, force=False):
-        curBuf = self.curBuf
-        curBuf.fs.rm(self.cur_node.fullpath, force)
-        curBuf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
-        curBuf.move_vim_cursor(curBuf.clineNo)
+        cur_buf = self.cur_buf
+        cur_buf.fs.rm(self.cur_node.fullpath, force)
+        cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
+        cur_buf.move_vim_cursor(cur_buf.clineNo)
 
     def NETRForceDelete(self):
         self.NETRDelete(force=True)
@@ -1446,30 +1445,30 @@ class Netranger(object):
         """Sync local so that the local content of the current directory will
         be the same as the remote content."""
         try:
-            curBuf = self.curBuf
+            cur_buf = self.cur_buf
         except KeyError:
             VimErrorMsg('Not a netranger buffer')
             return
 
-        if not self.is_remote_path(curBuf.wd):
+        if not self.is_remote_path(cur_buf.wd):
             VimErrorMsg('Not a remote directory')
         else:
-            self.rclone.sync(curBuf.wd, Rclone.SyncDirection.DOWN)
-        curBuf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
+            self.rclone.sync(cur_buf.wd, Rclone.SyncDirection.DOWN)
+        cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
 
     def NETRemotePush(self):
         """Sync remote so that the remote content of the current directory will
         be the same as the local content."""
         try:
-            curBuf = self.curBuf
+            cur_buf = self.cur_buf
         except KeyError:
             VimErrorMsg('Not a netranger buffer')
             return
 
-        if not self.is_remote_path(curBuf.wd):
+        if not self.is_remote_path(cur_buf.wd):
             VimErrorMsg('Not a remote directory')
         else:
-            self.rclone.sync(curBuf.wd, Rclone.SyncDirection.UP)
+            self.rclone.sync(cur_buf.wd, Rclone.SyncDirection.UP)
 
     def NETRemoteList(self):
         if self.rclone is None:
@@ -1482,5 +1481,4 @@ class Netranger(object):
         else:
             VimErrorMsg(
                 "There's no remote now. Run 'rclone config' in a terminal to "
-                "setup remotes"
-            )
+                "setup remotes")
