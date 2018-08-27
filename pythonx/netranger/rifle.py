@@ -43,16 +43,19 @@ class Rifle(object):
                     pass
 
                 line = line.strip()
-                if len(line)==0:
+                if len(line) == 0:
                     continue
                 sp = line.split('=')
                 if len(sp) != 2:
-                    VimErrorMsg('invalid rule: rifle.conf line {}. There should be one and only one "=" for each line'.format(i+1))
+                    VimErrorMsg(
+                        'invalid rule: rifle.conf line {}. There should be one'
+                        ' and only one "=" for each line'.
+                        format(i + 1))
                     continue
 
                 tests = []
                 for test in sp[0].strip().split(','):
-                    testSp = [e for e in test.split(' ') if e!='']
+                    testSp = [e for e in test.split(' ') if e != '']
                     tests.append(globals()[testSp[0]](testSp[1]))
                 command = sp[1].strip()
 

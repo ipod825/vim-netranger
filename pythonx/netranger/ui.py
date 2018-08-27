@@ -18,7 +18,9 @@ class UI(object):
         self.vim = vim
 
     def map_key_reg(self, key, regval):
-        self.vim.command("nnoremap <nowait> <silent> <buffer> {} :let g:NETRRegister=['{}'] <cr> :quit <cr>".format(key, regval))
+        self.vim.command("nnoremap <nowait> <silent> <buffer> {} "
+                         ":let g:NETRRegister=['{}'] <cr> :quit <cr>".format(
+                             key, regval))
 
     def buf_valid(self, name='default'):
         return name in self.bufs and self.bufs[name].valid
@@ -28,7 +30,8 @@ class UI(object):
             del self.bufs[name]
 
     def show(self, name='default'):
-        self.vim.command('{} {}sb'.format(self.position, self.bufs[name].number))
+        self.vim.command('{} {}sb'.format(self.position,
+                                          self.bufs[name].number))
 
     def create_buf(self, content, mappings=None, name='default'):
         self.vim.command('{} new'.format(self.position))
@@ -61,7 +64,10 @@ class HelpUI(UI):
     def __init__(self, vim, keymap_doc):
         UI.__init__(self, vim)
 
-        self.create_buf(content=['{:<25} {:<10} {}'.format(fn, ','.join(keys), desc) for fn, (keys, desc) in keymap_doc.items()])
+        self.create_buf(content=[
+            '{:<25} {:<10} {}'.format(fn, ','.join(keys), desc)
+            for fn, (keys, desc) in keymap_doc.items()
+        ])
 
 
 class AskUI(UI):
@@ -70,7 +76,9 @@ class AskUI(UI):
         self.netranger = netranger
         self.options = None
         self.fullpath = None
-        self.create_buf(content=[], mappings=[(chr(ind),chr(ind)) for ind in range(97,123)])
+        self.create_buf(
+            content=[],
+            mappings=[(chr(ind), chr(ind)) for ind in range(97, 123)])
 
     def ask(self, content, fullpath):
         self.show()
@@ -94,9 +102,9 @@ class AskUI(UI):
         self.netranger.pend_onuiquit(self._ask, 1)
 
     def _ask(self, char):
-        cmd = self.options[ord(char)-97]
+        cmd = self.options[ord(char) - 97]
         log(self.options)
-        log(char, cmd, cmd=='vim')
+        log(char, cmd, cmd == 'vim')
         if cmd == 'vim':
             self.netranger.NETROpen(use_rifle=False)
         else:
@@ -115,7 +123,7 @@ def ext_name(path):
     if ind < 0:
         return ' '
     else:
-        return path[ind+1:]
+        return path[ind + 1:]
 
 
 class SortUI(UI):
@@ -143,8 +151,12 @@ class SortUI(UI):
         UI.__init__(self, vim)
         sort_opts = ['atime', 'ctime', 'default', 'extension', 'mtime', 'size']
         content = ['{}  {}'.format(s[0], s) for s in sort_opts]
-        content.insert(0, 'Type keys for sorting option. Use captial letter for reverse (small to large) order')
-        mappings = [(k[0],k[0]) for k in sort_opts] + [(k[0].upper(), k[0].upper()) for k in sort_opts]
+        content.insert(
+            0, 'Type keys for sorting option. Use captial letter '
+            'for reverse (small to large) order')
+        mappings = [(k[0], k[0])
+                    for k in sort_opts] + [(k[0].upper(), k[0].upper())
+                                           for k in sort_opts]
         self.create_buf(content=content, mappings=mappings)
 
 
@@ -172,14 +184,17 @@ class BookMarkUI(UI):
             with open(VimVar('NETRBookmarkFile'), 'r') as f:
                 for line in f:
                     kp = line.split(':')
-                    if(len(kp)==2):
+                    if (len(kp) == 2):
                         self.mark_dict[kp[0].strip()] = kp[1].strip()
 
     def set(self, path):
         if not self.buf_valid('set'):
-            self.create_buf(mappings=zip(self.valid_mark, self.valid_mark),
-                            content=['{}:{}'.format(k, p) for k,p in self.mark_dict.items()],
-                            name='set')
+            self.create_buf(
+                mappings=zip(self.valid_mark, self.valid_mark),
+                content=[
+                    '{}:{}'.format(k, p) for k, p in self.mark_dict.items()
+                ],
+                name='set')
         self.show('set')
         self.path_to_mark = path
         self.netranger.pend_onuiquit(self._set, 1)
@@ -195,12 +210,12 @@ class BookMarkUI(UI):
 
         if mark in self.mark_dict:
             for i, line in enumerate(set_buf):
-                if len(line)>0 and line[0] == mark:
+                if len(line) > 0 and line[0] == mark:
                     set_buf[i] = '{}:{}'.format(mark, self.path_to_mark)
                     break
         elif self.path_to_mark in self.mark_dict.values():
             for i, line in enumerate(set_buf):
-                if len(line)>0 and line[2:] == self.path_to_mark:
+                if len(line) > 0 and line[2:] == self.path_to_mark:
                     set_buf[i] = '{}:{}'.format(mark, self.path_to_mark)
                     break
         else:
@@ -210,18 +225,22 @@ class BookMarkUI(UI):
         self.del_buf('go')
         with open(VimVar('NETRBookmarkFile'), 'w') as f:
             for k, p in self.mark_dict.items():
-                f.write('{}:{}\n'.format(k,p))
+                f.write('{}:{}\n'.format(k, p))
 
     def go(self):
         if not self.buf_valid('go'):
-            self.create_buf(mappings=self.mark_dict.items(),
-                            content=['{}:{}'.format(k, p) for k,p in self.mark_dict.items()],
-                            name='go')
+            self.create_buf(
+                mappings=self.mark_dict.items(),
+                content=[
+                    '{}:{}'.format(k, p) for k, p in self.mark_dict.items()
+                ],
+                name='go')
         self.show('go')
         self.netranger.pend_onuiquit(self.netranger.bookmarkgo_onuiquit, 1)
 
     def edit(self):
-        self.vim.command('belowright split {}'.format(VimVar('NETRBookmarkFile')))
+        self.vim.command('belowright split {}'.format(
+            VimVar('NETRBookmarkFile')))
         self.vim.command('setlocal bufhidden=wipe')
         self.del_buf('set')
         self.del_buf('go')

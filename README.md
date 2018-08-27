@@ -206,13 +206,8 @@ $ bash test.sh
 $ cd test
 $ py.test --flake8 .
 ~~~
-If you fail on syntax check, you could use `autopep8` to fix it:
+If you fail on syntax check, you could use `yapf` to fix (some of the error):
 ~~~{.bash}
-$ pip install autopep8
-$ autopep8 --recursive -i --select E128 test/netranger # fix all error no.128
-~~~
-
-It is highly recommend you avoid these errors when writing them using. I recommend installing `flake8` and adopt the (vim) settings in this [gist](https://gist.github.com/ipod825/fbee70d8bd063f228951cd4b6f38f4df). Note that `flake8` is required:
-~~~{.bash}
-$ pip install flake8
+$ pip install yapf
+$ yapf --style pep8 -i -r pythonx
 ~~~

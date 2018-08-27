@@ -9,7 +9,8 @@ def walk(fn, obj, *args, **kwargs):
     if objType in [list, tuple, vim.List]:
         return list(walk(fn, o, *args) for o in obj)
     elif objType in [dict, vim.Dictionary]:
-        return dict((walk(fn, k, *args), walk(fn, v, *args)) for k, v in obj.items())
+        return dict(
+            (walk(fn, k, *args), walk(fn, v, *args)) for k, v in obj.items())
     return fn(obj, *args, **kwargs)
 
 
@@ -33,11 +34,15 @@ def VimErrorMsg(exception):
         msg = exception.output.decode('utf-8')
     else:
         msg = str(exception)
-    vim.command('unsilent echohl ErrorMsg | unsilent echo "{}" | echohl None '.format(msg.replace('"','\\"')))
+    vim.command(
+        'unsilent echohl ErrorMsg | unsilent echo "{}" | echohl None '.format(
+            msg.replace('"', '\\"')))
 
 
 def VimWarningMsg(msg):
-    vim.command('unsilent echohl WarningMsg | unsilent echo "{}" | echohl None '.format(msg.replace('"','\\"')))
+    vim.command(
+        'unsilent echohl WarningMsg | unsilent echo "{}" | echohl None '.
+        format(msg.replace('"', '\\"')))
 
 
 def VimUserInput(hint, default=''):
@@ -88,6 +93,8 @@ class pbar(object):
         else:
             self.cur += 1
             if self.cur % self.chunkSize == 0:
-                vim.current.window.options['statusline'] = "%#NETRhiProgressBar#{}%##".format(' '*int(self.cur*self.wid/self.total))
+                vim.current.window.options[
+                    'statusline'] = "%#NETRhiProgressBar#{}%##".format(
+                        ' ' * int(self.cur * self.wid / self.total))
                 vim.command("redrawstatus!")
             return next(self.objects)

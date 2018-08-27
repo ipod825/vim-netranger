@@ -12,7 +12,7 @@ except Exception:
 
 def log(*msg):
     with open(os.path.join(tempfile.gettempdir(), "netlog"), 'a') as f:
-        f.write(' '.join([str(m) for m in msg])+"\n")
+        f.write(' '.join([str(m) for m in msg]) + "\n")
 
 
 def spawnDaemon(func):
@@ -24,7 +24,7 @@ def spawnDaemon(func):
             # parent process, return and keep running
             return
     except OSError as e:
-        print >>sys.stderr, "fork #1 failed: %d (%s)" % (e.errno, e.strerror)
+        print >> sys.stderr, "fork #1 failed: %d (%s)" % (e.errno, e.strerror)
         sys.exit(1)
 
     os.setsid()
@@ -36,7 +36,7 @@ def spawnDaemon(func):
             # exit from second parent
             sys.exit(0)
     except OSError as e:
-        print >>sys.stderr, "fork #2 failed: %d (%s)" % (e.errno, e.strerror)
+        print >> sys.stderr, "fork #2 failed: %d (%s)" % (e.errno, e.strerror)
         sys.exit(1)
 
     # do stuff
@@ -60,9 +60,8 @@ class Shell():
     @classmethod
     def run(cls, cmd):
         try:
-            return subprocess.check_output(cmd,
-                                           shell=True,
-                                           stderr=subprocess.STDOUT).decode('utf-8')
+            return subprocess.check_output(
+                cmd, shell=True, stderr=subprocess.STDOUT).decode('utf-8')
         except subprocess.CalledProcessError as e:
             CmdFailLog(e)
 
@@ -80,11 +79,13 @@ class Shell():
 
     @classmethod
     def spawn(cls, cmd):
-        spawnDaemon(lambda: subprocess.check_output(cmd.split(' ')).decode('utf-8'))
+        spawnDaemon(
+            lambda: subprocess.check_output(cmd.split(' ')).decode('utf-8'))
 
     @classmethod
     def shellrc(cls):
-        return os.path.expanduser('~/.{}rc'.format(os.path.basename(os.environ['SHELL'])))
+        return os.path.expanduser('~/.{}rc'.format(
+            os.path.basename(os.environ['SHELL'])))
 
     @classmethod
     def cp(cls, src, dst):
@@ -101,7 +102,9 @@ class Shell():
 
     @classmethod
     def isinPATH(cls, exe):
-        return any(os.access(os.path.join(path, exe), os.X_OK) for path in os.environ["PATH"].split(os.pathsep))
+        return any(
+            os.access(os.path.join(path, exe), os.X_OK)
+            for path in os.environ["PATH"].split(os.pathsep))
 
     @classmethod
     def urldownload(cls, url, dst):

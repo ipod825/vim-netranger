@@ -15,25 +15,25 @@ FType = Enum('FileType', 'SOCK, LNK, REG, BLK, DIR, CHR, FIFO')
 
 class FS(object):
     acl_tbl = {
-        '7': ['r','w','x'],
-        '6': ['r','w','-'],
-        '5': ['r','-','x'],
-        '4': ['r','-','-'],
-        '3': ['-','w','x'],
-        '2': ['-','w','-'],
-        '1': ['-','-','x'],
-        '0': ['-','-','-'],
+        '7': ['r', 'w', 'x'],
+        '6': ['r', 'w', '-'],
+        '5': ['r', '-', 'x'],
+        '4': ['r', '-', '-'],
+        '3': ['-', 'w', 'x'],
+        '2': ['-', 'w', '-'],
+        '1': ['-', '-', 'x'],
+        '0': ['-', '-', '-'],
     }
 
     uid_tbl = {
-        '7': ['s','s','t'],
-        '6': ['s','s','-'],
-        '5': ['s','-','t'],
-        '4': ['s','-','-'],
-        '3': ['-','s','t'],
-        '2': ['-','s','-'],
-        '1': ['-','-','t'],
-        '0': ['-','-','-'],
+        '7': ['s', 's', 't'],
+        '6': ['s', 's', '-'],
+        '5': ['s', '-', 't'],
+        '4': ['s', '-', '-'],
+        '3': ['-', 's', 't'],
+        '2': ['-', 's', '-'],
+        '1': ['-', '-', 't'],
+        '0': ['-', '-', '-'],
     }
 
     ft_tbl = {
@@ -74,10 +74,10 @@ class FS(object):
         shutil.move(src, dst)
 
     def cp(self, src, dst):
-        if os.path.isdir(src) and src[-1]!='/':
-            src = src+'/'
-        if os.path.isdir(dst) and dst[-1]!='/':
-            dst = dst+'/'
+        if os.path.isdir(src) and src[-1] != '/':
+            src = src + '/'
+        if os.path.isdir(dst) and dst[-1] != '/':
+            dst = dst + '/'
         Shell.run('cp -r "{}" "{}"'.format(src, dst))
 
     def rm(self, target, force=False):
@@ -96,9 +96,11 @@ class FS(object):
         res = float(statinfo.st_size)
         for u in ['B', 'K', 'M', 'G', 'T', 'P']:
             if res < 1024:
-                return '{} {}'.format(re.sub('\.0*$', '', str(res)[:file_sz_display_wid-2]), u)
+                return '{} {}'.format(
+                    re.sub('\.0*$', '',
+                           str(res)[:file_sz_display_wid - 2]), u)
             res /= 1024
-        return '?'*file_sz_display_wid
+        return '?' * file_sz_display_wid
 
     def acl_str(self, statinfo):
         statinfo = oct(statinfo.st_mode)
@@ -130,7 +132,7 @@ class Rclone(FS):
             root_dir = root_dir[:-1]
 
         self.root_dir = root_dir
-        self.rplen = len(root_dir)+1
+        self.rplen = len(root_dir) + 1
         for remote, root in remote_remap.items():
             if root[-1] != '/':
                 remote_remap[remote] += '/'
@@ -143,7 +145,7 @@ class Rclone(FS):
         for remote in local_remotes.difference(remotes):
             super(Rclone, self).rm(os.path.join(root_dir, remote), True)
 
-        self.has_remote = len(remotes)>0
+        self.has_remote = len(remotes) > 0
         self.ls_time_stamp = {}
 
     def rpath(self, lpath):
@@ -162,8 +164,15 @@ class Rclone(FS):
 
     def ls(self, dirname, cheap_remote_ls=False):
         if not cheap_remote_ls and len(dirname) > len(self.root_dir):
-            local_files = set([name for name in Shell.run('ls -p {}'.format(dirname)).split('\n') if len(name)>0])
-            remote_files = set([name for name in Shell.run('rclone lsf "{}"'.format(self.rpath(dirname))).split('\n') if len(name)>0])
+            local_files = set([
+                name
+                for name in Shell.run('ls -p {}'.format(dirname)).split('\n')
+                if len(name) > 0
+            ])
+            remote_files = set([
+                name for name in Shell.run('rclone lsf "{}"'.format(
+                    self.rpath(dirname))).split('\n') if len(name) > 0
+            ])
 
             for name in remote_files.difference(local_files):
                 if name[-1] == '/':
@@ -172,8 +181,12 @@ class Rclone(FS):
                     Shell.touch(os.path.join(dirname, name))
 
             for name in local_files.difference(remote_files):
-                log('rclone copyto "{}" "{}"'.format(os.path.join(dirname, name), os.path.join(self.rpath(dirname), name)))
-                Shell.run('rclone copyto "{}" "{}"'.format(os.path.join(dirname, name), os.path.join(self.rpath(dirname), name)))
+                log('rclone copyto "{}" "{}"'.format(
+                    os.path.join(dirname, name),
+                    os.path.join(self.rpath(dirname), name)))
+                Shell.run('rclone copyto "{}" "{}"'.format(
+                    os.path.join(dirname, name),
+                    os.path.join(self.rpath(dirname), name)))
         return super(Rclone, self).ls(dirname)
 
     def ensure_downloaded(self, lpath):
@@ -182,7 +195,8 @@ class Rclone(FS):
             Shell.run('rclone copyto "{}" "{}"'.format(src, dst))
 
     def rename(self, src, dst):
-        Shell.run('rclone moveto "{}" "{}"'.format(self.rpath(src), self.rpath(dst)))
+        Shell.run('rclone moveto "{}" "{}"'.format(
+            self.rpath(src), self.rpath(dst)))
         super(Rclone, self).rename(src, dst)
 
     def mv(self, src, dst):
@@ -191,8 +205,9 @@ class Rclone(FS):
         self.rm(src)
 
     def cp(self, src, dst):
-        Shell.run('rclone copyto "{}" "{}"'.format(self.rpath(src),
-                                                   os.path.join(self.rpath(dst), os.path.basename(src))))
+        Shell.run('rclone copyto "{}" "{}"'.format(
+            self.rpath(src),
+            os.path.join(self.rpath(dst), os.path.basename(src))))
         super(Rclone, self).cp(src, dst)
 
     def rm(self, target, force=False):
@@ -205,7 +220,7 @@ class Rclone(FS):
         Shell.run('rclone sync "{}" "{}"'.format(src, dst))
 
     def parent_dir(self, cwd):
-        if len(cwd) == self.rplen-1:
+        if len(cwd) == self.rplen - 1:
             return cwd
         return os.path.abspath(os.path.join(cwd, os.pardir))
 
@@ -217,7 +232,9 @@ class Rclone(FS):
         if Shell.isinPATH('rclone'):
             return True
         else:
-            rclone_dir = VimUserInput('Rclone not in PATH. Install it at (modify/enter)', os.path.expanduser('~/rclone'))
+            rclone_dir = VimUserInput(
+                'Rclone not in PATH. Install it at (modify/enter)',
+                os.path.expanduser('~/rclone'))
             Shell.mkdir(rclone_dir)
 
             system = platform.system().lower()
@@ -228,7 +245,8 @@ class Rclone(FS):
                 # Should support arm??
                 pass
 
-            url = 'https://downloads.rclone.org/rclone-current-{}-{}.zip'.format(system, processor)
+            url = 'https://downloads.rclone.org/'
+            'rclone-current-{}-{}.zip'.format(system, processor)
             zip_fname = os.path.join(rclone_dir, 'rclone.zip')
             Shell.urldownload(url, zip_fname)
             zip_ref = zipfile.ZipFile(zip_fname, 'r')
@@ -236,13 +254,15 @@ class Rclone(FS):
             for entry in zip_ref.NameToInfo:
                 if entry.endswith('rclone'):
                     Shell.cp(os.path.join(rclone_dir, entry), rclone_dir)
-                    Shell.chmod(os.path.join(rclone_dir,'rclone'), 755)
+                    Shell.chmod(os.path.join(rclone_dir, 'rclone'), 755)
 
             zip_ref.close()
             os.remove(zip_fname)
 
-            shellrc = VimUserInput('Update PATH in (leave blank to set manually later)', Shell.shellrc())
-            if len(shellrc)>0:
+            shellrc = VimUserInput(
+                'Update PATH in (leave blank to set manually later)',
+                Shell.shellrc())
+            if len(shellrc) > 0:
                 with open(shellrc, 'a') as f:
                     f.write('PATH={}:$PATH\n'.format(rclone_dir))
             os.environ['PATH'] += ':' + rclone_dir

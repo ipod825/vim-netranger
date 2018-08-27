@@ -8,7 +8,11 @@ from netranger.util import Shell
 from netranger import default
 from netranger.colortbl import colortbl
 from neovim import attach
-from netranger.config import test_dir, test_local_dir, test_remote_dir, test_remote_name, test_remote_cache_dir
+from netranger.config import test_dir
+from netranger.config import test_local_dir
+from netranger.config import test_remote_dir
+from netranger.config import test_remote_name
+from netranger.config import test_remote_cache_dir
 
 
 def color_str(hi_key):
@@ -26,18 +30,23 @@ def assert_content(expected, level=0, ind=None, hi=None):
         line = nvim.current.buffer[ind]
 
     m = re.search('\[38;5;([0-9]+)(;7)?m( *)([^ ]+)', line)
-    assert m.group(4) == expected, 'expected:"{}", real: "{}"'.format(expected, m.group(4))
-    assert m.group(3) == '  '*level, "level mismatch:expected:{}, real:{}".format('"{}"'.format('  '*level), '"{}"'.format(m.group(3)))
+    assert m.group(4) == expected, 'expected:"{}",'
+    ' real: "{}"'.format(expected, m.group(4))
+    assert m.group(3) == '  ' * level, "level mismatch: expected: {}, "
+    "real:{}".format('"{}"'.format('  ' * level), '"{}"'.format(m.group(3)))
 
     if hi is not None:
         expected_hi = color_str(hi)
-        assert m.group(1) == expected_hi, 'expected_hi: "{}", real_hi: "{}"'.format(expected_hi, m.group(1))
+        assert m.group(1) == expected_hi, 'expected_hi: "{}", '
+        'real_hi: "{}"'.format(expected_hi, m.group(1))
 
     cLineNo = nvim.eval("line('.')") - 1
     if ind is None or ind == cLineNo:
-        assert m.group(2) is not None, 'Background highlight mismatch. ind: {}, curLine: {}'.format(ind, cLineNo)
+        assert m.group(2) is not None, 'Background highlight mismatch. '
+        'ind: {}, curLine: {}'.format(ind, cLineNo)
     else:
-        assert m.group(2) is None,'Background highlight mismatch. ind: {}, curLine: {}'.format(ind, cLineNo)
+        assert m.group(2) is None, 'Background highlight mismatch. '
+        'ind: {}, curLine: {}'.format(ind, cLineNo)
 
 
 def assert_highlight(expected, ind=None):
@@ -49,7 +58,8 @@ def assert_highlight(expected, ind=None):
 
     m = re.search('\[38;5;([0-9]+)(;7)?m', line)
     expected = color_str(expected)
-    assert m.group(1) == expected, 'expected: "{}", real: "{}"'.format(expected, m.group(1))
+    assert m.group(1) == expected, 'expected: "{}", real: "{}"'.format(
+        expected, m.group(1))
     if ind == nvim.current.buffer.number:
         assert m.group(2) is not None
     else:
@@ -57,7 +67,10 @@ def assert_highlight(expected, ind=None):
 
 
 def assert_num_content_line(numLine):
-    assert numLine == len(nvim.current.buffer)-2, 'expected line #: {}, real line #: {}'.format(numLine, len(nvim.current.buffer)-1)
+    assert numLine == len(nvim.current.buffer
+                          ) - 2, 'expected line #: {}, real line #: {}'.format(
+                              numLine,
+                              len(nvim.current.buffer) - 1)
 
 
 def assert_fs(d, expected):
@@ -68,7 +81,7 @@ def assert_fs(d, expected):
     """
     real = None
     for i in range(10):
-        real = Shell.run('ls --group-directories-first '+d).split()
+        real = Shell.run('ls --group-directories-first ' + d).split()
         if real == expected:
             return
         time.sleep(0.05)
@@ -93,14 +106,16 @@ def print_vim_buffer():
 def do_test(fn=None, fn_remote=None):
     """
     Note on the mecahnism of testing rclone on localhost:
-    1. Tester run rclone to create a "local" remote named netrtest (must be exact this name)
+    1. Tester run rclone to create a "local" remote named netrtest (must be
+       exact this name)
     2. In default.py, the vim variable 'NETRemoteRoots' is set to
        {test_remote_name: test_remote_dir}, which defaults to
        {'netrtest', '/tmp/netrtest/remote'}.
     3. 'NETRemoteRoots' is passed to Rclone constructor, so that the rpath
        of the netrtest remote is mapped to '/tmp/netrtest/remote'.
-    4. This just works in netranger. In cmd line, running 'rclone lsl netranger:/'
-       still shows you the content of the root directory of the localhost.
+    4. This just works in netranger. In cmd line, running
+       'rclone lsl netranger:/' still shows you the content of the root
+       directory of the localhost.
     """
     old_cwd = os.getcwd()
     Shell.run('rm -rf {}'.format(test_dir))
@@ -115,7 +130,8 @@ def do_test(fn=None, fn_remote=None):
         Shell.touch('.a')
         Shell.mkdir('dir2/')
 
-        # The following should be removed when rclone fix "not copying empty directories" bug.
+        # The following should be removed when rclone fix "not copying empty
+        # directories" bug.
         Shell.touch('dir/subdir/subsubdir/placeholder')
         Shell.touch('dir/subdir2/placeholder')
         Shell.touch('dir/subdir2/placeholder')
@@ -133,11 +149,13 @@ def do_test(fn=None, fn_remote=None):
         found_remote = False
         for i, line in enumerate(nvim.current.buffer):
             if re.findall('.+(netrtest)', line):
-                nvim.command('call cursor({}, 1)'.format(i+1))
+                nvim.command('call cursor({}, 1)'.format(i + 1))
                 found_remote = True
                 break
 
-        assert found_remote, 'You must set up an rclone remote named "{}" to test remote function'.format(test_remote_name)
+        assert found_remote, 'You must set up an rclone remote named "{}" '
+        'to test remote function'.format(
+            test_remote_name)
         nvim.input('l')
         nvim.command('NETRemotePull')
         nvim.command('call cursor(2, 1)')
@@ -175,7 +193,9 @@ def test_navigation():
     assert_content('dir2', ind=4, hi='dir')
 
     nvim.input(' j<Cr>')
-    assert os.path.basename(nvim.command_output('pwd')) == 'dir2', os.path.basename(nvim.command_output('pwd'))
+    assert os.path.basename(
+        nvim.command_output('pwd')) == 'dir2', os.path.basename(
+            nvim.command_output('pwd'))
     nvim.input('k 3j<Cr>')
     assert os.path.basename(nvim.command_output('pwd')) == 'dir'
 
@@ -383,7 +403,8 @@ def test_detect_fs_change():
 
 def test_bookmark():
     bookmarkfile = default.variables['NETRBookmarkFile']
-    copy = '{}/{}bak'.format(os.path.dirname(bookmarkfile), os.path.basename(bookmarkfile))
+    copy = '{}/{}bak'.format(
+        os.path.dirname(bookmarkfile), os.path.basename(bookmarkfile))
 
     if os.path.isfile(bookmarkfile):
         Shell.run('mv {} {}'.format(bookmarkfile, copy))
@@ -422,15 +443,20 @@ def test_size_display():
         # line[-4:] = [0m
         return nvim.current.line[:-4].endswith(s)
 
-    assert cLine_ends_with('3'), 'size display dir fail: {}'.format('a'+nvim.current.line[-1]+'a')
-    Shell.run('echo {} > {}'.format('a'*1035, 'a'*width +'.pdf'))
-    Shell.run('echo {} > {}'.format('b'*1024, 'b'*width))
+    assert cLine_ends_with('3'), 'size display dir fail: {}'.format(
+        'a' + nvim.current.line[-1] + 'a')
+    Shell.run('echo {} > {}'.format('a' * 1035, 'a' * width + '.pdf'))
+    Shell.run('echo {} > {}'.format('b' * 1024, 'b' * width))
 
     nvim.command('edit .')
     nvim.input('Gk')
-    assert cLine_ends_with('~.pdf 1.01 K'), 'size display abbreviation fail: a~.pdf {}'.format(nvim.current.line[-10:])
+    assert cLine_ends_with(
+        '~.pdf 1.01 K'), 'size display abbreviation fail: a~.pdf {}'.format(
+            nvim.current.line[-10:])
     nvim.input('j')
-    assert cLine_ends_with('b~    1 K'), 'size display abbreviation fail: b~ {}'.format(nvim.current.line[-10:])
+    assert cLine_ends_with(
+        'b~    1 K'), 'size display abbreviation fail: b~ {}'.format(
+            nvim.current.line[-10:])
 
 
 def test_sort():
@@ -438,9 +464,9 @@ def test_sort():
     # extension: [a, a.a, a.b]
     # size: [a.b, a.a, a]
     # mtime: [a, a.b, a.a]
-    Shell.run('echo {} > dir/{}'.format('a'*3, 'a'))
-    Shell.run('echo {} > dir/{}'.format('a'*2, 'a.a'))
-    Shell.run('echo {} > dir/{}'.format('a'*1, 'a.b'))
+    Shell.run('echo {} > dir/{}'.format('a' * 3, 'a'))
+    Shell.run('echo {} > dir/{}'.format('a' * 2, 'a.a'))
+    Shell.run('echo {} > dir/{}'.format('a' * 1, 'a.b'))
     time.sleep(0.01)
     Shell.run('touch dir/a.a')
 
@@ -494,7 +520,11 @@ def test_rifle():
 
 def parse_arg(argv):
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('-m', '--manual', action='store_true', help='Only setting up testing directories. Used for testing manually')
+    parser.add_argument(
+        '-m',
+        '--manual',
+        action='store_true',
+        help='Only setting up testing directories. Used for testing manually')
     return parser.parse_args(argv[1:])
 
 
@@ -503,7 +533,9 @@ if __name__ == '__main__':
     if args.manual:
         do_test()
     else:
-        nvim = attach('socket', path=os.path.join(tempfile.gettempdir(), 'netrangertest'))
+        nvim = attach(
+            'socket',
+            path=os.path.join(tempfile.gettempdir(), 'netrangertest'))
         ori_timeoutlen = nvim.options['timeoutlen']
         nvim.options['timeoutlen'] = 1
         default.color.update(nvim.vars['NETRColors'])
