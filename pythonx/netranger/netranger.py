@@ -327,6 +327,7 @@ class NetRangerBuf(object):
         self.pseudo_footer_lineNo = None
         self.is_editing = False
         self.visual_start_line = 0
+        self.vim_buf_handel = self.vim.current.buffer
         self.render()
 
     def abbrev_cwd(self, width):
@@ -627,14 +628,15 @@ class NetRangerBuf(object):
         for hooker in Hookers['render_begin']:
             hooker(self)
 
-        self.vim.command('setlocal modifiable')
+        self.vim_buf_handel.options['modifiable'] = True
         if plain:
-            self.vim.current.buffer[:] = self.plain_content
+            self.vim_buf_handel[:] = self.plain_content
         else:
-            self.vim.current.buffer[:] = self.highlight_content
-        self.vim.command('setlocal nomodifiable')
-        self.move_vim_cursor(self.clineNo)
-        self.winwidth = VimCurWinWidth()
+            self.vim_buf_handel[:] = self.highlight_content
+        self.vim_buf_handel.options['modifiable'] = False
+        if self.vim.current.buffer.number is self.vim_buf_handel.number:
+            self.move_vim_cursor(self.clineNo)
+            self.winwidth = VimCurWinWidth()
 
         for hooker in Hookers['render_end']:
             hooker(self)

@@ -58,12 +58,13 @@ class Shell():
         return path.replace(Shell.userhome, '~')
 
     @classmethod
-    def run(cls, cmd):
+    def run(cls, cmd, log_if_error=True):
         try:
             return subprocess.check_output(
                 cmd, shell=True, stderr=subprocess.STDOUT).decode('utf-8')
         except subprocess.CalledProcessError as e:
-            CmdFailLog(e)
+            if log_if_error:
+                CmdFailLog(e)
 
     @classmethod
     def run_async(cls, cmd):
