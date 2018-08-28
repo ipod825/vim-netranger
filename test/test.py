@@ -22,7 +22,8 @@ def color_str(hi_key):
     return str(hi)
 
 
-def assert_content(expected, level=0, ind=None, hi=None):
+def assert_content(expected, level=0, ind=None, hi=None,
+                   hi_is_foreround=False):
     if ind is None:
         line = nvim.current.line
     else:
@@ -39,6 +40,9 @@ def assert_content(expected, level=0, ind=None, hi=None):
         expected_hi = color_str(hi)
         assert m.group(1) == expected_hi, 'expected_hi: "{}", '
         'real_hi: "{}"'.format(expected_hi, m.group(1))
+
+        if hi_is_foreround:
+            assert m.group(2) is not None, 'Expect a foreground highlight'
 
     cLineNo = nvim.eval("line('.')") - 1
     if ind is None or ind == cLineNo:
@@ -154,8 +158,7 @@ def do_test(fn=None, fn_remote=None):
                 break
 
         assert found_remote, 'You must set up an rclone remote named "{}" '
-        'to test remote function'.format(
-            test_remote_name)
+        'to test remote function'.format(test_remote_name)
         nvim.input('l')
         nvim.command('NETRemotePull')
         nvim.command('call cursor(2, 1)')
@@ -169,24 +172,25 @@ def do_test(fn=None, fn_remote=None):
 def test_navigation():
     nvim.input('j')
     assert_content('dir', ind=0, hi='dir')
-    assert_content('dir2', ind=1, hi='dir')
+    assert_content('dir2', ind=1, hi='dir', hi_is_foreround=True)
 
     nvim.input('kl')
-    assert_content('subdir', ind=0, hi='dir')
+    assert_content('subdir', ind=0, hi='dir', hi_is_foreround=True)
 
     nvim.input('h')
-    assert_content('dir', ind=0, hi='dir')
+    assert_content('dir', ind=0, hi='dir', hi_is_foreround=True)
     assert_content('dir2', ind=1, hi='dir')
 
     nvim.input(' ')
-    assert_content('dir', ind=0, hi='dir')
+    assert_content('dir', ind=0, hi='dir', hi_is_foreround=True)
     assert_content('subdir', level=1, ind=1, hi='dir')
     assert_content('dir2', ind=4, hi='dir')
     nvim.input(' ')
+    assert_content('dir', ind=0, hi='dir', hi_is_foreround=True)
     assert_content('dir2', ind=1, hi='dir')
 
     nvim.input(' jlhh')
-    assert_content('dir', ind=0, hi='dir')
+    assert_content('dir', ind=0, hi='dir', hi_is_foreround=True)
     assert_content('subdir', ind=1, level=1, hi='dir')
     assert_content('subdir2', ind=2, level=1, hi='dir')
     assert_content('a', ind=3, level=1, hi='file')
@@ -239,6 +243,7 @@ def test_pickCutCopyPaste():
     assert_content('subdir', ind=1, level=1, hi='pick')
     assert_content('subdir2', ind=2, level=1, hi='dir')
     assert_content('a', ind=3, level=1, hi='pick')
+    assert_content('dir2', ind=4, level=0, hi='dir', hi_is_foreround=True)
 
     nvim.input('x')
     assert_content('dir', ind=0, hi='dir')
@@ -252,7 +257,7 @@ def test_pickCutCopyPaste():
     assert_fs('dir2', ['subdir', 'a'])
 
     nvim.input('hkddkdd')
-    assert_content('dir', ind=0, hi='cut')
+    assert_content('dir', ind=0, hi='cut', hi_is_foreround=True)
     assert_content('subdir2', ind=1, level=1, hi='cut')
 
     nvim.input('jjlp')
@@ -265,19 +270,19 @@ def test_pickCutCopyPaste():
     nvim.input('Gvkkvjyy')
     assert_content('dir', ind=0, hi='dir')
     assert_content('subdir', ind=1, hi='pick')
-    assert_content('subdir2', ind=2, hi='copy')
+    assert_content('subdir2', ind=2, hi='copy', hi_is_foreround=True)
     assert_content('a', ind=3, hi='pick')
 
     nvim.input('x')
     assert_content('dir', ind=0, hi='dir')
     assert_content('subdir', ind=1, hi='cut')
-    assert_content('subdir2', ind=2, hi='copy')
+    assert_content('subdir2', ind=2, hi='copy', hi_is_foreround=True)
     assert_content('a', ind=3, hi='cut')
 
     nvim.command('wincmd v')
     nvim.command('wincmd l')
     nvim.input('hp')
-    assert_content('dir2', ind=0, hi='dir')
+    assert_content('dir2', ind=0, hi='dir', hi_is_foreround=True)
     assert_content('subdir', ind=1, hi='dir')
     assert_content('subdir2', ind=2, hi='dir')
     assert_content('a', ind=3, hi='file')
@@ -292,7 +297,7 @@ def test_pickCutCopyPaste():
 def test_visual_pick():
     nvim.input('vVjv')
     assert_content('dir', ind=0, level=0, hi='dir')
-    assert_content('dir2', ind=1, level=0, hi='pick')
+    assert_content('dir2', ind=1, level=0, hi='pick', hi_is_foreround=True)
     nvim.input('D')
     assert_fs('', ['dir'])
 
@@ -363,9 +368,9 @@ def test_delete():
     assert_fs('dir', ['subdir2'])
     assert_content('dir', ind=0, hi='dir')
     assert_content('subdir2', ind=1, level=1, hi='dir')
-    assert_content('dir2', ind=2, hi='dir')
+    assert_content('dir2', ind=2, hi='dir', hi_is_foreround=True)
     nvim.input('kkXX')
-    assert_content('dir2', ind=0, hi='dir')
+    assert_content('dir2', ind=0, hi='dir', hi_is_foreround=True)
     assert_fs('', ['dir2'])
 
 
@@ -375,12 +380,12 @@ def test_delete_remote():
     assert_fs_remote('dir', ['subdir2'])
     assert_content('dir', ind=0, hi='dir')
     assert_content('subdir2', ind=1, level=1, hi='dir')
-    assert_content('dir2', ind=2, hi='dir')
+    assert_content('dir2', ind=2, hi='dir', hi_is_foreround=True)
 
     nvim.input('kk  ')
     assert_content('subdir2', ind=1, level=1, hi='dir')
     nvim.input('XX')
-    assert_content('dir2', ind=0, hi='dir')
+    assert_content('dir2', ind=0, hi='dir', hi_is_foreround=True)
     assert_fs('', ['dir2'])
     assert_fs_remote('', ['dir2'])
 
@@ -391,7 +396,7 @@ def test_detect_fs_change():
     Shell.mkdir('dir3')
     nvim.command('split new')
     nvim.command('quit')
-    assert_content('dir', ind=0, hi='dir')
+    assert_content('dir', ind=0, hi='dir', hi_is_foreround=True)
     assert_content('b', ind=4, level=1, hi='file')
     assert_content('dir3', ind=6, hi='dir')
     assert_num_content_line(7)
