@@ -161,7 +161,7 @@ alias palette='for i in {0..255}; do echo -e "\e[38;05;${i}m${i}"; done | column
 
 
 ### Writing plugin for vim-netranger
-vim-netranger will expose some api so that users can write (python) code to customize the appearance of vim-netranger. An example plugin is [netranger-diricon](https://github.com/ipod825/netranger-diricon), which shows a small icon indicating whether a directory is expanded or not. Generally, in your `plugin/YOURPLUGIN.vim` file, you'll have the following boilplate code:
+vim-netranger will expose some api so that users can write (python) code to customize the appearance of vim-netranger. An example plugin is [netranger-diricon](https://github.com/ipod825/netranger-diricon), which shows a small icon indicating whether a directory is expanded or not. A more sophisticated plugin is [netranger-git](https://github.com/ipod825/netranger-git). Generally, in your `plugin/YOURPLUGIN.vim` file, you'll have the following boilplate code:
 ```vim
 let s:pyx = 'python3 '
 exec s:pyx 'from netranger.api import RegisterHooker'
