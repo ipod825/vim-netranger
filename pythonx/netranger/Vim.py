@@ -45,6 +45,10 @@ def VimWarningMsg(msg):
         format(msg.replace('"', '\\"')))
 
 
+def VimEcho(msg):
+    vim.command('unsilent echo "{}"'.format(msg))
+
+
 def VimUserInput(hint, default=''):
     vim.command('let g:NETRRegister=input("{}: ", "{}")'.format(hint, default))
     return decode_if_bytes(vim.vars['NETRRegister'])
