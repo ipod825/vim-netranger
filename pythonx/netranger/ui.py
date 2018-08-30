@@ -174,7 +174,7 @@ class BookMarkUI(UI):
         # on user input..
         if not os.path.isfile(VimVar('NETRBookmarkFile')):
             with open(VimVar('NETRBookmarkFile'), 'w') as f:
-                f.write('/:/')
+                f.write('~:{}'.format(os.path.expanduser('~')))
 
         self.load_bookmarks()
 
