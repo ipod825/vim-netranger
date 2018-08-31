@@ -955,6 +955,16 @@ class Netranger(object):
                              '<Esc>:exe ":call _NETRInvokeMap({})"<CR>'.format(
                                  k, "'NETRTogglePickVisual'"))
 
+    def unmap_keys(self):
+        for fn, keys in self.keymaps.items():
+            if fn == 'NETRSave':
+                continue
+            for k in keys:
+                self.vim.command("nunmap <silent> <buffer> {}".format(k))
+
+        for k in self.keymaps['NETRTogglePick']:
+            self.vim.command('vunmap <silent> <buffer> {}'.format(k))
+
     def register_keymap(self, keys_fns):
         mapped_keys = []
         for keys in self.keymaps.values():
@@ -1218,11 +1228,7 @@ class Netranger(object):
         self.cur_buf.toggle_expand()
 
     def NETREdit(self):
-        for fn, keys in self.keymaps.items():
-            if fn == 'NETRSave':
-                continue
-            for k in keys:
-                self.vim.command("nunmap <silent> <buffer> {}".format(k))
+        self.unmap_keys()
         self.cur_buf.edit()
 
     def NETRSave(self):
