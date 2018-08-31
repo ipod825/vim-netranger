@@ -82,7 +82,7 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 
 ### Bookmark
 1. Press `m` to open the bookmark UI. You'll see the current bookmarks you have. Press [azAZ] (any letters) to bookmark the current directory.
-2. Press `'` to open the bookmark UI again. You'll see that previous entered character appears there. Press the correct character to navigate to the directory you want to go.
+2. Press `'` to open the bookmark UI again. You'll see that previous entered character appears there. Press the correct character to navigate to the directory you want to go. Alternatively, move your cursor and press enter (`<cr>`).
 3. Press `em` to edit the bookmark with vim. On saving (e.g. `:x`)the file, your bookmarks will be updated automatically.
 4. Note that you can use `:q` to quit the bookmark ui to abort the aforementioned operation.
 
@@ -90,11 +90,11 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 1. Rifle is a config file ranger used to open files with external program. vim-netranger mimics its syntax and behavior.
 2. If you don't have a `rifle.config` file in `g:NETRRootDir` (default to `$HOME/.netranger/`), vim-netranger will copy a default one to that directory. You can simply modify the default `rifle.config` to serve your need.
 3. The first match (if any) in `rifle.config` is adopted.
-4. If multiple match are found, you can press `a` to select which program you want to use.
+4. If multiple match are possible, press `a` (stands for ask) to show a list of candidates. Press the correct character to select the program. Alternatively, move your cursor and press enter (`<cr>`).
 
 
 ### Sort
-1. Press `S` to sort.
+1. Press `S` show a list of sorting modes. Press the correct character to select the mode. Alternatively, move your cursor and press enter (`<cr>`).
 
 
 ### Panel Mode

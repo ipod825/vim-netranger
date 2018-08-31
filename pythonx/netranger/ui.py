@@ -33,7 +33,7 @@ class UI(object):
         self.vim.command('{} {}sb'.format(self.position,
                                           self.bufs[name].number))
 
-    def create_buf(self, content, mappings=None, name='default'):
+    def create_buf(self, content, mappings=None, name='default', map_cr=False):
         self.vim.command('{} new'.format(self.position))
         self.set_buf_common_option()
         new_buf = self.vim.current.buffer
@@ -42,6 +42,16 @@ class UI(object):
         if mappings is not None:
             for k, v in mappings:
                 self.map_key_reg(k, v)
+
+        if map_cr:
+            assert mappings is not None
+            ui_internal_vim_dict_name = 'g:_{}Map'.format(type(self).__name__)
+            self.vim.command('let {}={}'.format(ui_internal_vim_dict_name,
+                                                dict(mappings)))
+            self.vim.command(
+                "nnoremap <nowait> <silent> <buffer> <Cr> "
+                ":let g:NETRRegister=[{}[getline('.')[0]]] <cr> :quit <cr>".
+                format(ui_internal_vim_dict_name))
 
         new_buf.options['modifiable'] = True
         new_buf[:] = content
@@ -78,7 +88,8 @@ class AskUI(UI):
         self.fullpath = None
         self.create_buf(
             content=[],
-            mappings=[(chr(ind), chr(ind)) for ind in range(97, 123)])
+            mappings=[(chr(ind), chr(ind)) for ind in range(97, 123)],
+            map_cr=True)
 
     def ask(self, content, fullpath):
         self.show()
@@ -157,7 +168,7 @@ class SortUI(UI):
         mappings = [(k[0], k[0])
                     for k in sort_opts] + [(k[0].upper(), k[0].upper())
                                            for k in sort_opts]
-        self.create_buf(content=content, mappings=mappings)
+        self.create_buf(content=content, mappings=mappings, map_cr=True)
 
 
 class BookMarkUI(UI):
@@ -231,6 +242,7 @@ class BookMarkUI(UI):
         if not self.buf_valid('go'):
             self.create_buf(
                 mappings=self.mark_dict.items(),
+                map_cr=True,
                 content=[
                     '{}:{}'.format(k, p) for k, p in self.mark_dict.items()
                 ],
@@ -245,16 +257,3 @@ class BookMarkUI(UI):
         self.del_buf('set')
         self.del_buf('go')
         self.netranger.pend_onuiquit(self.load_bookmarks)
-
-
-class ParentUI(UI):
-    def __init__(self, vim, height):
-        UI.__init__(self, vim)
-        self.height = height
-        self.create_buf([])
-
-    def set_content(self, acl, content):
-        buf = self.bufs['default']
-        buf.api.set_option('modifiable', True)
-        buf[:] = [acl] + content
-        buf.api.set_option('modifiable', False)
