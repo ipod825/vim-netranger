@@ -30,7 +30,7 @@ def assert_content(expected, level=0, ind=None, hi=None,
         ind += 1
         line = nvim.current.buffer[ind]
 
-    m = re.search('\[38;5;([0-9]+)(;7)?m( *)([^ ]+)', line)
+    m = re.search(r'\[38;5;([0-9]+)(;7)?m( *)([^ ]+)', line)
     assert m.group(4) == expected, 'expected:"{}",'
     ' real: "{}"'.format(expected, m.group(4))
     assert m.group(3) == '  ' * level, "level mismatch: expected: {}, "
@@ -60,7 +60,7 @@ def assert_highlight(expected, ind=None):
         ind += 1
         line = nvim.current.buffer[ind]
 
-    m = re.search('\[38;5;([0-9]+)(;7)?m', line)
+    m = re.search(r'\[38;5;([0-9]+)(;7)?m', line)
     expected = color_str(expected)
     assert m.group(1) == expected, 'expected: "{}", real: "{}"'.format(
         expected, m.group(1))
@@ -157,8 +157,8 @@ def do_test(fn=None, fn_remote=None):
                 found_remote = True
                 break
 
-        assert found_remote, 'You must set up an rclone remote named "{}" '
-        'to test remote function'.format(test_remote_name)
+        assert found_remote, 'You must set up an rclone remote named "{}" \
+            to test remote function'.format(test_remote_name)
         nvim.input('l')
         nvim.command('NETRemotePull')
         nvim.command('call cursor(2, 1)')

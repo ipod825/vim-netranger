@@ -97,7 +97,7 @@ class FS(object):
         for u in ['B', 'K', 'M', 'G', 'T', 'P']:
             if res < 1024:
                 return '{} {}'.format(
-                    re.sub('\.0*$', '',
+                    re.sub(r'\.0*$', '',
                            str(res)[:file_sz_display_wid - 2]), u)
             res /= 1024
         return '?' * file_sz_display_wid
@@ -138,7 +138,11 @@ class Rclone(FS):
                 remote_remap[remote] += '/'
         self.remote_remap = remote_remap
         Shell.mkdir(root_dir)
-        remotes = set(Shell.run('rclone listremotes').split(':\n'))
+
+        remotes = set([
+            line for line in Shell.run('rclone listremotes').split(':\n')
+            if line
+        ])
         local_remotes = set(super(Rclone, self).ls(root_dir))
         for remote in remotes.difference(local_remotes):
             Shell.mkdir(os.path.join(root_dir, remote))
@@ -245,8 +249,8 @@ class Rclone(FS):
                 # Should support arm??
                 pass
 
-            url = 'https://downloads.rclone.org/'
-            'rclone-current-{}-{}.zip'.format(system, processor)
+            url = 'https://downloads.rclone.org/rclone-current-{}-{}.zip'\
+                .format(system, processor)
             zip_fname = os.path.join(rclone_dir, 'rclone.zip')
             Shell.urldownload(url, zip_fname)
             zip_ref = zipfile.ZipFile(zip_fname, 'r')

@@ -759,8 +759,8 @@ class NetRangerBuf(object):
                                          cur_node.level + 1)
             if len(newNodes) > 0:
                 self.nodes = self.nodes[:self.clineNo +
-                                        1] + newNodes + self.nodes[self.clineNo
-                                                                   + 1:]
+                                        1] + newNodes + self.nodes[
+                                            self.clineNo + 1:]
         cur_node.expanded = not cur_node.expanded
         self.render()
 
