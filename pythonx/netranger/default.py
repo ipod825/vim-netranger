@@ -1,8 +1,7 @@
 from __future__ import absolute_import
-from netranger.config import root_dir
-from netranger.config import remote_cache_dir
-from netranger.config import test_remote_dir
-from netranger.config import test_remote_name
+
+from netranger.config import (remote_cache_dir, root_dir, test_remote_dir,
+                              test_remote_name)
 
 keymap = {
     # non-printable characters (e.g. <cr>) should be in small case for

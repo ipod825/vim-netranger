@@ -3,7 +3,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+
 import _thread as thread
+
 try:
     from netranger.Vim import VimErrorMsg as CmdFailLog
 except Exception:

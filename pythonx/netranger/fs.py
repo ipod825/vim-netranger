@@ -1,12 +1,13 @@
 from __future__ import absolute_import
+
 import os
-from netranger.util import Shell
-from netranger.util import log
-from netranger.Vim import VimUserInput
-from netranger.enum import Enum
-from netranger.config import file_sz_display_wid
-import shutil
 import re
+import shutil
+
+from netranger.config import file_sz_display_wid
+from netranger.enum import Enum
+from netranger.util import Shell, log
+from netranger.Vim import VimUserInput
 
 log('')
 

@@ -1,9 +1,10 @@
 from __future__ import absolute_import
-import string
+
 import os
+import string
+
 from netranger.util import log
-from netranger.Vim import VimVar
-from netranger.Vim import VimWarningMsg
+from netranger.Vim import VimVar, VimWarningMsg
 
 log('')
 

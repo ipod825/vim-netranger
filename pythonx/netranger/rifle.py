@@ -1,9 +1,11 @@
 from __future__ import absolute_import
-import re
+
 import os
+import re
+
+from netranger.config import config_dir
 from netranger.util import Shell, log
 from netranger.Vim import VimErrorMsg
-from netranger.config import config_dir
 
 log('')
 

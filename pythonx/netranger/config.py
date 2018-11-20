@@ -1,5 +1,6 @@
 import os
 import tempfile
+
 root_dir = os.path.expanduser('~/.netranger/')
 remote_cache_dir = os.path.join(root_dir, 'remote')
 config_dir = '{}/../../config'.format(os.path.dirname(__file__))

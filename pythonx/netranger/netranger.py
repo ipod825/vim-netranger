@@ -1,22 +1,23 @@
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
+
+import datetime
+import fnmatch
 import os
 import re
-import fnmatch
-import datetime
-from netranger.fs import FS, Rclone
-from netranger.util import log, Shell, c256
-from netranger import default
-from netranger.colortbl import colortbl
-from netranger.ui import BookMarkUI, HelpUI, SortUI, AskUI
-from netranger.rifle import Rifle
-from netranger.Vim import VimVar, VimErrorMsg, VimCurWinWidth, VimCurWinHeight
-from netranger.enum import Enum
 from collections import defaultdict
-from netranger.config import file_sz_display_wid
-from netranger.api import Hookers, HasHooker, disableHookers
-
 from sys import platform
+
+from netranger import default
+from netranger.api import HasHooker, Hookers, disableHookers
+from netranger.colortbl import colortbl
+from netranger.config import file_sz_display_wid
+from netranger.enum import Enum
+from netranger.fs import FS, Rclone
+from netranger.rifle import Rifle
+from netranger.ui import AskUI, BookMarkUI, HelpUI, SortUI
+from netranger.util import Shell, c256, log
+from netranger.Vim import VimCurWinHeight, VimCurWinWidth, VimErrorMsg, VimVar
+
 if platform == "win32":
     from os import getenv
 else:
