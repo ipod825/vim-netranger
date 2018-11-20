@@ -1019,8 +1019,11 @@ class Netranger(object):
                 bufname = os.path.expanduser('~')
             if not os.path.isdir(bufname):
                 return
-
+            if os.path.islink(bufname):
+                bufname = os.path.join(
+                    os.path.dirname(bufname), os.readlink(bufname))
             bufname = os.path.abspath(bufname)
+
             if self.buf_existed(bufname):
                 self.show_existing_buf(bufname)
             else:
