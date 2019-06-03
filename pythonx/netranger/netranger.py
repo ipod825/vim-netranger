@@ -44,8 +44,6 @@ class Node(object):
         self.is_cursor_on = False
 
     def set_highlight(self, highlight):
-        if type(highlight) is str:
-            highlight = colortbl[highlight]
         self.highlight = highlight
 
     @property
@@ -918,11 +916,16 @@ class Netranger(object):
             if type(color) is int and (color < 0 or color > 255):
                 VimErrorMsg('netranger: Color value should be within 0~255')
                 continue
-            elif type(color) is str and color not in colortbl:
-                VimErrorMsg('netranger: {} is not a valid color name!')
-                continue
+            elif type(color) is str:
+                if color not in colortbl:
+                    VimErrorMsg('netranger: {} is not a valid color name!')
+                    continue
 
             default.color[name] = color
+
+        for key, value in default.color.items():
+            if type(value) is str:
+                default.color[key] = colortbl[value]
 
     def should_ignore(self, basename):
         if self.ignore_pattern.match(basename):
