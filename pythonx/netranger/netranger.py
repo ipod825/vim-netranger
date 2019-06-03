@@ -9,7 +9,7 @@ from sys import platform
 
 from netranger import default
 from netranger.api import HasHooker, Hookers, disableHookers
-from netranger.colortbl import colortbl
+from netranger.colortbl import colorhexstr2ind, colorname2ind
 from netranger.config import file_sz_display_wid
 from netranger.enum import Enum
 from netranger.fs import FS, Rclone
@@ -917,7 +917,11 @@ class Netranger(object):
                 VimErrorMsg('netranger: Color value should be within 0~255')
                 continue
             elif type(color) is str:
-                if color not in colortbl:
+                if color[0] == '#':
+                    color = colorhexstr2ind.get(color, None)
+                else:
+                    color = colorname2ind.get(color, None)
+                if color is None:
                     VimErrorMsg('netranger: {} is not a valid color name!')
                     continue
 
@@ -925,7 +929,7 @@ class Netranger(object):
 
         for key, value in default.color.items():
             if type(value) is str:
-                default.color[key] = colortbl[value]
+                default.color[key] = colorname2ind[value]
 
     def should_ignore(self, basename):
         if self.ignore_pattern.match(basename):

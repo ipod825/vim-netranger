@@ -150,9 +150,9 @@ let g:NETRBookmarkGo = ["m"]
 'brokenlink': link node color
 'file': file node color
 ```
-2. Values can be either string or integer between 0~255. Please refer to [this page](https://jonasjacek.github.io/colors/). For example, in your `.vimrc`:
+2. Values can be either string or integer between 0~255. For gui (e.g. gvim, oni, VimR), the value should be of the form `#rrggbb` corresponding to the 256 colors, for more information, please refer to [this page](https://jonasjacek.github.io/colors/). For example, in your `.vimrc`:
 ```
-let g:NETRColors = {'pick': 'maroon', 'cut': 95}
+let g:NETRColors = {'pick': 'maroon', 'cut': 95, 'dir': '#5f5faf'}
 ```
 3. Or you could add the following to your shell rc and run `palette` to see directly how the colors look in your terminal:
 ```sh
@@ -170,7 +170,7 @@ exec s:pyx 'from netrangerPlugin.netrangerPlugin import NETRPlugin'
 exec s:pyx 'netrPlugin = NETRPlugin(NETRApi)'
 exec s:pyx 'RegisterHooker(netrPlugin.node_highlight_content_l)'
 ```
-In your `pythonx/netrangerPlugin/netrangerPlugin.py` (you should change netrangerPlugin to a different name), you should implemnt a `NETRPlugin` class (again, change it to proper name), whose constructor has the following signature: 
+In your `pythonx/netrangerPlugin/netrangerPlugin.py` (you should change netrangerPlugin to a different name), you should implemnt a `NETRPlugin` class (again, change it to proper name), whose constructor has the following signature:
 ```py
 def __init__(self, api):
     pass
