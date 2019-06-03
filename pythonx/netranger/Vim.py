@@ -14,6 +14,16 @@ def walk(fn, obj, *args, **kwargs):
     return fn(obj, *args, **kwargs)
 
 
+if vim.eval('has("timers")') == "1":
+
+    def VimTimer(delay, fn, pyfn):
+        vim.command('call timer_start({}, "{}")'.format(delay, fn))
+else:
+
+    def VimTimer(delay, fn, pyfn):
+        pyfn()
+
+
 def decode_if_bytes(obj, mode=True):
     """Decode obj if it is bytes."""
     if mode is True:

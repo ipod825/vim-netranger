@@ -37,6 +37,10 @@ func! _NETRInvokeMap(fn)
     exec s:pyx 'ranger.invoke_map("'.a:fn.'")'
 endfunc
 
+func! _NETRSetHeadeAndFooter(...)
+    exec s:pyx 'ranger.set_header_and_footer()'
+endfunc
+
 command! NETRemoteList exec s:pyx 'ranger.NETRemoteList()'
 command! NETRemotePull exec s:pyx 'ranger.NETRemotePull()'
 command! NETRemotePush exec s:pyx 'ranger.NETRemotePush()'

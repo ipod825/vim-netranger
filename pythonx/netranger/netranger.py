@@ -16,7 +16,8 @@ from netranger.fs import FS, Rclone
 from netranger.rifle import Rifle
 from netranger.ui import AskUI, BookMarkUI, HelpUI, SortUI
 from netranger.util import Shell, c256
-from netranger.Vim import VimCurWinHeight, VimCurWinWidth, VimErrorMsg, VimVar
+from netranger.Vim import (VimCurWinHeight, VimCurWinWidth, VimErrorMsg,
+                           VimTimer, VimVar)
 
 if platform == "win32":
     from os import getenv
@@ -659,12 +660,14 @@ class NetRangerBuf(object):
             clineNo -= 1
 
         self.set_clineno(clineNo)
+        VimTimer(100, '_NETRSetHeadeAndFooter', self.set_header_and_footer)
 
+    def set_header_and_footer(self):
         self.vim.command("setlocal modifiable")
         self.set_header_content()
         self.set_footer_content()
-        self.set_pseudo_header_content(clineNo)
-        self.set_pseudo_footer_content(clineNo)
+        self.set_pseudo_header_content(self.clineNo)
+        self.set_pseudo_footer_content(self.clineNo)
         self.vim.command("setlocal nomodifiable")
 
     def move_vim_cursor(self, lineNo):
@@ -1109,6 +1112,11 @@ class Netranger(object):
         """
         if bufnum in self.bufs:
             self.bufs[bufnum].on_cursormoved()
+
+    def set_header_and_footer(self):
+        bufnum = self.vim.current.buffer.number
+        if bufnum in self.bufs:
+            self.bufs[bufnum].set_header_and_footer()
 
     def pend_onuiquit(self, fn, numArgs=0):
         """Can be called by any UI. Used for waiting for user input in some UI
