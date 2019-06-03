@@ -140,11 +140,11 @@ def ext_name(path):
 
 class SortUI(UI):
     sort_fns = {
-        'a': lambda n: os.stat(n.fullpath).st_atime,
-        'c': lambda n: os.stat(n.fullpath).st_ctime,
+        'a': lambda n: n.stat.st_atime if n.stat is not None else -1,
+        'c': lambda n: n.stat.st_ctime if n.stat is not None else -1,
         'd': lambda n: '',
         'e': lambda n: ext_name(n.name),
-        'm': lambda n: os.stat(n.fullpath).st_ctime,
+        'm': lambda n: n.stat.st_ctime if n.stat is not None else -1,
         's': lambda n: size(n.fullpath),
     }
 

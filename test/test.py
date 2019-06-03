@@ -561,4 +561,7 @@ if __name__ == '__main__':
         do_test(test_sort)
         do_test(test_rifle)
 
+        # TODO
+        # add SORT test for broken link #issue 21 
+
         nvim.options['timeoutlen'] = ori_timeoutlen
