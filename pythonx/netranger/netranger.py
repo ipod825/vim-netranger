@@ -649,9 +649,6 @@ class NetRangerBuf(object):
 
         and refresh the highlight of the current line no.
         """
-        if self.is_editing:
-            return
-
         clineNo = int(self.vim.eval("line('.')")) - 1
 
         # do not stay on footer
@@ -660,9 +657,8 @@ class NetRangerBuf(object):
             clineNo -= 1
 
         self.set_clineno(clineNo)
-        VimTimer(100, '_NETRSetHeadeAndFooter', self.set_header_and_footer)
 
-    def set_header_and_footer(self):
+    def on_cursormoved_post(self):
         self.vim.command("setlocal modifiable")
         self.set_header_content()
         self.set_footer_content()
@@ -1110,13 +1106,18 @@ class Netranger(object):
 
         @param bufnum: current buffer number
         """
-        if bufnum in self.bufs:
+        if bufnum in self.bufs and not self.bufs[bufnum].is_editing:
             self.bufs[bufnum].on_cursormoved()
+            VimTimer(200, '_NETROnCursorMovedPost', self.on_cursormoved_post)
 
-    def set_header_and_footer(self):
+    def on_cursormoved_post(self):
+        """refresh header and footer content. This is a heavy task (compared
+        to setting highlight when cursor moved). We alieviate its load by using
+        timer.
+        """
         bufnum = self.vim.current.buffer.number
         if bufnum in self.bufs:
-            self.bufs[bufnum].set_header_and_footer()
+            self.bufs[bufnum].on_cursormoved_post()
 
     def pend_onuiquit(self, fn, numArgs=0):
         """Can be called by any UI. Used for waiting for user input in some UI
