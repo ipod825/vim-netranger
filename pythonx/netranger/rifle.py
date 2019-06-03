@@ -4,10 +4,8 @@ import os
 import re
 
 from netranger.config import config_dir
-from netranger.util import Shell, log
+from netranger.util import Shell
 from netranger.Vim import VimErrorMsg
-
-log('')
 
 
 class Rule(object):

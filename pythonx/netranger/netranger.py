@@ -15,7 +15,7 @@ from netranger.enum import Enum
 from netranger.fs import FS, Rclone
 from netranger.rifle import Rifle
 from netranger.ui import AskUI, BookMarkUI, HelpUI, SortUI
-from netranger.util import Shell, c256, log
+from netranger.util import Shell, c256
 from netranger.Vim import VimCurWinHeight, VimCurWinWidth, VimErrorMsg, VimVar
 
 if platform == "win32":
@@ -23,8 +23,6 @@ if platform == "win32":
 else:
     import pwd
     import grp
-
-log('')
 
 
 class Node(object):
@@ -650,7 +648,6 @@ class NetRangerBuf(object):
 
         and refresh the highlight of the current line no.
         """
-        log('on_cursormoved')
         if self.is_editing:
             return
 

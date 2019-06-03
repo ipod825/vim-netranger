@@ -6,10 +6,8 @@ import shutil
 
 from netranger.config import file_sz_display_wid
 from netranger.enum import Enum
-from netranger.util import Shell, log
+from netranger.util import Shell
 from netranger.Vim import VimUserInput
-
-log('')
 
 FType = Enum('FileType', 'SOCK, LNK, REG, BLK, DIR, CHR, FIFO')
 
@@ -186,9 +184,6 @@ class Rclone(FS):
                     Shell.touch(os.path.join(dirname, name))
 
             for name in local_files.difference(remote_files):
-                log('rclone copyto "{}" "{}"'.format(
-                    os.path.join(dirname, name),
-                    os.path.join(self.rpath(dirname), name)))
                 Shell.run('rclone copyto "{}" "{}"'.format(
                     os.path.join(dirname, name),
                     os.path.join(self.rpath(dirname), name)))
@@ -200,8 +195,8 @@ class Rclone(FS):
             Shell.run('rclone copyto "{}" "{}"'.format(src, dst))
 
     def rename(self, src, dst):
-        Shell.run('rclone moveto "{}" "{}"'.format(
-            self.rpath(src), self.rpath(dst)))
+        Shell.run('rclone moveto "{}" "{}"'.format(self.rpath(src),
+                                                   self.rpath(dst)))
         super(Rclone, self).rename(src, dst)
 
     def mv(self, src, dst):

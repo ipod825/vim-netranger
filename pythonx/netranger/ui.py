@@ -3,10 +3,7 @@ from __future__ import absolute_import
 import os
 import string
 
-from netranger.util import log
 from netranger.Vim import VimVar, VimWarningMsg
-
-log('')
 
 
 class UI(object):
@@ -115,8 +112,6 @@ class AskUI(UI):
 
     def _ask(self, char):
         cmd = self.options[ord(char) - 97]
-        log(self.options)
-        log(char, cmd, cmd == 'vim')
         if cmd == 'vim':
             self.netranger.NETROpen(use_rifle=False)
         else:
