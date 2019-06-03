@@ -85,11 +85,10 @@ class FooterNode(Node):
 
 class HeaderNode(Node):
     def __init__(self, fullpath):
-        super(HeaderNode, self).__init__(
-            fullpath,
-            Shell.abbrevuser(fullpath),
-            default.color['cwd'],
-            level=0)
+        super(HeaderNode, self).__init__(fullpath,
+                                         Shell.abbrevuser(fullpath),
+                                         default.color['cwd'],
+                                         level=0)
         self.re_stat()
 
     def re_stat(self, fs=None):
@@ -417,8 +416,8 @@ class NetRangerBuf(object):
             self.pseudo_footer_lineNo = None
 
     def create_nodes(self, wd, level=0, truncate_if_too_many_nodes=False):
-        nodes = self.create_nodes_with_file_names(
-            self.fs.ls(wd), wd, level, truncate_if_too_many_nodes)
+        nodes = self.create_nodes_with_file_names(self.fs.ls(wd), wd, level,
+                                                  truncate_if_too_many_nodes)
         return self.sort_nodes(nodes)
 
     def create_nodes_with_file_names(self,
@@ -612,11 +611,13 @@ class NetRangerBuf(object):
                 prefixEndInd = prefixEndInd[:cur_node.level + 1]
                 prefix = prefix[:prefixEndInd[-1]]
             if cur_node.is_DIR:
-                sortedNodes.append(('{}  {}{}'.format(
-                    prefix, sort_fn(cur_node), cur_node.name), cur_node))
+                sortedNodes.append(
+                    ('{}  {}{}'.format(prefix, sort_fn(cur_node),
+                                       cur_node.name), cur_node))
             else:
-                sortedNodes.append(('{} ~{}{}'.format(
-                    prefix, sort_fn(cur_node), cur_node.name), cur_node))
+                sortedNodes.append(
+                    ('{} ~{}{}'.format(prefix, sort_fn(cur_node),
+                                       cur_node.name), cur_node))
 
         sortedNodes = sorted(sortedNodes, key=lambda x: x[0])
         sortedNodes = [node[1] for node in sortedNodes]
@@ -840,8 +841,8 @@ class NetRangerBuf(object):
     def next_lesseq_level_ind(self, begInd, nodes=None):
         if nodes is None:
             nodes = self.nodes
-        return self.find_next_ind(nodes, begInd,
-                                  lambda beg, new: new.level <= beg.level)
+        return self.find_next_ind(
+            nodes, begInd, lambda beg, new: new.level <= beg.level)
 
 
 class Netranger(object):
@@ -1020,8 +1021,8 @@ class Netranger(object):
             if not os.path.isdir(bufname):
                 return
             if os.path.islink(bufname):
-                bufname = os.path.join(
-                    os.path.dirname(bufname), os.readlink(bufname))
+                bufname = os.path.join(os.path.dirname(bufname),
+                                       os.readlink(bufname))
             bufname = os.path.abspath(bufname)
 
             if self.buf_existed(bufname):
@@ -1177,20 +1178,20 @@ class Netranger(object):
         self.NETROpen('edit', use_rifle=False)
 
     def NETRBufVSplitOpen(self):
-        self.NETROpen(
-            VimVar('NETRSplitOrientation') + ' vsplit', use_rifle=False)
+        self.NETROpen(VimVar('NETRSplitOrientation') + ' vsplit',
+                      use_rifle=False)
 
     def NETRBufHSplitOpen(self):
-        self.NETROpen(
-            VimVar('NETRSplitOrientation') + ' split', use_rifle=False)
+        self.NETROpen(VimVar('NETRSplitOrientation') + ' split',
+                      use_rifle=False)
 
     def NETRBufPanelOpen(self):
         if self.cur_node.is_DIR:
             return
 
         if len(self.vim.current.tabpage.windows) == 1:
-            self.NETROpen(
-                VimVar('NETRSplitOrientation') + ' vsplit', use_rifle=False)
+            self.NETROpen(VimVar('NETRSplitOrientation') + ' vsplit',
+                          use_rifle=False)
             newsize = VimCurWinWidth() * VimVar('NETRPanelSize')
             self.vim.command('vertical resize {}'.format(newsize))
         else:
@@ -1485,8 +1486,8 @@ class Netranger(object):
     def NETRemoteList(self):
         if self.rclone is None:
             Rclone.valid_or_install(self.vim)
-            self.rclone = Rclone(
-                VimVar('NETRemoteCacheDir'), VimVar('NETRemoteRoots'))
+            self.rclone = Rclone(VimVar('NETRemoteCacheDir'),
+                                 VimVar('NETRemoteRoots'))
 
         if self.rclone.has_remote:
             self.vim.command('tabe ' + VimVar('NETRemoteCacheDir'))
