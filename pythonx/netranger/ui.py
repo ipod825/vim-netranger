@@ -87,10 +87,10 @@ class AskUI(UI):
         self.netranger = netranger
         self.options = None
         self.fullpath = None
-        self.create_buf(
-            content=[],
-            mappings=[(chr(ind), chr(ind)) for ind in range(97, 123)],
-            map_cr=True)
+        self.create_buf(content=[],
+                        mappings=[(chr(ind), chr(ind))
+                                  for ind in range(97, 123)],
+                        map_cr=True)
 
     def ask(self, content, fullpath):
         self.show()
@@ -201,12 +201,12 @@ class BookMarkUI(UI):
 
     def set(self, path):
         if not self.buf_valid('set'):
-            self.create_buf(
-                mappings=zip(self.valid_mark, self.valid_mark),
-                content=[
-                    '{}:{}'.format(k, p) for k, p in self.mark_dict.items()
-                ],
-                name='set')
+            self.create_buf(mappings=zip(self.valid_mark, self.valid_mark),
+                            content=[
+                                '{}:{}'.format(k, p)
+                                for k, p in self.mark_dict.items()
+                            ],
+                            name='set')
         self.show('set')
         self.path_to_mark = path
         self.netranger.pend_onuiquit(self._set, 1)
@@ -241,13 +241,13 @@ class BookMarkUI(UI):
 
     def go(self):
         if not self.buf_valid('go'):
-            self.create_buf(
-                mappings=self.mark_dict.items(),
-                map_cr=True,
-                content=[
-                    '{}:{}'.format(k, p) for k, p in self.mark_dict.items()
-                ],
-                name='go')
+            self.create_buf(mappings=self.mark_dict.items(),
+                            map_cr=True,
+                            content=[
+                                '{}:{}'.format(k, p)
+                                for k, p in self.mark_dict.items()
+                            ],
+                            name='go')
         self.show('go')
         self.netranger.pend_onuiquit(self.netranger.bookmarkgo_onuiquit, 1)
 

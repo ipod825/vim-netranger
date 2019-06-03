@@ -1,18 +1,17 @@
-import os
-import sys
-import re
-import time
-import tempfile
 import argparse
-from netranger.util import Shell
+import os
+import re
+import sys
+import tempfile
+import time
+
+from neovim import attach
+
 from netranger import default
 from netranger.colortbl import colortbl
-from neovim import attach
-from netranger.config import test_dir
-from netranger.config import test_local_dir
-from netranger.config import test_remote_dir
-from netranger.config import test_remote_name
-from netranger.config import test_remote_cache_dir
+from netranger.config import (test_dir, test_local_dir, test_remote_cache_dir,
+                              test_remote_dir, test_remote_name)
+from netranger.util import Shell
 
 
 def color_str(hi_key):
@@ -408,8 +407,8 @@ def test_detect_fs_change():
 
 def test_bookmark():
     bookmarkfile = default.variables['NETRBookmarkFile']
-    copy = '{}/{}bak'.format(
-        os.path.dirname(bookmarkfile), os.path.basename(bookmarkfile))
+    copy = '{}/{}bak'.format(os.path.dirname(bookmarkfile),
+                             os.path.basename(bookmarkfile))
 
     if os.path.isfile(bookmarkfile):
         Shell.run('mv {} {}'.format(bookmarkfile, copy))
@@ -538,9 +537,9 @@ if __name__ == '__main__':
     if args.manual:
         do_test()
     else:
-        nvim = attach(
-            'socket',
-            path=os.path.join(tempfile.gettempdir(), 'netrangertest'))
+        nvim = attach('socket',
+                      path=os.path.join(tempfile.gettempdir(),
+                                        'netrangertest'))
         ori_timeoutlen = nvim.options['timeoutlen']
         nvim.options['timeoutlen'] = 1
         default.color.update(nvim.vars['NETRColors'])
