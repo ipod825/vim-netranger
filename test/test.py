@@ -2,7 +2,6 @@ import argparse
 import os
 import re
 import sys
-import tempfile
 import time
 
 from neovim import attach
