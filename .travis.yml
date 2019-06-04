@@ -1,12 +1,10 @@
-sudo: true
-dist: trusty
+dist: xenial
 
 language: python
 
 python:
-    - 3.5
-    - 3.6
-    - 3.7
+  - 3.6
+  - 3.7
 
 install:
     - export NVIMDIR=$HOME/neovim/bin
