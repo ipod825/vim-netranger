@@ -547,8 +547,8 @@ if __name__ == '__main__':
         else:
             nvim = attach('child',
                           argv=[
-                              '/bin/env', 'nvim', '-u', './test_init.vim',
-                              '--embed', '--headless'
+                              'nvim', '-u', './test_init.vim', '--embed',
+                              '--headless'
                           ])
 
         do_test(test_navigation)
