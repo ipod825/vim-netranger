@@ -4,16 +4,16 @@ dist: trusty
 language: python
 
 python:
-    - 3.3
-    - 3.4
     - 3.5
+    - 3.6
+    - 3.7
 
 install:
     - export NVIMDIR=$HOME/neovim/bin
     - mkdir -p $NVIMDIR
     - curl -o $NVIMDIR/nvim -L https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
     - chmod u+x $NVIMDIR/nvim
-    - pip install neovim
+    - pip install pynvim
 
 script:
     - PATH="$NVIMDIR:$PATH"
