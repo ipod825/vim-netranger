@@ -1,10 +1,8 @@
 #!/bin/sh
 
 TMPDIR="${TMPDIR:-/tmp}"
-rm -rf $TMPDIR/netrangertest*
+LISTEN_ADDRESS=$TMPDIR/netrangertest
+rm -rf $LISTEN_ADDRESS
 
-NVIM_LISTEN_ADDRESS=$TMPDIR/netrangertest nvim --headless 2> /dev/null &
-NVIM_PID=$!
-python3 test.py
-kill $NVIM_PID
-
+xterm -e "NVIM_LISTEN_ADDRESS=$LISTEN_ADDRESS nvim -u ./test_init.vim" &
+python test.py --listen_address $LISTEN_ADDRESS

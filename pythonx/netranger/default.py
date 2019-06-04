@@ -48,9 +48,9 @@ keymap = {
      'Sort contnet in current directory, pending for single (double) character'
      ),
     'NETRHelp': (['?'], "Show help message"),
-    'NETRefresh': ([
-        'r'
-    ], "Force refresh netranger buffer to be the same as the file system"),
+    'NETRefresh':
+    (['r'],
+     "Force refresh netranger buffer to be the same as the file system"),
 }
 
 color = {
@@ -80,6 +80,7 @@ variables = {
     'NETRSplitOrientation': 'belowright',
     'NETRPanelSize': 1.5,
     'NETRColors': {},
+    'NETRRedrawDelay': 200,
     'NETRMaxFileNumToEagerlyDisplay': 1000,
     'NETRMinFileNumToLoadInParallel': 100,
 }

@@ -8,7 +8,7 @@ import time
 from neovim import attach
 
 from netranger import default
-from netranger.colortbl import colortbl
+from netranger.colortbl import colorname2ind
 from netranger.config import (test_dir, test_local_dir, test_remote_cache_dir,
                               test_remote_dir, test_remote_name)
 from netranger.util import Shell
@@ -17,7 +17,7 @@ from netranger.util import Shell
 def color_str(hi_key):
     hi = default.color[hi_key]
     if type(hi) is str:
-        hi = colortbl[hi]
+        hi = colorname2ind[hi]
     return str(hi)
 
 
@@ -180,31 +180,31 @@ def test_navigation():
     assert_content('dir', ind=0, hi='dir', hi_is_foreround=True)
     assert_content('dir2', ind=1, hi='dir')
 
-    nvim.input(' ')
+    nvim.input('za')
     assert_content('dir', ind=0, hi='dir', hi_is_foreround=True)
     assert_content('subdir', level=1, ind=1, hi='dir')
     assert_content('dir2', ind=4, hi='dir')
-    nvim.input(' ')
+    nvim.input('za')
     assert_content('dir', ind=0, hi='dir', hi_is_foreround=True)
     assert_content('dir2', ind=1, hi='dir')
 
-    nvim.input(' jlhh')
+    nvim.input('zajlhh')
     assert_content('dir', ind=0, hi='dir', hi_is_foreround=True)
     assert_content('subdir', ind=1, level=1, hi='dir')
     assert_content('subdir2', ind=2, level=1, hi='dir')
     assert_content('a', ind=3, level=1, hi='file')
     assert_content('dir2', ind=4, hi='dir')
 
-    nvim.input(' j<Cr>')
+    nvim.input('zaj<Cr>')
     assert os.path.basename(
         nvim.command_output('pwd')) == 'dir2', os.path.basename(
             nvim.command_output('pwd'))
-    nvim.input('k 3j<Cr>')
+    nvim.input('kza3j<Cr>')
     assert os.path.basename(nvim.command_output('pwd')) == 'dir'
 
 
 def test_edit():
-    nvim.input(' ')
+    nvim.input('za')
     nvim.input('iiz<Left><Down>')
     nvim.input('y<Left><Down>')
     nvim.input('x<Left><Down>')
@@ -222,7 +222,7 @@ def test_edit():
 
 def test_edit_remote():
     return
-    nvim.input(' ')
+    nvim.input('za')
     nvim.input('iiz<Left><Down>')
     nvim.input('y<Left><Down>')
     nvim.input('x<Left><Down>')
@@ -237,7 +237,7 @@ def test_edit_remote():
 
 def test_pickCutCopyPaste():
     nvim.input('vv')
-    nvim.input(' jvjjvjlh')
+    nvim.input('zajvjjvjlh')
     assert_content('dir', ind=0, hi='dir')
     assert_content('subdir', ind=1, level=1, hi='pick')
     assert_content('subdir2', ind=2, level=1, hi='dir')
@@ -288,7 +288,7 @@ def test_pickCutCopyPaste():
     assert_fs('', ['dir2', 'subdir', 'subdir2', 'a'])
     assert_fs('dir2', ['dir', 'subdir2'])
 
-    nvim.input(' jddj<Cr>p')
+    nvim.input('zajddj<Cr>p')
     assert_content('subdir2', ind=1, hi='dir', level=1)
     assert_fs('dir2/subdir2', ['dir', 'placeholder'])
 
@@ -302,7 +302,7 @@ def test_visual_pick():
 
 
 def test_pickCutCopyPaste_remote_r2r():
-    nvim.input(' jvjjvjlh')
+    nvim.input('zajvjjvjlh')
     assert_content('dir', ind=0, hi='dir')
     assert_content('subdir', ind=1, level=1, hi='pick')
     assert_content('subdir2', ind=2, level=1, hi='dir')
@@ -356,14 +356,14 @@ def test_pickCutCopyPaste_remote_r2r():
     assert_fs_remote('', ['dir2', 'subdir', 'subdir2', 'a'])
     assert_fs_remote('dir2', ['dir', 'subdir2'])
 
-    nvim.input(' jddj<Cr>p')
+    nvim.input('zajddj<Cr>p')
     assert_content('subdir2', ind=1, hi='dir', level=1)
     assert_fs('dir2/subdir2', ['dir', 'placeholder'])
     assert_fs_remote('dir2/subdir2', ['dir', 'placeholder'])
 
 
 def test_delete():
-    nvim.input(' jvjjvD')
+    nvim.input('zajvjjvD')
     assert_fs('dir', ['subdir2'])
     assert_content('dir', ind=0, hi='dir')
     assert_content('subdir2', ind=1, level=1, hi='dir')
@@ -374,7 +374,7 @@ def test_delete():
 
 
 def test_delete_remote():
-    nvim.input(' jvjjvD')
+    nvim.input('zajvjjvD')
     assert_fs('dir', ['subdir2'])
     assert_fs_remote('dir', ['subdir2'])
     assert_content('dir', ind=0, hi='dir')
@@ -390,7 +390,7 @@ def test_delete_remote():
 
 
 def test_detect_fs_change():
-    nvim.input(' ')
+    nvim.input('za')
     Shell.touch('dir/b')
     Shell.mkdir('dir3')
     nvim.command('split new')
@@ -474,7 +474,7 @@ def test_sort():
     time.sleep(0.01)
     Shell.run('touch dir/a.a')
 
-    nvim.input(' Se')
+    nvim.input('zaSe')
     assert_content('dir', ind=0, hi='dir', level=0)
     assert_content('a', ind=3, hi='file', level=1)
     assert_content('a.a', ind=4, hi='file', level=1)
@@ -529,6 +529,11 @@ def parse_arg(argv):
         '--manual',
         action='store_true',
         help='Only setting up testing directories. Used for testing manually')
+    parser.add_argument(
+        '--listen_address',
+        default=None,
+        help='NVIM_LISTEN_ADDRESS for an open neovim. If set to none, open a \
+        headless neovim instead.')
     return parser.parse_args(argv[1:])
 
 
@@ -537,31 +542,32 @@ if __name__ == '__main__':
     if args.manual:
         do_test()
     else:
-        nvim = attach('socket',
-                      path=os.path.join(tempfile.gettempdir(),
-                                        'netrangertest'))
-        ori_timeoutlen = nvim.options['timeoutlen']
-        nvim.options['timeoutlen'] = 1
-        default.color.update(nvim.vars['NETRColors'])
-        # disable all plugins
-        nvim.command('py3 ranger._NETRTest()')
+        if args.listen_address:
+            nvim = attach('socket', path=args.listen_address)
+        else:
+            nvim = attach('child',
+                          argv=[
+                              '/bin/env', 'nvim', '-u', './test_init.vim',
+                              '--embed', '--headless'
+                          ])
 
         do_test(test_navigation)
         do_test(test_edit)
-        do_test(fn_remote=test_edit_remote)
         do_test(test_delete)
-        do_test(fn_remote=test_delete_remote)
         do_test(test_pickCutCopyPaste)
-        do_test(test_visual_pick)
+
+        # do_test(test_visual_pick)
+        # do_test(test_bookmark)
+        # do_test(test_misc)
+        # do_test(test_detect_fs_change)
+        # do_test(test_size_display)
+        # do_test(test_sort)
+        # do_test(test_rifle)
+        #
+        # do_test(fn_remote=test_edit_remote)
+        # do_test(fn_remote=test_delete_remote)
         # do_test(fn_remote=test_pickCutCopyPaste_remote_r2r)
-        do_test(test_bookmark)
-        do_test(test_misc)
-        do_test(test_detect_fs_change)
-        do_test(test_size_display)
-        do_test(test_sort)
-        do_test(test_rifle)
+        # # TODO
+        # # add SORT test for broken link #issue 21
 
-        # TODO
-        # add SORT test for broken link #issue 21 
-
-        nvim.options['timeoutlen'] = ori_timeoutlen
+        nvim.close()

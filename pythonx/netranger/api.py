@@ -21,11 +21,6 @@ def HasHooker(*hooker_names):
     return False
 
 
-def disableHookers():
-    for name in Hookers:
-        Hookers[name] = []
-
-
 class Api(object):
     def set_ranger(self, ranger):
         self.ranger = ranger

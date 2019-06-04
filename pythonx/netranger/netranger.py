@@ -8,7 +8,7 @@ from collections import defaultdict
 from sys import platform
 
 from netranger import default
-from netranger.api import HasHooker, Hookers, disableHookers
+from netranger.api import HasHooker, Hookers
 from netranger.colortbl import colorhexstr2ind, colorname2ind
 from netranger.config import file_sz_display_wid
 from netranger.enum import Enum
@@ -859,9 +859,6 @@ class Netranger(object):
     def cwd(self):
         return self.cur_buf.wd
 
-    def _NETRTest(self):
-        disableHookers()
-
     def __init__(self, vim):
         self.vim = vim
         self.inited = False
@@ -1108,7 +1105,8 @@ class Netranger(object):
         """
         if bufnum in self.bufs and not self.bufs[bufnum].is_editing:
             self.bufs[bufnum].on_cursormoved()
-            VimTimer(200, '_NETROnCursorMovedPost', self.on_cursormoved_post)
+            VimTimer(VimVar('NETRRedrawDelay'), '_NETROnCursorMovedPost',
+                     self.on_cursormoved_post)
 
     def on_cursormoved_post(self):
         """refresh header and footer content. This is a heavy task (compared
