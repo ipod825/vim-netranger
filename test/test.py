@@ -556,13 +556,13 @@ if __name__ == '__main__':
         do_test(test_pickCutCopyPaste)
 
         # do_test(test_visual_pick)
-        # do_test(test_bookmark)
+        do_test(test_bookmark)
         # do_test(test_misc)
-        # do_test(test_detect_fs_change)
-        # do_test(test_size_display)
-        # do_test(test_sort)
-        # do_test(test_rifle)
-        #
+        do_test(test_detect_fs_change)
+        do_test(test_size_display)
+        do_test(test_sort)
+        do_test(test_rifle)
+
         # do_test(fn_remote=test_edit_remote)
         # do_test(fn_remote=test_delete_remote)
         # do_test(fn_remote=test_pickCutCopyPaste_remote_r2r)

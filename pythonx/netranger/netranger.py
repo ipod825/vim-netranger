@@ -704,13 +704,19 @@ class NetRangerBuf(object):
         self.nodes[newLineNo].cursor_on()
         self.refresh_lines_hi([oc, newLineNo])
 
+    def vim_set_line(self, i, content):
+        # This is a work-abound for the fact that  
+        # nvim.current.buffer[i]=content
+        # moves the cursor
+        self.vim.call('setline', i+1, self.nodes[i].highlight_content)
+
     def refresh_lines_hi(self, lineNos):
         self.vim.command('setlocal modifiable')
 
         sz = min(len(self.nodes), len(self.vim.current.buffer))
         for i in lineNos:
             if i < sz:
-                self.vim.current.buffer[i] = self.nodes[i].highlight_content
+                self.vim_set_line(i, self.nodes[i].highlight_content)
         self.vim.command('setlocal nomodifiable')
 
     def refresh_clineNo(self):
