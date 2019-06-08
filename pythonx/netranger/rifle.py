@@ -18,7 +18,7 @@ class Rule(object):
 
 class ext(Rule):
     def __call__(self, fname):
-        return re.search(self.arg, fname) is not None
+        return fname.lower().endswith('.'+self.arg)
 
 
 class has(Rule):
