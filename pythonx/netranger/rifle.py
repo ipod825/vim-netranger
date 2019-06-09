@@ -9,8 +9,8 @@ from netranger.Vim import VimErrorMsg
 
 
 class Rule(object):
-    def __init__(self, arg):
-        self.arg = arg
+    def __init__(self, *args):
+        self.args = args
 
     def __call__(self, fname):
         pass
@@ -18,12 +18,15 @@ class Rule(object):
 
 class ext(Rule):
     def __call__(self, fname):
-        return fname.lower().endswith('.'+self.arg)
+        return fname.lower().endswith('.'+self.args[0])
 
+class isdir(Rule):
+    def __call__(self, fname):
+        return os.path.isdir(fname)
 
 class has(Rule):
     def __call__(self, fname):
-        return Shell.isinPATH(self.arg)
+        return Shell.isinPATH(self.args[0])
 
 
 class Rifle(object):
@@ -55,7 +58,7 @@ class Rifle(object):
                 tests = []
                 for test in sp[0].strip().split(','):
                     testSp = [e for e in test.split(' ') if e != '']
-                    tests.append(globals()[testSp[0]](testSp[1]))
+                    tests.append(globals()[testSp[0]](*testSp[1:]))
                 command = sp[1].strip()
 
                 # simple case, used specify only the command
