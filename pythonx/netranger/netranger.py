@@ -295,6 +295,9 @@ class NetRangerBuf(object):
     def highlight_outdated(self):
         return 0 < len(self.highlight_outdated_nodes)
 
+    def nodes_plus_header_footer(self, nodes):
+        return [self.header_node] + nodes + [self.footer_node]
+
     def __init__(self, controler, vim, wd, fs):
         self.controler = controler
         self.vim = vim
@@ -310,8 +313,7 @@ class NetRangerBuf(object):
 
         self.header_node = HeaderNode(wd)
         self.footer_node = FooterNode()
-        self.nodes = [self.header_node] + self.create_nodes(
-            self.wd, truncate_if_too_many_nodes=True) + [self.footer_node]
+        self.nodes = self.nodes_plus_header_footer(self.create_nodes(self.wd, truncate_if_too_many_nodes=True))
 
         self.clineNo = 1
         self.nodes[self.clineNo].cursor_on()
@@ -540,8 +542,7 @@ class NetRangerBuf(object):
                     self.nodes[i + 1:nextInd + 1], cur_node.fullpath,
                     cur_node.level, cheap_remote_ls)
 
-        self.nodes = [self.header_node
-                      ] + self.sort_nodes(new_nodes) + [self.footer_node]
+        self.nodes = self.nodes_plus_header_footer(self.sort_nodes(new_nodes))
         self.render()
         self.set_clineno_by_node(oriNode)
 
@@ -573,8 +574,7 @@ class NetRangerBuf(object):
         self.nodes_order_outdated = False
         for node in self.nodes:
             node.re_stat(self.fs)
-        self.nodes = [self.header_node] + self.sort_nodes(
-            self.nodes) + [self.footer_node]
+        self.nodes = self.nodes_plus_header_footer(self.sort_nodes(self.nodes))
         self.render()
         self.set_clineno_by_node(self.lastNodeId)
 
