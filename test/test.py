@@ -515,6 +515,16 @@ def test_sort():
     assert_content('a', ind=3, hi='file', level=1)
     assert_content('dir2', ind=6, hi='dir', level=0)
 
+def test_opt_Autochdir():
+    pwd = nvim.eval('getcwd()')
+    nvim.vars['NETRAutochdir'] = True
+    nvim.input('l')
+    assert nvim.eval('getcwd()') != pwd
+    nvim.input('h')
+
+    nvim.vars['NETRAutochdir'] = False
+    nvim.input('l')
+    assert nvim.eval('getcwd()') == pwd
 
 def test_rifle():
     # TODO
@@ -561,6 +571,7 @@ if __name__ == '__main__':
         do_test(test_size_display)
         do_test(test_sort)
         do_test(test_rifle)
+        do_test(test_opt_Autochdir)
 
         # do_test(fn_remote=test_edit_remote)
         # do_test(fn_remote=test_delete_remote)

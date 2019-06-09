@@ -129,6 +129,7 @@ let g:NETRBookmarkGo = ["m"]
 | :------------ | :--------------                                           | :----------------     |
 | g:NETRIgnore  | File patterns (bash wild card) to ignore (not displaying) | []                    |
 | g:NETRRootDir | Directory for storing remote cache and bookmark file      | ['$HOME/.netranger/'] |
+| g:NETRAutochdir | Whether to change vim's pwd when enter a new directory. Not compatible with vim's `autochdir`. | True |
 | g:NETRRifleFile| Path to the rifle setting file [panel mode](#panel-mode). | ['$HOME/.netranger/rifle.conf']|
 | g:NETROpenCmd | Vim command to open files from netranger buffer           | 'tabedit'             |
 | g:NETRSplitOrientation | Split orientation when a split buffer is created | 'belowright'          |

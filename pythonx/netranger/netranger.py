@@ -309,7 +309,8 @@ class NetRangerBuf(object):
         self.nodes_order_outdated = False
 
         self.vim.command('silent file N:{}'.format(os.path.basename(wd)))
-        self.vim.command('lcd ' + wd)
+        if VimVar('NETRAutochdir'):
+            self.vim.command('lcd ' + wd)
 
         self.header_node = HeaderNode(wd)
         self.footer_node = FooterNode()
@@ -1046,7 +1047,8 @@ class Netranger(object):
         cur_buf.sort()
         cur_buf.render_if_winwidth_changed()
         # ensure pwd is correct
-        self.vim.command('lcd ' + cur_buf.wd)
+        if VimVar('NETRAutochdir'):
+            self.vim.command('lcd ' + cur_buf.wd)
 
     def show_existing_buf(self, bufname):
         ori_bufnum = self.vim.current.buffer.number
@@ -1285,7 +1287,6 @@ class Netranger(object):
         if len(ignore_pat)==0:
             ignore_pat = ['$^']
 
-        print(ignore_pat)
         self.ignore_pattern = re.compile('|'.join(ignore_pat))
         for buf in self.bufs.values():
             buf.content_outdated = True

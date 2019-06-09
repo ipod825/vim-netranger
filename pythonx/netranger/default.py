@@ -69,6 +69,7 @@ color = {
 variables = {
     'NETRIgnore': ['.*'],
     'NETROpenCmd': 'tabedit',
+    'NETRAutochdir': True,
     'NETRDefaultMapSkip': [],
     'NETRRootDir': root_dir,
     'NETRBookmarkFile': root_dir + 'bookmark',
