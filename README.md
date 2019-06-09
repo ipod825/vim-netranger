@@ -129,9 +129,9 @@ let g:NETRBookmarkGo = ["m"]
 | :------------ | :--------------                                           | :----------------     |
 | g:NETRIgnore  | File patterns (bash wild card) to ignore (not displaying) | []                    |
 | g:NETRRootDir | Directory for storing remote cache and bookmark file      | ['$HOME/.netranger/'] |
-| g:NETRAutochdir | Whether to change vim's pwd when enter a new directory. Not compatible with vim's `autochdir`. | True |
+| g:NETRAutochdir | Whether to change vim's pwd when enter a new directory. Not compatible with vim's `autochdir`. | `v:true` |
 | g:NETRRifleFile| Path to the rifle setting file [panel mode](#panel-mode). | ['$HOME/.netranger/rifle.conf']|
-| g:NETROpenCmd | Vim command to open files from netranger buffer           | 'tabedit'             |
+| g:NETROpenCmd | Vim command to open files from netranger buffer           | 'NETRTabdrop'             |
 | g:NETRSplitOrientation | Split orientation when a split buffer is created | 'belowright'          |
 | g:NETRColors  | Colors for nodes in vim-netranger buffer. See below.      | {}                    |
 | g:NETRPanelSize| Controls the size of split in [panel mode](#panel-mode). | 1.5                   |

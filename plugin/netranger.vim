@@ -22,6 +22,7 @@ let g:loaded_netrw = 0
 let s:pyx = 'python3 '
 
 exec s:pyx "import vim"
+exec s:pyx "import netranger"
 exec s:pyx "from netranger.netranger import Netranger"
 exec s:pyx "ranger = Netranger(vim)"
 exec s:pyx "from netranger.api import NETRApi"
@@ -44,6 +45,7 @@ endfunc
 command! NETRemoteList exec s:pyx 'ranger.NETRemoteList()'
 command! NETRemotePull exec s:pyx 'ranger.NETRemotePull()'
 command! NETRemotePush exec s:pyx 'ranger.NETRemotePush()'
+command! -nargs=1 -complete=file NETRTabdrop exec s:pyx 'netranger.Vim.tabdrop("'.fnamemodify("<args>", ":p").'")'
 
 
 let &cpo = s:save_cpo

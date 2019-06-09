@@ -68,7 +68,7 @@ color = {
 
 variables = {
     'NETRIgnore': ['.*'],
-    'NETROpenCmd': 'tabedit',
+    'NETROpenCmd': 'NETRTabdrop',
     'NETRAutochdir': True,
     'NETRDefaultMapSkip': [],
     'NETRRootDir': root_dir,
