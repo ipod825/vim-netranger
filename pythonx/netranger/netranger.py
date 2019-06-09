@@ -14,10 +14,10 @@ from netranger.config import file_sz_display_wid
 from netranger.enum import Enum
 from netranger.fs import FS, Rclone
 from netranger.rifle import Rifle
-from netranger.ui import AskUI, BookMarkUI, HelpUI, SortUI
+from netranger.ui import AskUI, BookMarkUI, HelpUI, SortUI, NewUI
 from netranger.util import Shell, c256
 from netranger.Vim import (VimCurWinHeight, VimCurWinWidth, VimErrorMsg,
-                           VimTimer, VimVar)
+                           VimTimer, VimVar, VimUserInput)
 
 if platform == "win32":
     from os import getenv
@@ -879,6 +879,7 @@ class Netranger(object):
         self.sortUI = None
         self.askUI = None
         self.onuiquit = None
+        self.newUI = None
         self.onuiquit_num_args = 0
         self.fs = FS()
         self.rclone = None
@@ -1253,6 +1254,22 @@ class Netranger(object):
 
     def NETRToggleExpand(self):
         self.cur_buf.toggle_expand()
+
+    def NETRNew(self):
+        if self.newUI is None:
+            self.newUI = NewUI(self.vim)
+        self.newUI.show()
+        self.pend_onuiquit(self.new_onuiiquit, numArgs=1)
+
+    def new_onuiiquit(self, opt):
+        cwd = os.path.dirname(self.cur_node.fullpath)
+        if opt=='d':
+            name = VimUserInput('New directory name')
+            Shell.mkdir(os.path.join(cwd, name))
+        elif opt=='f':
+            name = VimUserInput('New file name')
+            Shell.touch(os.path.join(cwd, name))
+        self.cur_buf.refresh_nodes()
 
     def NETREdit(self):
         self.unmap_keys()

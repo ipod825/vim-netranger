@@ -45,7 +45,7 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 1. Press `?` to see current key bindings
 
 ### Automatic Update
-1. vim-netranger does not provide any function or key-binding for creating directories, touching new files, etc. The reason is because it's cheap to open a terminal to get this jobs done. However, when the directory content is changed elsewhere, the vim-netranger buffer will be updated when you reenter it.
+1. When the directory content is changed elsewhere, the vim-netranger buffer will be updated when you reenter it.
 2. This applies in general, You can always manipulate directory content manually and expect the vim-nertanger buffer be updated when you reenter it. For example, you could run `:tabe newfile` in a vim-netranger buffer. After writing file with `:w` and switching back to the vim-netranger buffer, you'll see `newfile` there.
 3. It is possible that the mechanism to detect file changes might fail on some remotefs. Hence, the user can still press `r` to force syncing the vim-netranger buffer content to be the same as the file system.
 
@@ -66,6 +66,9 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 1. Press `i` to enter edit mode. You can freely modify any file/directory name in this mode. Note that after pressing `i`, you are in normal mode, you need to press `i` again to enter insert mode.
 2. Note that in this mode, you can't delete file by deleting lines (you can't add file either).
 3. After you are done, back into normal mode (i.e. press `<Esc>` or whatever mapping you prefer), then press `<Esc>` again. All files will be renamed as you've modified.
+
+### New file/directory
+1. Press `o` to open the newfile UI. Press d/f to create new directory or file.
 
 ### File Selection/Copy/Cut/Paste/Deletion
 1. Press `v` to select a file for further processing. You can select multiple files and then do one of the following

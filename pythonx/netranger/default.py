@@ -22,6 +22,7 @@ keymap = {
     'NETRVimCD':
     (['<cr>'],
      "Changing vim's pwd to the directory of the entry under cursor"),
+    'NETRNew': (['o'], 'Create new directory/file, pending for ui selection'),
     'NETREdit': (['i'], "Enter edit mode to rename file/directory names"),
     'NETRSave': (['<esc>'],
                  "Leave edit mode to save changes made in edit mode"),
@@ -39,13 +40,13 @@ keymap = {
                           "(Toggle) Pin current directory as \"root\""),
     'NETRToggleShowHidden': (['zh'], "(Toggle) Show hidden files"),
     'NETRBookmarkSet': (['m'],
-                        "Jump to bookmark, pending for single character"),
+                        "Jump to bookmark, pending for ui selection"),
     'NETRBookmarkGo':
-    (["'"], "Bookmark current directory, pending for single character"),
+    (["'"], "Bookmark current directory, pending for ui selection"),
     'NETRBookmarkEdit': (["em"], "Open bookmark file to edit"),
     'NETRSort':
     (['S'],
-     'Sort contnet in current directory, pending for single (double) character'
+     'Sort contnet in current directory, pending for ui selection'
      ),
     'NETRHelp': (['?'], "Show help message"),
     'NETRefresh':

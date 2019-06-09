@@ -166,6 +166,12 @@ class SortUI(UI):
                                            for k in sort_opts]
         self.create_buf(content=content, mappings=mappings, map_cr=True)
 
+class NewUI(UI):
+    def __init__(self, vim):
+        UI.__init__(self, vim)
+        content = ['d.directory','f.file']
+        mappings = [('d','d'),('f','f')]
+        self.create_buf(content=content, mappings=mappings, map_cr=True)
 
 class BookMarkUI(UI):
     def __init__(self, vim, netranger):

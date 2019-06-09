@@ -526,6 +526,14 @@ def test_opt_Autochdir():
     nvim.input('l')
     assert nvim.eval('getcwd()') == pwd
 
+def test_new():
+    nvim.input('odzd<CR>')
+    nvim.input('ofzf<CR>')
+    assert_content('zd', ind=2, hi='dir', level=0)
+    assert_content('zf', ind=3, hi='file', level=0)
+    assert_fs('', ['dir','dir2','zd', 'zf'])
+
+
 def test_rifle():
     # TODO
     pass
@@ -562,6 +570,7 @@ if __name__ == '__main__':
 
         do_test(test_navigation)
         do_test(test_edit)
+        do_test(test_new)
         do_test(test_delete)
         do_test(test_pickCutCopyPaste)
         do_test(test_visual_pick)
