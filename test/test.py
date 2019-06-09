@@ -142,7 +142,6 @@ def do_test(fn=None, fn_remote=None):
     if fn is not None:
         nvim.command('silent tabe {}'.format(test_local_dir))
         fn()
-        nvim.command('bwipeout')
         print('== {} success =='.format(str(fn.__name__)))
 
     prepare_test_dir(test_remote_dir)
@@ -161,9 +160,10 @@ def do_test(fn=None, fn_remote=None):
         nvim.command('NETRemotePull')
         nvim.command('call cursor(2, 1)')
         fn_remote()
-        nvim.command('bwipeout')
         print('== {} success =='.format(str(fn_remote.__name__)))
 
+    while nvim.eval('&ft')=='netranger':
+        nvim.command('bwipeout')
     os.chdir(old_cwd)
 
 
@@ -554,10 +554,9 @@ if __name__ == '__main__':
         do_test(test_edit)
         do_test(test_delete)
         do_test(test_pickCutCopyPaste)
-
-        # do_test(test_visual_pick)
+        do_test(test_visual_pick)
         do_test(test_bookmark)
-        # do_test(test_misc)
+        do_test(test_misc)
         do_test(test_detect_fs_change)
         do_test(test_size_display)
         do_test(test_sort)

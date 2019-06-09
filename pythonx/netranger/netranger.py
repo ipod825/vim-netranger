@@ -931,7 +931,7 @@ class Netranger(object):
                 default.color[key] = colorname2ind[value]
 
     def should_ignore(self, basename):
-        if self.ignore_pattern.match(basename):
+        if self.ignore_pattern.match(basename) and self.ignore_pattern:
             return True
         return False
 
@@ -1277,8 +1277,16 @@ class Netranger(object):
         else:
             ignore_pat.append('.*')
         self.vim.vars['NETRIgnore'] = ignore_pat
-        self.ignore_pattern = re.compile('|'.join(
-            fnmatch.translate(p) for p in ignore_pat))
+
+        # When ignore_pat is empty, the compiled pattern matches everything.
+        # However, what we want is to ignore nothing in such case. Hence we add
+        # a pattern that will never be matched.
+        ignore_pat = [fnmatch.translate(p) for p in ignore_pat]
+        if len(ignore_pat)==0:
+            ignore_pat = ['$^']
+
+        print(ignore_pat)
+        self.ignore_pattern = re.compile('|'.join(ignore_pat))
         for buf in self.bufs.values():
             buf.content_outdated = True
         self.cur_buf.refresh_nodes(force_refreh=True)
