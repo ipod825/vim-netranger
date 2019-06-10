@@ -46,7 +46,8 @@ def VimErrorMsg(exception):
         msg = str(exception)
     vim.command(
         'unsilent echohl ErrorMsg | unsilent echo "{}" | echohl None '.format(
-            msg.replace('"', '\\"')))
+            msg.replace('"', '\\"')),
+        async_=True)
 
 
 def VimWarningMsg(msg):

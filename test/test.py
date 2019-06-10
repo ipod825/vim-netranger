@@ -10,7 +10,7 @@ from netranger import default
 from netranger.colortbl import colorname2ind
 from netranger.config import (test_dir, test_local_dir, test_remote_cache_dir,
                               test_remote_dir, test_remote_name)
-from netranger.util import Shell
+from tutil import Shell
 
 
 def color_str(hi_key):
@@ -559,6 +559,9 @@ def parse_arg(argv):
 if __name__ == '__main__':
     args = parse_arg(sys.argv)
     if args.manual:
+        nvim = attach(
+            'child',
+            argv=['nvim', '-u', './test_init.vim', '--embed', '--headless'])
         do_test()
     else:
         if args.listen_address:

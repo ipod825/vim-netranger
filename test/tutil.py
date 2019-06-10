@@ -1,11 +1,6 @@
-import inspect
 import os
 import shutil
 import subprocess
-
-import _thread as thread
-import vim
-from netranger.Vim import VimErrorMsg
 
 
 class Shell():
@@ -20,32 +15,12 @@ class Shell():
         return path.replace(Shell.userhome, '~')
 
     @classmethod
-    def run(cls, cmd, log_if_error=True):
+    def run(cls, cmd):
         try:
             return subprocess.check_output(
                 cmd, shell=True, stderr=subprocess.STDOUT).decode('utf-8')
         except subprocess.CalledProcessError as e:
-            ee = e
-            if log_if_error:
-                vim.async_call(VimErrorMsg(ee))
-
-    @classmethod
-    def run_async(cls, cmd, cbk=None):
-        def run():
-            try:
-                res = subprocess.check_output(
-                    cmd, shell=True, stderr=subprocess.STDOUT).decode('utf-8')
-                if cbk:
-                    if len(inspect.getargspec(cbk).args) == 1:
-                        vim.async_call(lambda: cbk(res))
-                    else:
-                        vim.async_call(lambda: cbk())
-
-            except subprocess.CalledProcessError as e:
-                ee = e
-                vim.async_call(lambda: VimErrorMsg(ee))
-
-        thread.start_new_thread(run, ())
+            print(e)
 
     @classmethod
     def touch(cls, name):
@@ -90,10 +65,3 @@ class Shell():
         hstream = urllib.urlopen(url)
         with open(dst, 'wb') as f:
             f.write(hstream.read())
-
-
-def c256(msg, c, background):
-    if background:
-        return '[38;5;{};7m{}[0m'.format(c, msg)
-    else:
-        return '[38;5;{}m{}[0m'.format(c, msg)
