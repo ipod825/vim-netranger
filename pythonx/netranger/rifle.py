@@ -18,11 +18,13 @@ class Rule(object):
 
 class ext(Rule):
     def __call__(self, fname):
-        return fname.lower().endswith('.'+self.args[0])
+        return fname.lower().endswith('.' + self.args[0])
+
 
 class isdir(Rule):
     def __call__(self, fname):
         return os.path.isdir(fname)
+
 
 class has(Rule):
     def __call__(self, fname):

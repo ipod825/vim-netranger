@@ -39,15 +39,12 @@ keymap = {
     'NETRTogglePinRoot': (['zp'],
                           "(Toggle) Pin current directory as \"root\""),
     'NETRToggleShowHidden': (['zh'], "(Toggle) Show hidden files"),
-    'NETRBookmarkSet': (['m'],
-                        "Jump to bookmark, pending for ui selection"),
-    'NETRBookmarkGo':
-    (["'"], "Bookmark current directory, pending for ui selection"),
+    'NETRBookmarkSet': (['m'], "Jump to bookmark, pending for ui selection"),
+    'NETRBookmarkGo': (["'"],
+                       "Bookmark current directory, pending for ui selection"),
     'NETRBookmarkEdit': (["em"], "Open bookmark file to edit"),
     'NETRSort':
-    (['S'],
-     'Sort contnet in current directory, pending for ui selection'
-     ),
+    (['S'], 'Sort contnet in current directory, pending for ui selection'),
     'NETRHelp': (['?'], "Show help message"),
     'NETRefresh':
     (['r'],

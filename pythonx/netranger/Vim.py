@@ -83,6 +83,7 @@ def VimCurWinWidth(cache=False):
 def VimCurWinHeight():
     return int(vim.eval("winheight('.')"))
 
+
 def tabdrop(path):
     for tab in vim.tabpages:
         for window in tab.windows:
@@ -90,6 +91,7 @@ def tabdrop(path):
                 vim.command("tabnext {}".format(tab.number))
                 return
     vim.command("tabedit {}".format(path))
+
 
 class pbar(object):
     def __init__(self, objects, total=None, chunkSize=100):

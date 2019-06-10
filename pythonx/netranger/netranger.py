@@ -14,10 +14,10 @@ from netranger.config import file_sz_display_wid
 from netranger.enum import Enum
 from netranger.fs import FS, Rclone
 from netranger.rifle import Rifle
-from netranger.ui import AskUI, BookMarkUI, HelpUI, SortUI, NewUI
+from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, SortUI
 from netranger.util import Shell, c256
 from netranger.Vim import (VimCurWinHeight, VimCurWinWidth, VimErrorMsg,
-                           VimTimer, VimVar, VimUserInput)
+                           VimTimer, VimUserInput, VimVar)
 
 if platform == "win32":
     from os import getenv
@@ -314,7 +314,8 @@ class NetRangerBuf(object):
 
         self.header_node = HeaderNode(wd)
         self.footer_node = FooterNode()
-        self.nodes = self.nodes_plus_header_footer(self.create_nodes(self.wd, truncate_if_too_many_nodes=True))
+        self.nodes = self.nodes_plus_header_footer(
+            self.create_nodes(self.wd, truncate_if_too_many_nodes=True))
 
         self.clineNo = 1
         self.nodes[self.clineNo].cursor_on()
@@ -706,10 +707,10 @@ class NetRangerBuf(object):
         self.refresh_lines_hi([oc, newLineNo])
 
     def vim_set_line(self, i, content):
-        # This is a work-abound for the fact that  
+        # This is a work-abound for the fact that
         # nvim.current.buffer[i]=content
         # moves the cursor
-        self.vim.call('setline', i+1, self.nodes[i].highlight_content)
+        self.vim.call('setline', i + 1, self.nodes[i].highlight_content)
 
     def refresh_lines_hi(self, lineNos):
         self.vim.command('setlocal modifiable')
@@ -1263,10 +1264,10 @@ class Netranger(object):
 
     def new_onuiiquit(self, opt):
         cwd = os.path.dirname(self.cur_node.fullpath)
-        if opt=='d':
+        if opt == 'd':
             name = VimUserInput('New directory name')
             Shell.mkdir(os.path.join(cwd, name))
-        elif opt=='f':
+        elif opt == 'f':
             name = VimUserInput('New file name')
             Shell.touch(os.path.join(cwd, name))
         self.cur_buf.refresh_nodes()
@@ -1301,7 +1302,7 @@ class Netranger(object):
         # However, what we want is to ignore nothing in such case. Hence we add
         # a pattern that will never be matched.
         ignore_pat = [fnmatch.translate(p) for p in ignore_pat]
-        if len(ignore_pat)==0:
+        if len(ignore_pat) == 0:
             ignore_pat = ['$^']
 
         self.ignore_pattern = re.compile('|'.join(ignore_pat))

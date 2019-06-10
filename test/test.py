@@ -162,7 +162,7 @@ def do_test(fn=None, fn_remote=None):
         fn_remote()
         print('== {} success =='.format(str(fn_remote.__name__)))
 
-    while nvim.eval('&ft')=='netranger':
+    while nvim.eval('&ft') == 'netranger':
         nvim.command('bwipeout')
     os.chdir(old_cwd)
 
@@ -515,6 +515,7 @@ def test_sort():
     assert_content('a', ind=3, hi='file', level=1)
     assert_content('dir2', ind=6, hi='dir', level=0)
 
+
 def test_opt_Autochdir():
     pwd = nvim.eval('getcwd()')
     nvim.vars['NETRAutochdir'] = True
@@ -526,12 +527,13 @@ def test_opt_Autochdir():
     nvim.input('l')
     assert nvim.eval('getcwd()') == pwd
 
+
 def test_new():
     nvim.input('odzd<CR>')
     nvim.input('ofzf<CR>')
     assert_content('zd', ind=2, hi='dir', level=0)
     assert_content('zf', ind=3, hi='file', level=0)
-    assert_fs('', ['dir','dir2','zd', 'zf'])
+    assert_fs('', ['dir', 'dir2', 'zd', 'zf'])
 
 
 def test_rifle():

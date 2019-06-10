@@ -82,8 +82,8 @@ class Shell():
 
     @classmethod
     def spawn(cls, cmd):
-        spawnDaemon(
-            lambda: subprocess.check_output(cmd.split(' ')).decode('utf-8'))
+        spawnDaemon(lambda: subprocess.check_output(cmd.split(' ')).decode(
+            'utf-8'))
 
     @classmethod
     def shellrc(cls):
