@@ -13,7 +13,7 @@ let c = 0
 while c < 256
   exec 'syntax match NETRhi'.c.' "\e\[38;5;'.c.'m[^\e]*\e\[0m"  contains=ansiSuppress'
   exec 'syntax match NETRhi'.c.'r "\e\[38;5;'.c.';7m[^\e]*\e\[0m"  contains=ansiSuppress'
-  exec 'hi NETRhi'.c.' ctermfg='.c.' ctermbg=None guifg='.s:colorHexstr[c].' guibg=None'
+  exec 'hi NETRhi'.c.' ctermfg='.c.' guifg='.s:colorHexstr[c]
   exec 'hi NETRhi'.c.'r ctermbg='.c.' ctermfg=black guibg='.s:colorHexstr[c].' guifg=black'
   let c += 1
 endwhile

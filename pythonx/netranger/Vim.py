@@ -17,7 +17,7 @@ def walk(fn, obj, *args, **kwargs):
 if vim.eval('has("timers")') == "1" and not vim.vars.get("_NETRDebug", False):
 
     def VimTimer(delay, fn, pyfn):
-        vim.funcs.timer_start(delay, fn)
+        vim.command('call timer_start({}, "{}")'.format(delay, fn))
 else:
 
     def VimTimer(delay, fn, pyfn):
