@@ -1167,8 +1167,8 @@ class Netranger(object):
                 Shell.run_async(rifle_cmd.format(fullpath))
             else:
                 self.vim.command('silent {} {}'.format(open_cmd, fullpath))
-                # manually call on_bufenLer as vim might not trigger BufEnter with
-                # the above command
+                # manually call on_bufenLer as vim might not trigger BufEnter
+                # with the above command
                 self.on_bufenter(self.vim.eval("winnr()"))
         else:
             if self.rclone is not None and self.is_remote_path(fullpath):
