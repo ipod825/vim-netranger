@@ -20,14 +20,12 @@ class Shell():
         return path.replace(Shell.userhome, '~')
 
     @classmethod
-    def run(cls, cmd, log_if_error=True):
+    def run(cls, cmd):
         try:
             return subprocess.check_output(
                 cmd, shell=True, stderr=subprocess.STDOUT).decode('utf-8')
         except subprocess.CalledProcessError as e:
-            ee = e
-            if log_if_error:
-                vim.async_call(VimErrorMsg(ee))
+            VimErrorMsg(e)
 
     @classmethod
     def run_async(cls, cmd, cbk=None):

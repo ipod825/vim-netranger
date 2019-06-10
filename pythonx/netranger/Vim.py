@@ -17,7 +17,7 @@ def walk(fn, obj, *args, **kwargs):
 if vim.eval('has("timers")') == "1" and not vim.vars.get("_NETRDebug", False):
 
     def VimTimer(delay, fn, pyfn):
-        vim.command('call timer_start({}, "{}")'.format(delay, fn))
+        vim.funcs.timer_start(delay, fn)
 else:
 
     def VimTimer(delay, fn, pyfn):
@@ -46,8 +46,7 @@ def VimErrorMsg(exception):
         msg = str(exception)
     vim.command(
         'unsilent echohl ErrorMsg | unsilent echo "{}" | echohl None '.format(
-            msg.replace('"', '\\"')),
-        async_=True)
+            msg.replace('"', '\\"')))
 
 
 def VimWarningMsg(msg):
