@@ -39,6 +39,8 @@ _NETRcbks = {}
 def VimAsyncCallBack(job_id, event, data):
     data = eval(data)
     _NETRcbks[int(job_id)][event](data)
+    if event == 'exit':
+        del _NETRcbks[int(job_id)]
 
 
 def do_nothing(_):
