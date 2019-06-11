@@ -1,17 +1,22 @@
 import vim
 
+_hasnvim = int(vim.eval('has("nvim")'))
 
-def walk(fn, obj, *args, **kwargs):
-    """Recursively walk an object graph applying `fn`/`args` to objects."""
-    if int(vim.eval('has("nvim")')):
+if _hasnvim:
+
+    def walk(fn, obj, *args, **kwargs):
         return obj
-    objType = type(obj)
-    if objType in [list, tuple, vim.List]:
-        return list(walk(fn, o, *args) for o in obj)
-    elif objType in [dict, vim.Dictionary]:
-        return dict(
-            (walk(fn, k, *args), walk(fn, v, *args)) for k, v in obj.items())
-    return fn(obj, *args, **kwargs)
+else:
+
+    def walk(fn, obj, *args, **kwargs):
+        """Recursively walk an object graph applying `fn`/`args` to objects."""
+        objType = type(obj)
+        if objType in [list, tuple, vim.List]:
+            return list(walk(fn, o, *args) for o in obj)
+        elif objType in [dict, vim.Dictionary]:
+            return dict((walk(fn, k, *args), walk(fn, v, *args))
+                        for k, v in obj.items())
+        return fn(obj, *args, **kwargs)
 
 
 if vim.eval('has("timers")') == "1" and not vim.vars.get("_NETRDebug", False):
@@ -47,6 +52,19 @@ def do_nothing(_):
     pass
 
 
+if _hasnvim:
+    job_str = 'let g:NETRJobId = jobstart(\'{}\',\
+        {{"on_stdout":function("netranger#AsyncCallBack"),\
+          "on_stderr":function("netranger#AsyncCallBack"),\
+          "on_exit":function("netranger#AsyncCallBack")}})'
+
+else:
+    job_str = 'let g:NETRJobId = job_start(\'{}\',\
+        {{"on_stdout":function("netranger#AsyncCallBack"),\
+          "on_stderr":function("netranger#AsyncCallBack"),\
+          "on_exit":function("netranger#AsyncCallBack")}})'
+
+
 def VimAsyncRun(cmd, cbk_stdout=None, cbk_stderr=None, cbk_exit=None):
 
     if cbk_stdout is None:
@@ -56,9 +74,7 @@ def VimAsyncRun(cmd, cbk_stdout=None, cbk_stderr=None, cbk_exit=None):
     if cbk_exit is None:
         cbk_exit = do_nothing
 
-    vim.command(
-        'let g:NETRJobId = jobstart(\'{}\', {{"on_stdout":function("netranger#AsyncCallBack"), "on_stderr":function("netranger#AsyncCallBack"), "on_exit":function("netranger#AsyncCallBack")}})'
-        .format(cmd))
+    vim.command(job_str.format(cmd))
     _NETRcbks[vim.vars['NETRJobId']] = {
         'stdout': cbk_stdout,
         'stderr': cbk_stderr,
