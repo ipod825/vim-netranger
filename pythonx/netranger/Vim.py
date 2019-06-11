@@ -33,6 +33,37 @@ def decode_if_bytes(obj, mode=True):
     return obj
 
 
+_NETRcbks = {}
+
+
+def VimAsyncCallBack(job_id, event, data):
+    data = eval(data)
+    _NETRcbks[int(job_id)][event](data)
+
+
+def do_nothing(_):
+    pass
+
+
+def VimAsyncRun(cmd, cbk_stdout=None, cbk_stderr=None, cbk_exit=None):
+
+    if cbk_stdout is None:
+        cbk_stdout = do_nothing
+    if cbk_stderr is None:
+        cbk_stderr = do_nothing
+    if cbk_exit is None:
+        cbk_exit = do_nothing
+
+    vim.command(
+        'let g:NETRJobId = jobstart(\'{}\', {{"on_stdout":function("netranger#AsyncCallBack"), "on_stderr":function("netranger#AsyncCallBack"), "on_exit":function("netranger#AsyncCallBack")}})'
+        .format(cmd))
+    _NETRcbks[vim.vars['NETRJobId']] = {
+        'stdout': cbk_stdout,
+        'stderr': cbk_stderr,
+        'exit': cbk_exit
+    }
+
+
 def VimVar(name, default=None):
     if name not in vim.vars:
         return default
@@ -64,20 +95,20 @@ def VimUserInput(hint, default=''):
     return decode_if_bytes(vim.vars['NETRRegister'])
 
 
-lastWidth = None
+_NETRlastWidth = None
 
 
 def VimCurWinWidth(cache=False):
-    global lastWidth
+    global _NETRlastWidth
     if cache:
-        return lastWidth
+        return _NETRlastWidth
     ve = vim.options['virtualedit']
     vim.options['virtualedit'] = 'all'
     vim.command('norm! g$')
-    lastWidth = int(vim.eval('virtcol(".")'))
+    _NETRlastWidth = int(vim.eval('virtcol(".")'))
     vim.command('norm! g0')
     vim.options['virtualedit'] = ve
-    return lastWidth
+    return _NETRlastWidth
 
 
 def VimCurWinHeight():

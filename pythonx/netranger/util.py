@@ -5,7 +5,7 @@ import subprocess
 
 import _thread as thread
 import vim
-from netranger.Vim import VimErrorMsg
+from netranger.Vim import VimAsyncRun, VimErrorMsg
 
 
 class Shell():
@@ -28,22 +28,16 @@ class Shell():
             VimErrorMsg(e)
 
     @classmethod
-    def run_async(cls, cmd, cbk=None):
-        def run():
-            try:
-                res = subprocess.check_output(
-                    cmd, shell=True, stderr=subprocess.STDOUT).decode('utf-8')
-                if cbk:
-                    if len(inspect.getargspec(cbk).args) == 1:
-                        vim.async_call(lambda: cbk(res))
-                    else:
-                        vim.async_call(lambda: cbk())
+    def run_async(cls, cmd, cbk_stdout=None, cbk_exit=None):
+        def print_error(err_msg):
+            msg = '\n'.join(err_msg)
+            if msg:
+                VimErrorMsg(msg)
 
-            except subprocess.CalledProcessError as e:
-                ee = e
-                vim.async_call(lambda: VimErrorMsg(ee))
-
-        thread.start_new_thread(run, ())
+        VimAsyncRun(cmd,
+                    cbk_stdout=cbk_stdout,
+                    cbk_exit=cbk_exit,
+                    cbk_stderr=print_error)
 
     @classmethod
     def touch(cls, name):
