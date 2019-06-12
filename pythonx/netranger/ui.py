@@ -84,16 +84,18 @@ class AskUI(UI):
         self.netranger = netranger
         self.options = None
         self.fullpath = None
+        # 106 -> j, 107 -> k
         self.create_buf(content=[],
                         mappings=[(chr(ind), chr(ind))
-                                  for ind in range(97, 123)],
+                                  for ind in range(97, 123)
+                                  if ind != 106 and ind != 107],
                         map_cr=True)
 
     def ask(self, content, fullpath):
         self.show()
-        if len(content) > 26:
-            VimWarningMsg('Ask only supports up to 26 commands.')
-            content = content[:26]
+        if len(content) > 24:
+            VimWarningMsg('Ask only supports up to 24 commands.')
+            content = content[:24]
 
         ind = 97
         self.options = content[:]
