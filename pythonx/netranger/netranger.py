@@ -498,8 +498,6 @@ class NetRangerBuf(object):
         if not self.content_outdated and not force_refreh:
             return
 
-        oriNode = self.cur_node
-
         self.content_outdated = False
 
         # create nodes corresponding to new files
@@ -544,9 +542,11 @@ class NetRangerBuf(object):
                     self.nodes[i + 1:nextInd + 1], cur_node.fullpath,
                     cur_node.level, cheap_remote_ls)
 
+        oriNode = self.cur_node
+        ori_clineNo = self.clineNo
         self.nodes = self.nodes_plus_header_footer(self.sort_nodes(new_nodes))
         self.render()
-        self.set_clineno_by_node(oriNode)
+        self.set_clineno_by_node(oriNode, ori_clineNo)
 
     def reverse_sorted_nodes(self, nodes):
         rev = []
@@ -682,7 +682,7 @@ class NetRangerBuf(object):
                 self.move_vim_cursor(ind)
                 break
 
-    def set_clineno_by_node(self, node):
+    def set_clineno_by_node(self, node, ori_clineNo=0):
         """Real work is done in on_cursormoved.
 
         Eventually call set_clineno.
@@ -690,7 +690,7 @@ class NetRangerBuf(object):
         if node in self.nodes:
             self.move_vim_cursor(self.nodes.index(node))
         else:
-            self.move_vim_cursor(0)
+            self.move_vim_cursor(ori_clineNo)
 
     def set_clineno(self, newLineNo):
         """Turn on newLineNo and turn off self.clineNo."""
@@ -1481,17 +1481,12 @@ class Netranger(object):
             buf.content_outdated = True
             for node in nodes:
                 buf.fs.rm(node.fullpath, force)
-        cur_buf = self.cur_buf
-        clineNo = cur_buf.clineNo
-        cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
-        cur_buf.move_vim_cursor(clineNo)
+        self.cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
         self.picked_nodes = defaultdict(set)
 
     def NETRDeleteSingle(self, force=False):
-        cur_buf = self.cur_buf
-        cur_buf.fs.rm(self.cur_node.fullpath, force)
-        cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
-        cur_buf.move_vim_cursor(cur_buf.clineNo)
+        self.cur_buf.fs.rm(self.cur_node.fullpath, force)
+        self.cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
 
     def NETRForceDelete(self):
         self.NETRDelete(force=True)

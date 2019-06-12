@@ -1,10 +1,7 @@
-import inspect
 import os
 import shutil
 import subprocess
 
-import _thread as thread
-import vim
 from netranger.Vim import VimAsyncRun, VimErrorMsg
 
 
