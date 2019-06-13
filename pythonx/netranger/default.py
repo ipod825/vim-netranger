@@ -36,8 +36,6 @@ keymap = {
     'NETRDeleteSingle': (['DD'], "Delete the current entry."),
     'NETRForceDelete': (['X'], "Force delete all picked entries"),
     'NETRForceDeleteSingle': (['XX'], "Force delete the current entry."),
-    'NETRTogglePinRoot': (['zp'],
-                          "(Toggle) Pin current directory as \"root\""),
     'NETRToggleShowHidden': (['zh'], "(Toggle) Show hidden files"),
     'NETRBookmarkSet': (['m'], "Jump to bookmark, pending for ui selection"),
     'NETRBookmarkGo': (["'"],

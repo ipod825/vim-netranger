@@ -104,8 +104,7 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 NERDTree enables users to have a single panel on the left side that always open files on the right side when pressing enter. vim-netranger provides a similar functionality. In a vim-netranger buffer, press `ep` to open the file under cursor on the right. The size of the right panel can be customized by the `g:NETRPanelSize`, which is the ratio between the actual size of the right panel to half of the screen width (e.g. setting it to `1` you'll get a equal split.)
 
 ### Misc
-1. Press `zp` to (toggle) pin current directory as the project root, which means you can't use `h` to jump to the parent directory. I think it might be useful when developing a project.
-2. Press `zh` to (toggle) show hidden files.
+1. Press `zh` to (toggle) show hidden files.
 
 ### Remote storage
 __Note__ Due to a bug (see known issue), remote operations haven't been fully tested. You might encounter weird behavior of cp/mv. So please use it with caution.
@@ -133,7 +132,8 @@ let g:NETRBookmarkGo = ["m"]
 | g:NETRIgnore  | File patterns (bash wild card) to ignore (not displaying) | []                    |
 | g:NETRRootDir | Directory for storing remote cache and bookmark file      | ['$HOME/.netranger/'] |
 | g:NETRAutochdir | Whether to change vim's pwd when enter a new directory. Not compatible with vim's `autochdir`. | `v:true` |
-| g:NETRRifleFile| Path to the rifle setting file [panel mode](#panel-mode). | ['$HOME/.netranger/rifle.conf']|
+| g:NETRRifleFile| Path to the rifle setting file. | ['$HOME/.netranger/rifle.conf']|
+| g:NETRBookmarkFile| Path to the bookmark file. | ['$HOME/.netranger/bookmark']|
 | g:NETROpenCmd | Vim command to open files from netranger buffer           | 'NETRTabdrop'             |
 | g:NETRSplitOrientation | Split orientation when a split buffer is created | 'belowright'          |
 | g:NETRColors  | Colors for nodes in vim-netranger buffer. See below.      | {}                    |
