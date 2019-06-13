@@ -890,6 +890,7 @@ class Netranger(object):
         self.init_keymaps()
         Shell.mkdir(default.variables['NETRRootDir'])
         self.rifle = Rifle(self.vim, VimVar('NETRRifleFile'))
+        self.fs_lock = False
 
         ignore_pat = list(VimVar('NETRIgnore'))
         if '.*' not in ignore_pat:
@@ -1430,6 +1431,20 @@ class Netranger(object):
         self.copied_nodes[cur_buf].add(cur_node)
         cur_buf.refresh_cur_line_hi()
 
+    def lock_fs(self):
+        if self.fs_lock:
+            VimErrorMsg(
+                'Previous operation that might change the view is not done'
+                'yet. Try again later')
+        else:
+            self.fs_lock = True
+        return self.fs_lock
+
+    def unlock_fs(self):
+        if self.vim.current.buffer.number in self.bufs:
+            self.cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
+        self.fs_lock = False
+
     def NETRPaste(self):
         """Perform mv from cut_nodes or cp from copied_nodes to cwd.
 
@@ -1477,16 +1492,22 @@ class Netranger(object):
         self.cur_buf.refresh_highlight()
 
     def NETRDelete(self, force=False):
+        if not self.lock_fs():
+            return
+        targets = []
         for buf, nodes in self.picked_nodes.items():
             buf.content_outdated = True
-            for node in nodes:
-                buf.fs.rm(node.fullpath, force)
-        self.cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
+            targets += [n.fullpath for n in nodes]
         self.picked_nodes = defaultdict(set)
+        buf.fs.rm(targets, force, on_exit=lambda: self.unlock_fs())
 
     def NETRDeleteSingle(self, force=False):
-        self.cur_buf.fs.rm(self.cur_node.fullpath, force)
-        self.cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
+        if not self.lock_fs():
+            return
+        self.cur_buf.content_outdated = True
+        self.cur_buf.fs.rm([self.cur_node.fullpath],
+                           force,
+                           on_exit=lambda: self.unlock_fs())
 
     def NETRForceDelete(self):
         self.NETRDelete(force=True)

@@ -7,7 +7,7 @@ import shutil
 from netranger.config import file_sz_display_wid
 from netranger.enum import Enum
 from netranger.util import Shell
-from netranger.Vim import VimUserInput
+from netranger.Vim import VimChansend, VimUserInput
 
 FType = Enum('FileType', 'SOCK, LNK, REG, BLK, DIR, CHR, FIFO')
 
@@ -79,11 +79,19 @@ class FS(object):
             dst = dst + '/'
         Shell.run('cp -r "{}" "{}"'.format(src, dst))
 
-    def rm(self, target, force=False):
+    def rm(self, target_arr, force=False, on_exit=None):
+        def on_stdout(job_id, msg):
+            if msg:
+                VimChansend(job_id, VimUserInput(msg))
+
         if force:
-            Shell.run('rm -rf "{}"'.format(target))
+            cmd = 'rm -rf {}'
         else:
-            Shell.run('rm -r "{}"'.format(target))
+            cmd = 'rm -r {}'
+        target = ' '.join(['"{}"'.format(t) for t in target_arr])
+        Shell.run_async(cmd.format(target),
+                        on_stdout=on_stdout,
+                        on_exit=on_exit)
 
     def mtime(self, fname):
         return os.stat(fname).st_mtime

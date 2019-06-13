@@ -1,3 +1,5 @@
+import time
+
 import vim
 
 _hasnvim = int(vim.eval('has("nvim")'))
@@ -38,47 +40,63 @@ def decode_if_bytes(obj, mode=True):
     return obj
 
 
+def VimChansend(job_id, msg):
+    vim.command('chansend({},"{}\n")'.format(job_id, msg))
+
+
 _NETRcbks = {}
 
 
 def VimAsyncCallBack(job_id, event, data):
-    data = eval(data)
-    _NETRcbks[int(job_id)][event](data)
+    cbk = _NETRcbks[job_id][event]
     if event == 'exit':
-        del _NETRcbks[int(job_id)]
+        cbk()
+        del _NETRcbks[job_id]
+    else:
+        cbk(job_id, data)
 
 
-def do_nothing(_):
+def do_nothing_with_args(job_id, data):
+    pass
+
+
+def do_nothing():
     pass
 
 
 if _hasnvim:
-    job_str = 'let g:NETRJobId = jobstart(\'{}\',\
-        {{"on_stdout":function("netranger#AsyncCallBack"),\
-          "on_stderr":function("netranger#AsyncCallBack"),\
-          "on_exit":function("netranger#AsyncCallBack")}})'
+
+    def JobStart(cmd):
+        vim.command('let g:NETRJobId = jobstart(\'{}\',\
+        {{"on_stdout":function("netranger#nvimAsyncCallBack"),\
+          "on_stderr":function("netranger#nvimAsyncCallBack"),\
+          "on_exit":function("netranger#nvimAsyncCallBack")}})'.format(cmd))
+        return str(vim.vars['NETRJobId'])
 
 else:
-    job_str = 'let g:NETRJobId = job_start(\'{}\',\
-        {{"on_stdout":function("netranger#AsyncCallBack"),\
-          "on_stderr":function("netranger#AsyncCallBack"),\
-          "on_exit":function("netranger#AsyncCallBack")}})'
+
+    def JobStart(cmd):
+        cur_time = str(time.time())
+        vim.command(
+            'call job_start(\'{0}\',{{"out_cb":{{job,data-> netranger#vimAsyncCallBack("{1}",data,"stdout")}}, "err_cb":{{job,data-> netranger#vimAsyncCallBack("{1}",data,"stderr")}}, "exit_cb":{{job,status-> netranger#vimAsyncCallBack("{1}",status,"exit")}} }})'
+            .format(cmd, cur_time))
+        return cur_time
 
 
-def VimAsyncRun(cmd, cbk_stdout=None, cbk_stderr=None, cbk_exit=None):
+def VimAsyncRun(cmd, on_stdout=None, on_stderr=None, on_exit=None):
 
-    if cbk_stdout is None:
-        cbk_stdout = do_nothing
-    if cbk_stderr is None:
-        cbk_stderr = do_nothing
-    if cbk_exit is None:
-        cbk_exit = do_nothing
+    if on_stdout is None:
+        on_stdout = do_nothing_with_args
+    if on_stderr is None:
+        on_stderr = do_nothing_with_args
+    if on_exit is None:
+        on_exit = do_nothing
 
-    vim.command(job_str.format(cmd))
-    _NETRcbks[vim.vars['NETRJobId']] = {
-        'stdout': cbk_stdout,
-        'stderr': cbk_stderr,
-        'exit': cbk_exit
+    job_id = JobStart(cmd)
+    _NETRcbks[job_id] = {
+        'stdout': on_stdout,
+        'stderr': on_stderr,
+        'exit': on_exit
     }
 
 
@@ -93,8 +111,11 @@ def VimErrorMsg(exception):
         msg = exception.output.decode('utf-8')
     else:
         msg = str(exception)
+    msg = msg.strip()
+    if not msg:
+        return
     vim.command(
-        'unsilent echohl ErrorMsg | unsilent echo "{}" | echohl None '.format(
+        'unsilent echohl ErrorMsg | unsilent echom "{}" | echohl None '.format(
             msg.replace('"', '\\"')))
 
 

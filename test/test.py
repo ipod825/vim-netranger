@@ -29,10 +29,11 @@ def assert_content(expected, level=0, ind=None, hi=None,
         line = nvim.current.buffer[ind]
 
     m = re.search(r'\[38;5;([0-9]+)(;7)?m( *)([^ ]+)', line)
-    assert m.group(4) == expected, 'expected:"{}",'
-    ' real: "{}"'.format(expected, m.group(4))
-    assert m.group(3) == '  ' * level, "level mismatch: expected: {}, "
-    "real:{}".format('"{}"'.format('  ' * level), '"{}"'.format(m.group(3)))
+    assert m.group(4) == expected, 'expected:"{}", real: "{}"'.format(
+        expected, m.group(4))
+    assert m.group(
+        3) == '  ' * level, "level mismatch: expected: {}, real:{}".format(
+            '"{}"'.format('  ' * level), '"{}"'.format(m.group(3)))
 
     if hi is not None:
         expected_hi = color_str(hi)
@@ -368,6 +369,8 @@ def test_delete():
     assert_content('subdir2', ind=1, level=1, hi='dir')
     assert_content('dir2', ind=2, hi='dir', hi_is_foreround=True)
     nvim.input('kkXX')
+    import time
+    time.sleep(1)
     assert_content('dir2', ind=0, hi='dir', hi_is_foreround=True)
     assert_fs('', ['dir2'])
 

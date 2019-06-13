@@ -13,10 +13,18 @@ function! s:list2str(lst)
     return res
 endfunction
 
-function! netranger#AsyncCallBack(job_id, data, event)
+function! netranger#nvimAsyncCallBack(job_id, data, event)
    if a:event == "exit"
         exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","[]")'
     else
-        exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","'.s:list2str(a:data).'")'
+        exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","'.join(a:data,'\n').'")'
+   endif
+endfunction
+
+function! netranger#vimAsyncCallBack(job_id, data, event)
+   if a:event == "exit"
+        exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","[]")'
+    else
+        exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","'.a:data.'")'
    endif
 endfunction

@@ -25,16 +25,14 @@ class Shell():
             VimErrorMsg(e)
 
     @classmethod
-    def run_async(cls, cmd, cbk_stdout=None, cbk_exit=None):
-        def print_error(err_msg):
-            msg = '\n'.join(err_msg)
-            if msg:
-                VimErrorMsg(msg)
+    def run_async(cls, cmd, on_stdout=None, on_exit=None):
+        def print_error(job_id, err_msg):
+            VimErrorMsg(err_msg)
 
         VimAsyncRun(cmd,
-                    cbk_stdout=cbk_stdout,
-                    cbk_exit=cbk_exit,
-                    cbk_stderr=print_error)
+                    on_stdout=on_stdout,
+                    on_exit=on_exit,
+                    on_stderr=print_error)
 
     @classmethod
     def touch(cls, name):
