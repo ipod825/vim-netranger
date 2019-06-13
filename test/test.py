@@ -100,12 +100,6 @@ def assert_fs_remote(d, expected):
     assert_fs(os.path.join(test_remote_cache_dir, d), expected)
 
 
-def print_vim_buffer():
-    for l in nvim.current.buffer:
-        print(l)
-    print('======')
-
-
 def do_test(fn=None, fn_remote=None):
     """
     Note on the mecahnism of testing rclone on localhost:
@@ -168,42 +162,79 @@ def do_test(fn=None, fn_remote=None):
     os.chdir(old_cwd)
 
 
-def test_navigation():
+def test_on_cursormoved():
     nvim.input('j')
     assert_content('dir', ind=0, hi='dir')
     assert_content('dir2', ind=1, hi='dir', hi_is_foreround=True)
 
-    nvim.input('kl')
-    assert_content('subdir', ind=0, hi='dir', hi_is_foreround=True)
-
-    nvim.input('h')
+    nvim.input('k')
     assert_content('dir', ind=0, hi='dir', hi_is_foreround=True)
     assert_content('dir2', ind=1, hi='dir')
 
-    nvim.input('za')
+    # should test header footer
+
+
+def test_NETROpen():
+    nvim.input('l')
+    assert_content('subdir', ind=0, hi='dir', hi_is_foreround=True)
+    assert_content('subdir2', ind=1, hi='dir')
+
+
+def test_NETRParent():
+    nvim.input('h')
+    assert_content('local', ind=0, hi='dir', hi_is_foreround=True)
+
+
+def test_on_bufenter_cursor_stay_the_same_pos():
+    nvim.input('ljhl')
+    assert_content('subdir', ind=0, hi='dir')
+    assert_content('subdir2', ind=1, hi='dir', hi_is_foreround=True)
+
+
+def test_on_bufenter_content_stay_the_same():
+    nvim.input('zalh')
     assert_content('dir', ind=0, hi='dir', hi_is_foreround=True)
     assert_content('subdir', level=1, ind=1, hi='dir')
     assert_content('dir2', ind=4, hi='dir')
+
+
+def test_on_bufenter_fs_change():
+    nvim.input('lh')
+    Shell.touch('dir/b')
+    Shell.mkdir('dir3')
+    nvim.command('split new')
+    nvim.command('quit')
+    nvim.input('za')
+    assert_content('dir', ind=0, hi='dir', hi_is_foreround=True)
+    assert_content('b', ind=4, level=1, hi='file')
+    assert_content('dir3', ind=6, hi='dir')
+    assert_num_content_line(7)
+
+    Shell.rm('dir3')
+    nvim.input('lh')
+    assert_num_content_line(6)
+
+
+def test_NETRToggleExpand():
+    nvim.input('za')
+    assert_content('dir', ind=0, hi='dir', hi_is_foreround=True)
+    assert_content('subdir', level=1, ind=1, hi='dir')
+    assert_content('subdir2', ind=2, level=1, hi='dir')
+    assert_content('a', ind=3, level=1, hi='file')
+    assert_content('dir2', ind=4, hi='dir')
     nvim.input('za')
     assert_content('dir', ind=0, hi='dir', hi_is_foreround=True)
     assert_content('dir2', ind=1, hi='dir')
 
-    nvim.input('zajlhh')
-    assert_content('dir', ind=0, hi='dir', hi_is_foreround=True)
-    assert_content('subdir', ind=1, level=1, hi='dir')
-    assert_content('subdir2', ind=2, level=1, hi='dir')
-    assert_content('a', ind=3, level=1, hi='file')
-    assert_content('dir2', ind=4, hi='dir')
 
-    nvim.input('zaj<Cr>')
+def test_NETRVimCD():
+    nvim.input('<Cr>')
     assert os.path.basename(
-        nvim.command_output('pwd')) == 'dir2', os.path.basename(
+        nvim.command_output('pwd')) == 'dir', os.path.basename(
             nvim.command_output('pwd'))
-    nvim.input('kza3j<Cr>')
-    assert os.path.basename(nvim.command_output('pwd')) == 'dir'
 
 
-def test_edit():
+def test_NETREdit():
     nvim.input('za')
     nvim.input('iiz<Left><Down>')
     nvim.input('y<Left><Down>')
@@ -218,6 +249,14 @@ def test_edit():
 
     assert_fs('', ['dir2', 'zdir'])
     assert_fs('zdir', ['xsubdir2', 'ysubdir', 'wa'])
+
+
+def test_NETRNew():
+    nvim.input('odzd<CR>')
+    nvim.input('ofzf<CR>')
+    assert_content('zd', ind=2, hi='dir', level=0)
+    assert_content('zf', ind=3, hi='file', level=0)
+    assert_fs('', ['dir', 'dir2', 'zd', 'zf'])
 
 
 def test_edit_remote():
@@ -362,17 +401,63 @@ def test_pickCutCopyPaste_remote_r2r():
     assert_fs_remote('dir2/subdir2', ['dir', 'placeholder'])
 
 
-def test_delete():
+def wait_for_fs_unlock():
+    while nvim.command_output('python3 print(ranger.fs_lock)') != 'False':
+        pass
+    return
+
+
+def test_NETRDelete():
     nvim.input('zajvjjvD')
+    wait_for_fs_unlock()
     assert_fs('dir', ['subdir2'])
     assert_content('dir', ind=0, hi='dir')
     assert_content('subdir2', ind=1, level=1, hi='dir')
     assert_content('dir2', ind=2, hi='dir', hi_is_foreround=True)
-    nvim.input('kkXX')
-    import time
-    time.sleep(1)
+
+
+def test_NETRDeleteSingle():
+    nvim.input('DD')
+    wait_for_fs_unlock()
     assert_content('dir2', ind=0, hi='dir', hi_is_foreround=True)
-    assert_fs('', ['dir2'])
+
+
+def test_delete_fail_if_fs_lock():
+    nvim.command('python3 ranger.fs_lock=True')
+    nvim.input('vD')
+    assert_content('dir', ind=0, hi='pick', hi_is_foreround=True)
+
+
+def test_delete_single_fail_if_fs_lock():
+    nvim.command('python3 ranger.fs_lock=True')
+    nvim.input('DD')
+    assert_content('dir', ind=0, hi='dir', hi_is_foreround=True)
+
+
+def test_NETRForceDelete():
+    Shell.run('chmod u-w dir/a')
+    nvim.input('zajjjvX')
+    wait_for_fs_unlock()
+    assert_content('dir2', ind=3, hi='dir', hi_is_foreround=True)
+
+
+def test_NETRForceDeleteSingle():
+    Shell.run('chmod u-w dir/a')
+    nvim.input('zajjjXX')
+    wait_for_fs_unlock()
+    assert_content('dir2', ind=3, hi='dir', hi_is_foreround=True)
+
+
+def test_force_delete_fail_if_fs_lock():
+    nvim.command('python3 ranger.fs_lock=True')
+    nvim.input('vX')
+    assert_content('dir', ind=0, hi='pick', hi_is_foreround=True)
+
+
+def test_force_delete_single_fail_if_fs_lock():
+    nvim.command('python3 ranger.fs_lock=True')
+    nvim.input('XX')
+    assert_content('dir', ind=0, hi='dir', hi_is_foreround=True)
 
 
 def test_delete_remote():
@@ -391,31 +476,8 @@ def test_delete_remote():
     assert_fs_remote('', ['dir2'])
 
 
-def test_detect_fs_change():
-    nvim.input('za')
-    Shell.touch('dir/b')
-    Shell.mkdir('dir3')
-    nvim.command('split new')
-    nvim.command('quit')
-    assert_content('dir', ind=0, hi='dir', hi_is_foreround=True)
-    assert_content('b', ind=4, level=1, hi='file')
-    assert_content('dir3', ind=6, hi='dir')
-    assert_num_content_line(7)
-
-    Shell.rm('dir3')
-    nvim.input('lh')
-    assert_num_content_line(6)
-
-
 def test_bookmark():
-    bookmarkfile = default.variables['NETRBookmarkFile']
-    copy = '{}/{}bak'.format(os.path.dirname(bookmarkfile),
-                             os.path.basename(bookmarkfile))
-
-    if os.path.isfile(bookmarkfile):
-        Shell.run('mv {} {}'.format(bookmarkfile, copy))
-
-    Shell.run('rm -f {}'.format(bookmarkfile))
+    Shell.run('rm -f {}'.format(nvim.vars['NETRBookmarkFile']))
 
     nvim.input('mal')
     nvim.input("'a")
@@ -427,15 +489,8 @@ def test_bookmark():
     nvim.input("'b")
     assert_content('dir')
 
-    Shell.run('rm -f {}'.format(bookmarkfile))
-    if os.path.isfile(copy):
-        Shell.run('mv {} {}'.format(copy, bookmarkfile))
 
-
-def test_misc():
-    nvim.input('zph')
-    assert_content('dir')
-
+def test_NETRToggleShowHidden():
     nvim.input('zh')
     assert_content('.a', ind=2, hi='file')
     nvim.input('zh')
@@ -531,14 +586,6 @@ def test_opt_Autochdir():
     assert nvim.eval('getcwd()') == pwd
 
 
-def test_new():
-    nvim.input('odzd<CR>')
-    nvim.input('ofzf<CR>')
-    assert_content('zd', ind=2, hi='dir', level=0)
-    assert_content('zf', ind=3, hi='file', level=0)
-    assert_fs('', ['dir', 'dir2', 'zd', 'zf'])
-
-
 def test_rifle():
     # TODO
     pass
@@ -576,20 +623,40 @@ if __name__ == '__main__':
                               '--headless'
                           ])
 
-        do_test(test_navigation)
-        do_test(test_edit)
-        do_test(test_new)
-        do_test(test_delete)
-        do_test(test_pickCutCopyPaste)
-        do_test(test_visual_pick)
+        def do_test_navigation():
+            do_test(test_on_cursormoved)
+            do_test(test_NETROpen)
+            do_test(test_NETRParent)
+            do_test(test_on_bufenter_cursor_stay_the_same_pos)
+            do_test(test_on_bufenter_content_stay_the_same)
+            do_test(test_on_bufenter_fs_change)
+            do_test(test_NETRToggleExpand)
+            do_test(test_NETRVimCD)
+
+        def do_test_delete():
+            do_test(test_NETRDelete)
+            do_test(test_NETRDeleteSingle)
+            do_test(test_NETRForceDelete)
+            do_test(test_NETRForceDeleteSingle)
+            do_test(test_delete_fail_if_fs_lock)
+            do_test(test_delete_single_fail_if_fs_lock)
+            do_test(test_force_delete_fail_if_fs_lock)
+            do_test(test_force_delete_single_fail_if_fs_lock)
+
+        do_test_navigation()
+        do_test(test_NETREdit)
+        do_test(test_NETRNew)
+        do_test_delete()
+
+        # do_test(test_pickCutCopyPaste)
+        # do_test(test_visual_pick)
         do_test(test_bookmark)
-        do_test(test_misc)
-        do_test(test_detect_fs_change)
+        do_test(test_NETRToggleShowHidden)
         do_test(test_size_display)
         do_test(test_sort)
-        do_test(test_rifle)
         do_test(test_opt_Autochdir)
 
+        # do_test(test_rifle)
         # do_test(fn_remote=test_edit_remote)
         # do_test(fn_remote=test_delete_remote)
         # do_test(fn_remote=test_pickCutCopyPaste_remote_r2r)
