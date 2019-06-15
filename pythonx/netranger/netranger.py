@@ -123,7 +123,7 @@ class EntryNode(Node):
 
     @property
     def highlight_content(self):
-        width = VimCurWinWidth(cache=True)
+        width = self.buf.winwidth
         levelPad = '  ' * self.level
         size_info = self.size.rjust(file_sz_display_wid + 1)
 
@@ -167,8 +167,9 @@ class EntryNode(Node):
         else:
             return ''
 
-    def __init__(self, fullpath, name, fs, level=0):
+    def __init__(self, fullpath, name, fs, level=0, buf=None):
         self.fullpath = fullpath
+        self.buf = buf
         self.re_stat(fs)
         highlight = self.decide_hi()
         super(EntryNode, self).__init__(fullpath, name, highlight, level=level)
@@ -263,9 +264,9 @@ class EntryNode(Node):
 class DirNode(EntryNode):
     """Content node for directory."""
 
-    def __init__(self, fullpath, name, fs, level=0):
+    def __init__(self, *args, **kwargs):
         self.expanded = False
-        super(DirNode, self).__init__(fullpath, name, fs, level)
+        super(DirNode, self).__init__(*args, **kwargs)
 
     @property
     def is_DIR(self):
@@ -458,9 +459,13 @@ class NetRangerBuf(object):
     def create_node(self, dirname, basename, level):
         fullpath = os.path.join(dirname, basename)
         if os.path.isdir(fullpath):
-            return DirNode(fullpath, basename, self.fs, level=level)
+            return DirNode(fullpath, basename, self.fs, level=level, buf=self)
         else:
-            return EntryNode(fullpath, basename, self.fs, level=level)
+            return EntryNode(fullpath,
+                             basename,
+                             self.fs,
+                             level=level,
+                             buf=self)
 
     def creat_nodes_if_not_exist(self, nodes, dirpath, level, cheap_remote_ls):
         old_paths = set([node.fullpath for node in nodes if not node.is_INFO])
@@ -637,13 +642,14 @@ class NetRangerBuf(object):
         self.vim_buf_handel.options['modifiable'] = False
         if self.vim.current.buffer.number is self.vim_buf_handel.number:
             self.move_vim_cursor(self.clineNo)
-            self.winwidth = VimCurWinWidth()
 
         for hooker in Hookers['render_end']:
             hooker(self)
 
     def render_if_winwidth_changed(self):
-        if self.winwidth != VimCurWinWidth():
+        winwidth = VimCurWinWidth()
+        if self.winwidth != winwidth:
+            self.winwidth = winwidth
             self.render()
 
     def on_cursormoved(self):
@@ -1008,6 +1014,11 @@ class Netranger(object):
             "function name already defined by vim-netranger."
             setattr(self, name, fn)
 
+    def on_winenter(self, bufnum):
+        # deal with window width changed
+        if bufnum in self.bufs:
+            self.cur_buf.render_if_winwidth_changed()
+
     def on_bufenter(self, bufnum):
         """There are four cases on bufenter:
 
@@ -1058,9 +1069,6 @@ class Netranger(object):
         # deal with highlight changed, e.g., pick, copy hi dismiss because of
         # paste
         cur_buf.refresh_highlight()
-
-        # deal with window width changed
-        cur_buf.render_if_winwidth_changed()
 
         # ensure pwd is correct
         if VimVar('NETRAutochdir'):
