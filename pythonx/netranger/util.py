@@ -27,6 +27,10 @@ class Shell():
     @classmethod
     def run_async(cls, cmd, on_stdout=None, on_exit=None):
         def print_error(job_id, err_msg):
+            # Truncate unnecessary message if from fs_server.py
+            ind = err_msg.rfind('FSServerException: ')
+            if ind > 0:
+                err_msg = err_msg[ind + 19:]
             VimErrorMsg(err_msg)
 
         VimAsyncRun(cmd,

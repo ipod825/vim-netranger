@@ -13,6 +13,11 @@ FType = Enum('FileType', 'SOCK, LNK, REG, BLK, DIR, CHR, FIFO')
 
 
 class FS(object):
+    # Putting fs_server.py in the pythonx directory fail to import shutil
+    # so put it in the upper directory
+    FScmds = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          '../fs_server.py')
+
     acl_tbl = {
         '7': ['r', 'w', 'x'],
         '6': ['r', 'w', '-'],
@@ -84,10 +89,7 @@ class FS(object):
             if msg:
                 VimChansend(job_id, VimUserInput(msg))
 
-        if force:
-            cmd = 'rm -rf {}'
-        else:
-            cmd = 'rm -r {}'
+        cmd = 'python {} rm {{}}'.format(FS.FScmds)
         target = ' '.join(['"{}"'.format(t) for t in target_arr])
         Shell.run_async(cmd.format(target),
                         on_stdout=on_stdout,

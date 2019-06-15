@@ -890,7 +890,7 @@ class Netranger(object):
         self.init_keymaps()
         Shell.mkdir(default.variables['NETRRootDir'])
         self.rifle = Rifle(self.vim, VimVar('NETRRifleFile'))
-        self.fs_lock = False
+        self.num_fs_op = 0
 
         ignore_pat = list(VimVar('NETRIgnore'))
         if '.*' not in ignore_pat:
@@ -1166,7 +1166,7 @@ class Netranger(object):
                 VimErrorMsg('Permission Denied: {}'.format(cur_node.name))
                 return
             if use_rifle and rifle_cmd is not None:
-                Shell.run_async(rifle_cmd.format(fullpath))
+                Shell.run_async(rifle_cmd.format('"{}"'.format(fullpath)))
             else:
                 self.vim.command('silent {} {}'.format(open_cmd, fullpath))
                 # manually call on_bufenLer as vim might not trigger BufEnter
@@ -1180,7 +1180,7 @@ class Netranger(object):
                 rifle_cmd = self.rifle.decide_open_cmd(fullpath)
 
             if use_rifle and rifle_cmd is not None:
-                Shell.run_async(rifle_cmd.format(fullpath))
+                Shell.run_async(rifle_cmd.format('"{}"'.format(fullpath)))
             else:
                 try:
                     self.vim.command('{} {}'.format(open_cmd, fullpath))
@@ -1367,6 +1367,8 @@ class Netranger(object):
 
         Also update the highlight of the current line.
         """
+        if self.fs_busy():
+            return
         cur_node = self.cur_node
         cur_buf = self.cur_buf
         res = cur_node.toggle_pick()
@@ -1377,6 +1379,8 @@ class Netranger(object):
         self.cur_buf.refresh_cur_line_hi()
 
     def NETRTogglePickVisual(self):
+        if self.fs_busy():
+            return
         self.vim.command('normal! gv')
         beg = int(self.vim.eval('line("\'<")')) - 1
         end = int(self.vim.eval('line("\'>")'))
@@ -1431,19 +1435,22 @@ class Netranger(object):
         self.copied_nodes[cur_buf].add(cur_node)
         cur_buf.refresh_cur_line_hi()
 
-    def lock_fs(self):
-        if self.fs_lock:
+    def fs_busy(self):
+        if self.num_fs_op > 0:
             VimErrorMsg(
                 'Previous operation that might change the view is not done'
                 'yet. Try again later')
+            return True
         else:
-            self.fs_lock = True
-        return self.fs_lock
+            return False
+
+    def lock_fs(self):
+        self.num_fs_op += 1
 
     def unlock_fs(self):
         if self.vim.current.buffer.number in self.bufs:
             self.cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
-        self.fs_lock = False
+        self.num_fs_op -= 1
 
     def NETRPaste(self):
         """Perform mv from cut_nodes or cp from copied_nodes to cwd.
@@ -1492,19 +1499,33 @@ class Netranger(object):
         self.cur_buf.refresh_highlight()
 
     def NETRDelete(self, force=False):
-        if not self.lock_fs():
+        if self.fs_busy():
             return
         targets = []
+        remote_targets = []
         for buf, nodes in self.picked_nodes.items():
             buf.content_outdated = True
-            targets += [n.fullpath for n in nodes]
+            if self.is_remote_path(buf.wd):
+                remote_targets += [n.fullpath for n in nodes]
+            else:
+                targets += [n.fullpath for n in nodes]
+            for node in nodes:
+                node.toggle_pick()
+
         self.picked_nodes = defaultdict(set)
-        buf.fs.rm(targets, force, on_exit=lambda: self.unlock_fs())
+
+        if targets:
+            self.lock_fs()
+            self.fs.rm(targets, force, on_exit=lambda: self.unlock_fs())
+        if remote_targets:
+            self.lock_fs()
+            self.fs.rm(remote_targets, force, on_exit=lambda: self.unlock_fs())
 
     def NETRDeleteSingle(self, force=False):
-        if not self.lock_fs():
+        if self.fs_busy():
             return
         self.cur_buf.content_outdated = True
+        self.lock_fs()
         self.cur_buf.fs.rm([self.cur_node.fullpath],
                            force,
                            on_exit=lambda: self.unlock_fs())

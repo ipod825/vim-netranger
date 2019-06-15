@@ -340,6 +340,7 @@ def test_visual_pick():
 
 
 def test_pickCutCopyPaste_remote_r2r():
+    wait_for_fs_unlock()
     nvim.input('zajvjjvjlh')
     assert_content('dir', ind=0, hi='dir')
     assert_content('subdir', ind=1, level=1, hi='pick')
@@ -401,9 +402,17 @@ def test_pickCutCopyPaste_remote_r2r():
 
 
 def wait_for_fs_unlock():
-    while nvim.command_output('python3 print(ranger.fs_lock)') != 'False':
+    while nvim.command_output('python3 print(ranger.num_fs_op)') != '0':
         pass
     return
+
+
+def lock_fs():
+    nvim.command('python3 ranger.num_fs_op=1')
+
+
+def unlock_fs():
+    nvim.command('python3 ranger.num_fs_op=0')
 
 
 def test_NETRDelete():
@@ -422,15 +431,18 @@ def test_NETRDeleteSingle():
 
 
 def test_delete_fail_if_fs_lock():
-    nvim.command('python3 ranger.fs_lock=True')
-    nvim.input('vD')
+    nvim.input('v')
+    lock_fs()
+    nvim.input('D')
     assert_content('dir', ind=0, hi='pick', hi_fg=True)
+    unlock_fs()
 
 
 def test_delete_single_fail_if_fs_lock():
-    nvim.command('python3 ranger.fs_lock=True')
+    lock_fs()
     nvim.input('DD')
     assert_content('dir', ind=0, hi='dir', hi_fg=True)
+    unlock_fs()
 
 
 def test_NETRForceDelete():
@@ -448,15 +460,18 @@ def test_NETRForceDeleteSingle():
 
 
 def test_force_delete_fail_if_fs_lock():
-    nvim.command('python3 ranger.fs_lock=True')
-    nvim.input('vX')
+    nvim.input('v')
+    lock_fs()
+    nvim.input('X')
     assert_content('dir', ind=0, hi='pick', hi_fg=True)
+    unlock_fs()
 
 
 def test_force_delete_single_fail_if_fs_lock():
-    nvim.command('python3 ranger.fs_lock=True')
+    lock_fs()
     nvim.input('XX')
     assert_content('dir', ind=0, hi='dir', hi_fg=True)
+    unlock_fs()
 
 
 def test_delete_remote():
@@ -574,6 +589,8 @@ def test_sort():
 
 
 def test_opt_Autochdir():
+    default_value = nvim.vars['NETRAutochdir']
+
     pwd = nvim.eval('getcwd()')
     nvim.vars['NETRAutochdir'] = True
     nvim.input('l')
@@ -583,6 +600,8 @@ def test_opt_Autochdir():
     nvim.vars['NETRAutochdir'] = False
     nvim.input('l')
     assert nvim.eval('getcwd()') == pwd
+
+    nvim.vars['NETRAutochdir'] = default_value
 
 
 def test_rifle():
@@ -646,14 +665,14 @@ if __name__ == '__main__':
         do_test(test_NETREdit)
         do_test(test_NETRNew)
         do_test_delete()
-
-        # do_test(test_pickCutCopyPaste)
-        # do_test(test_visual_pick)
         do_test(test_bookmark)
         do_test(test_NETRToggleShowHidden)
         do_test(test_size_display)
         do_test(test_sort)
         do_test(test_opt_Autochdir)
+
+        # do_test(test_pickCutCopyPaste)
+        # do_test(test_visual_pick)
 
         # do_test(test_rifle)
         # do_test(fn_remote=test_edit_remote)
