@@ -273,70 +273,74 @@ def test_edit_remote():
     assert_fs_remote('zdir', ['xsubdir2', 'ysubdir', 'wa'])
 
 
-def test_pickCutCopyPaste():
-    nvim.input('vv')
-    nvim.input('zajvjjvjlh')
-    assert_content('dir', ind=0, hi='dir')
-    assert_content('subdir', ind=1, level=1, hi='pick')
-    assert_content('subdir2', ind=2, level=1, hi='dir')
-    assert_content('a', ind=3, level=1, hi='pick')
-    assert_content('dir2', ind=4, level=0, hi='dir', hi_fg=True)
+def test_NETRTogglePick():
+    nvim.input('vjvklh')
+    assert_content('dir', ind=0, hi='pick', hi_fg=True)
+    assert_content('dir2', ind=1, hi='pick', hi_fg=False)
+    nvim.input('v')
+    assert_content('dir', ind=0, hi='dir', hi_fg=True)
 
-    nvim.input('x')
+
+def test_NETRTogglePickVisual():
+    nvim.input('vVjv')
+    assert_content('dir', ind=0, level=0, hi='dir')
+    assert_content('dir2', ind=1, level=0, hi='pick', hi_fg=True)
+
+
+def test_NETRCut():
+    nvim.input('zajvjjvjd')
     assert_content('dir', ind=0, hi='dir')
     assert_content('subdir', ind=1, level=1, hi='cut')
     assert_content('subdir2', ind=2, level=1, hi='dir')
     assert_content('a', ind=3, level=1, hi='cut')
 
-    nvim.input('lp')
+
+def test_NETRCutSingle():
+    nvim.input('ddjdd')
+    assert_content('dir', ind=0, hi='cut')
+    assert_content('dir2', ind=1, hi='cut', hi_fg=True)
+
+
+def test_NETRCopy():
+    nvim.input('zajvjjvjy')
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('subdir', ind=1, level=1, hi='copy')
+    assert_content('subdir2', ind=2, level=1, hi='dir')
+    assert_content('a', ind=3, level=1, hi='copy')
+
+
+def test_NETRCopySingle():
+    nvim.input('yyjyy')
+    assert_content('dir', ind=0, hi='copy')
+    assert_content('dir2', ind=1, hi='copy', hi_fg=True)
+
+
+def test_NETRPaste_by_cut():
+    # nvim.input('zajddjddkkzajlp')
+    nvim.input('2Gzajddzajddkkzajlp')
     assert_content('subdir', ind=0, hi='dir')
-    assert_content('a', ind=1, hi='file')
-    assert_fs('dir2', ['subdir', 'a'])
+    assert_content('subsubdir', ind=1, hi='dir')
+    assert_fs('dir', ['subdir2', 'a'])
+    assert_fs('dir2', ['subdir', 'subsubdir'])
 
-    nvim.input('hkddkdd')
-    assert_content('dir', ind=0, hi='cut', hi_fg=True)
-    assert_content('subdir2', ind=1, level=1, hi='cut')
 
-    nvim.input('jjlp')
-    assert_content('dir', ind=0, hi='dir')
-    assert_content('subdir', ind=1, hi='dir')
-    assert_content('subdir2', ind=2, hi='dir')
-    assert_content('a', ind=3, hi='file')
-    assert_fs('dir2', ['dir', 'subdir', 'subdir2', 'a'])
+def test_NETRPaste_by_copy():
+    nvim.input('2Gzajyyzajyykkzajlp')
+    assert_content('subdir', ind=0, hi='dir')
+    assert_content('subsubdir', ind=1, hi='dir')
+    assert_fs('dir', ['subdir', 'subdir2', 'a'])
+    assert_fs('dir2', ['subdir', 'subsubdir'])
 
-    nvim.input('Gvkkvjyy')
-    assert_content('dir', ind=0, hi='dir')
-    assert_content('subdir', ind=1, hi='pick')
-    assert_content('subdir2', ind=2, hi='copy', hi_fg=True)
-    assert_content('a', ind=3, hi='pick')
 
-    nvim.input('x')
-    assert_content('dir', ind=0, hi='dir')
-    assert_content('subdir', ind=1, hi='cut')
-    assert_content('subdir2', ind=2, hi='copy', hi_fg=True)
-    assert_content('a', ind=3, hi='cut')
-
+def test_NETRPaste_sided_by_side():
+    nvim.input('2Gzajyyjddkkza')
     nvim.command('wincmd v')
     nvim.command('wincmd l')
-    nvim.input('hp')
-    assert_content('dir2', ind=0, hi='dir', hi_fg=True)
-    assert_content('subdir', ind=1, hi='dir')
-    assert_content('subdir2', ind=2, hi='dir')
-    assert_content('a', ind=3, hi='file')
-    assert_fs('', ['dir2', 'subdir', 'subdir2', 'a'])
-    assert_fs('dir2', ['dir', 'subdir2'])
-
-    nvim.input('zajddj<Cr>p')
-    assert_content('subdir2', ind=1, hi='dir', level=1)
-    assert_fs('dir2/subdir2', ['dir', 'placeholder'])
-
-
-def test_visual_pick():
-    nvim.input('vVjv')
-    assert_content('dir', ind=0, level=0, hi='dir')
-    assert_content('dir2', ind=1, level=0, hi='pick', hi_fg=True)
-    nvim.input('D')
-    assert_fs('', ['dir'])
+    nvim.input('jlp')
+    assert_content('subdir', ind=0, hi='dir')
+    assert_content('subdir2', ind=1, hi='dir')
+    assert_fs('dir', ['subdir', 'a'])
+    assert_fs('dir2', ['subdir', 'subdir2'])
 
 
 def test_pickCutCopyPaste_remote_r2r():
@@ -586,6 +590,7 @@ def test_sort():
     assert_content('a.b', ind=2, hi='file', level=1)
     assert_content('a', ind=3, hi='file', level=1)
     assert_content('dir2', ind=6, hi='dir', level=0)
+    nvim.input('Sd')
 
 
 def test_opt_Autochdir():
@@ -661,18 +666,31 @@ if __name__ == '__main__':
             do_test(test_force_delete_fail_if_fs_lock)
             do_test(test_force_delete_single_fail_if_fs_lock)
 
+        def do_test_pickCopyCutPaste():
+            do_test(test_NETRTogglePick)
+            do_test(test_NETRTogglePickVisual)
+            do_test(test_NETRCut)
+            do_test(test_NETRCopy)
+            do_test(test_NETRCutSingle)
+            do_test(test_NETRCopySingle)
+
+            # reset pick,cut,copy sets because previous tests do not paste to
+            # reset them
+            nvim.command('python3 ranger.reset_pick_cut_copy()')
+            do_test(test_NETRPaste_by_cut)
+            do_test(test_NETRPaste_by_copy)
+            do_test(test_NETRPaste_sided_by_side)
+
         do_test_navigation()
         do_test(test_NETREdit)
         do_test(test_NETRNew)
         do_test_delete()
+        do_test_pickCopyCutPaste()
         do_test(test_bookmark)
         do_test(test_NETRToggleShowHidden)
         do_test(test_size_display)
         do_test(test_sort)
         do_test(test_opt_Autochdir)
-
-        # do_test(test_pickCutCopyPaste)
-        # do_test(test_visual_pick)
 
         # do_test(test_rifle)
         # do_test(fn_remote=test_edit_remote)

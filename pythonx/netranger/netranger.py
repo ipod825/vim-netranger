@@ -255,7 +255,7 @@ class EntryNode(Node):
         self.state = Node.State.UNDEROP
         self.set_highlight(default.color['copy'])
 
-    def reset_highlight(self):
+    def reset_hi(self):
         self.state = Node.State.NORMAL
         self.highlight = self.ori_highlight
 
@@ -735,6 +735,7 @@ class NetRangerBuf(object):
         if not self.highlight_outdated:
             return
         lines = []
+        # TODO This is expensive but called frequently, can we do better?
         for i, node in enumerate(self.nodes):
             if node in self.highlight_outdated_nodes:
                 lines.append(i)
@@ -831,6 +832,11 @@ class NetRangerBuf(object):
             node.copy()
         self.highlight_outdated_nodes.update(nodes)
 
+    def reset_hi(self, nodes):
+        for node in nodes:
+            node.reset_hi()
+        self.highlight_outdated_nodes.update(nodes)
+
     def find_next_ind(self, nodes, ind, pred):
         beg_node = nodes[ind]
         ind += 1
@@ -873,7 +879,6 @@ class Netranger(object):
         self.inited = False
         self.bufs = {}
         self.wd2bufnum = {}
-        self.pinnedRoots = set()
         self.picked_nodes = defaultdict(set)
         self.cut_nodes, self.copied_nodes = defaultdict(set), defaultdict(set)
         self.bookmarkUI = None
@@ -1235,8 +1240,6 @@ class Netranger(object):
         """Real work is done in on_bufenter."""
         cur_buf = self.cur_buf
         cwd = cur_buf.wd
-        if cwd in self.pinnedRoots:
-            return
         pdir = self.fs.parent_dir(cwd)
         self.vim.command('silent edit {}'.format(pdir))
         # manually call on_bufenter as vim might not trigger BufEnter with the
@@ -1281,13 +1284,6 @@ class Netranger(object):
     def NETRSave(self):
         if self.cur_buf.save():
             self.map_keys()
-
-    def NETRTogglePinRoot(self):
-        cwd = self.cwd
-        if cwd in self.pinnedRoots:
-            self.pinnedRoots.remove(cwd)
-        else:
-            self.pinnedRoots.add(cwd)
 
     def NETRToggleShowHidden(self):
         """Change ignore pattern and mark all existing netranger buffers to be
@@ -1361,6 +1357,21 @@ class Netranger(object):
         if self.helpUI is None:
             self.helpUI = HelpUI(self.vim, self.keymap_doc)
         self.helpUI.show()
+
+    def reset_pick_cut_copy(self):
+        for buf, nodes in self.cut_nodes.items():
+            buf.reset_hi(nodes)
+        for buf, nodes in self.copied_nodes.items():
+            buf.reset_hi(nodes)
+        for buf, nodes in self.picked_nodes.items():
+            buf.reset_hi(nodes)
+        self.picked_nodes = defaultdict(set)
+        self.cut_nodes = defaultdict(set)
+        self.copied_nodes = defaultdict(set)
+
+    def NETRCancelPickCutCopy(self):
+        self.reset_pick_cut_copy()
+        self.cur_buf.refresh_highlight()
 
     def NETRTogglePick(self):
         """Funciton to Add or remove cur_node to/from picked_nodes.
@@ -1463,8 +1474,7 @@ class Netranger(object):
         cwd_is_remote = self.is_remote_path(cwd)
         alreday_moved = set()
         for buf, nodes in self.cut_nodes.items():
-            # TODO do we really need to update buf.highlight_outdated here?
-            buf.highlight_outdated_nodes.update(nodes)
+            buf.reset_hi(nodes)
 
             # For all ancestor directories of the source directory,
             # It's possible that their content contains the cutted
@@ -1480,23 +1490,22 @@ class Netranger(object):
             # We need to mv longer (deeper) file name first
             nodes = sorted(nodes, key=lambda n: n.fullpath, reverse=True)
             for node in nodes:
-                node.reset_highlight()
+                node.reset_hi()
                 if node.fullpath not in alreday_moved:
                     fs = self.rclone if cwd_is_remote else buf.fs
                     fs.mv(node.fullpath, cwd)
                     alreday_moved.add(node.fullpath)
 
         for buf, nodes in self.copied_nodes.items():
-            buf.highlight_outdated_nodes.update(nodes)
+            buf.reset_hi(nodes)
             for node in nodes:
-                node.reset_highlight()
                 fs = self.rclone if cwd_is_remote else buf.fs
                 fs.cp(node.fullpath, cwd)
 
         self.cut_nodes = defaultdict(set)
         self.copied_nodes = defaultdict(set)
-        self.cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
         self.cur_buf.refresh_highlight()
+        self.cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
 
     def NETRDelete(self, force=False):
         if self.fs_busy():
@@ -1505,12 +1514,11 @@ class Netranger(object):
         remote_targets = []
         for buf, nodes in self.picked_nodes.items():
             buf.content_outdated = True
+            buf.reset_hi(nodes)
             if self.is_remote_path(buf.wd):
                 remote_targets += [n.fullpath for n in nodes]
             else:
                 targets += [n.fullpath for n in nodes]
-            for node in nodes:
-                node.toggle_pick()
 
         self.picked_nodes = defaultdict(set)
 

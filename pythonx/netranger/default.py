@@ -32,6 +32,7 @@ keymap = {
     'NETRCutSingle': (['dd'], "Cut the current entry."),
     'NETRCopySingle': (['yy'], "Copy the current entry."),
     'NETRPaste': (['p'], "Paste all cut/copied entries"),
+    'NETRCancelPickCutCopy': (['u'], "Cancel all selection/cut/copy"),
     'NETRDelete': (['D'], "Delete all picked entries"),
     'NETRDeleteSingle': (['DD'], "Delete the current entry."),
     'NETRForceDelete': (['X'], "Force delete all picked entries"),
