@@ -17,7 +17,8 @@ function! netranger#nvimAsyncCallBack(job_id, data, event)
    if a:event == "exit"
         exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","[]")'
     else
-        exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","'.join(a:data,'\n').'")'
+        let data = escape(join(a:data,'\n'),'"')
+        exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","'.data.'")'
    endif
 endfunction
 
@@ -25,6 +26,7 @@ function! netranger#vimAsyncCallBack(job_id, data, event)
    if a:event == "exit"
         exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","[]")'
     else
-        exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","'.a:data.'")'
+        let data = escape(a:data, '"')
+        exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","'.data.'")'
    endif
 endfunction
