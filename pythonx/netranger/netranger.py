@@ -886,7 +886,9 @@ class Netranger(object):
         self.bufs = {}
         self.wd2bufnum = {}
         self.picked_nodes = defaultdict(set)
-        self.cut_nodes, self.copied_nodes = defaultdict(set), defaultdict(set)
+        self.num_fs_op = 0
+        self.cut_nodes = defaultdict(set)
+        self.copied_nodes = defaultdict(set)
         self.bookmarkUI = None
         self.helpUI = None
         self.sortUI = None
@@ -901,7 +903,6 @@ class Netranger(object):
         self.init_keymaps()
         Shell.mkdir(default.variables['NETRRootDir'])
         self.rifle = Rifle(self.vim, VimVar('NETRRifleFile'))
-        self.num_fs_op = 0
 
         ignore_pat = list(VimVar('NETRIgnore'))
         if '.*' not in ignore_pat:
@@ -1103,7 +1104,7 @@ class Netranger(object):
     def buf_existed(self, wd):
         """ Check if there's an existing NETRangerBuf.
         This avoids reinitializing a NETRangerBuf when the corresponding vim
-        buffer is wipeout and later a reentered.
+        buffer is wipeout and later reentered.
         """
         if wd not in self.wd2bufnum:
             return False
@@ -1145,19 +1146,20 @@ class Netranger(object):
                      self.on_cursormoved_post)
 
     def on_cursormoved_post(self):
-        """refresh header and footer content. This is a heavy task (compared
-        to setting highlight when cursor moved). We alieviate its load by using
-        timer.
+        """Refresh header and footer content.
+        This is a heavy task (compared to setting highlight when cursor moved).
+        We alieviate its load by using timer.
         """
         bufnum = self.vim.current.buffer.number
         if bufnum in self.bufs:
             self.bufs[bufnum].on_cursormoved_post()
 
     def pend_onuiquit(self, fn, numArgs=0):
-        """Can be called by any UI. Used for waiting for user input in some UI
-        and then defer what to do when the UI window is quit and the netranger
-        buffer gain focus again. Function arguments are passed as a list via
-        vim variable g:'NETRRegister'.
+        """Called by UIs to perform actions after reentering netranger buffer.
+        Used for waiting for user input in some UI and then defer what to do
+        when the UI window is quit and the netranger buffer gain focus again.
+        Function arguments are passed as a list via vim variable g:'
+        NETRRegister'.
 
         @param fn: function to be executed
         @param numArgs: number of args expected to see in g:'NETRRegister'.
@@ -1193,8 +1195,10 @@ class Netranger(object):
                 Shell.run_async(rifle_cmd.format('"{}"'.format(fullpath)))
             else:
                 self.vim.command('silent {} {}'.format(open_cmd, fullpath))
-                # manually call on_bufenLer as vim might not trigger BufEnter
-                # with the above command
+                # Manually call on_bufenLer as old vim version might not
+                # trigger BufEnter with the above command. It does not cause
+                # too much overhead calling on_bufenter two times because most
+                # of things are cached
                 self.on_bufenter(self.vim.eval("winnr()"))
         else:
             if self.rclone is not None and self.is_remote_path(fullpath):
@@ -1261,13 +1265,13 @@ class Netranger(object):
         cwd = cur_buf.wd
         pdir = self.fs.parent_dir(cwd)
         self.vim.command('silent edit {}'.format(pdir))
-        # manually call on_bufenter as vim might not trigger BufEnter with the
-        # above command
+        # Manually call on_bufenter, see comments in NETROpen
         self.on_bufenter(self.vim.eval("winnr()"))
         cur_buf = self.cur_buf
         cur_buf.set_clineno_by_path(cwd)
-        # manually call on_cursormoved as synchronous on_bufenter block
-        # on_cursormoved event handler
+        # Manually call on_cursormoved as synchronous on_bufenter block
+        # on_cursormoved event handler, which should trigger by the previous
+        # line.
         cur_buf.on_cursormoved()
 
     def NETRVimCD(self):
@@ -1345,11 +1349,11 @@ class Netranger(object):
         self.bookmarkUI.go()
 
     def bookmarkgo_onuiquit(self, fullpath):
-        # the following ls ensure that the directory exists on some remote file
+        # The following ls ensure that the directory exists on some remote file
         # system
         Shell.ls(fullpath)
         self.vim.command('silent edit {}'.format(fullpath))
-        # manually do the same thing like in on_bufenter as synchronous
+        # Manually perform part of on_bufenter as synchronous
         # on_bufenter block (nested) on_bufenter event handler
         if self.buf_existed(fullpath):
             self.show_existing_buf(fullpath)
