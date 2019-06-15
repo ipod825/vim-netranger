@@ -18,7 +18,7 @@ if __name__ == "__main__":
         for f in sys.argv[2:]:
             try:
                 if os.path.isdir(f):
-                    shutil.rmtree(f, ignore_errors=True)
+                    shutil.rmtree(f)
                 else:
                     os.remove(f)
             except Exception as e:

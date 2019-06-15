@@ -115,7 +115,7 @@ def VimErrorMsg(exception):
     if not msg:
         return
     vim.command(
-        'unsilent echohl ErrorMsg | unsilent echom "{}" | echohl None '.format(
+        'unsilent echohl ErrorMsg | unsilent echo "{}" | echohl None '.format(
             msg.replace('"', '\\"')))
 
 
