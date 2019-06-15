@@ -316,35 +316,36 @@ def test_NETRCopySingle():
 
 
 def test_NETRPaste_by_cut():
-    # nvim.input('zajddjddkkzajlp')
-    nvim.input('2Gzajddzajddkkzajlp')
+    nvim.input('2Gzajddjjddkkkzajlp')
+    wait_for_fs_free()
     assert_content('subdir', ind=0, hi='dir')
-    assert_content('subsubdir', ind=1, hi='dir')
-    assert_fs('dir', ['subdir2', 'a'])
-    assert_fs('dir2', ['subdir', 'subsubdir'])
+    assert_content('a', ind=1, hi='file')
+    assert_fs('dir', ['subdir2'])
+    assert_fs('dir2', ['subdir', 'a'])
 
 
 def test_NETRPaste_by_copy():
-    nvim.input('2Gzajyyzajyykkzajlp')
+    nvim.input('2Gzajyyjjyykkkzajlp')
+    wait_for_fs_free()
     assert_content('subdir', ind=0, hi='dir')
-    assert_content('subsubdir', ind=1, hi='dir')
+    assert_content('a', ind=1, hi='file')
     assert_fs('dir', ['subdir', 'subdir2', 'a'])
-    assert_fs('dir2', ['subdir', 'subsubdir'])
+    assert_fs('dir2', ['subdir', 'a'])
 
 
 def test_NETRPaste_sided_by_side():
-    nvim.input('2Gzajyyjddkkza')
+    nvim.input('2Gzajyyjjddkkkza')
     nvim.command('wincmd v')
     nvim.command('wincmd l')
     nvim.input('jlp')
+    wait_for_fs_free()
     assert_content('subdir', ind=0, hi='dir')
-    assert_content('subdir2', ind=1, hi='dir')
-    assert_fs('dir', ['subdir', 'a'])
-    assert_fs('dir2', ['subdir', 'subdir2'])
+    assert_content('a', ind=1, hi='file')
+    assert_fs('dir', ['subdir', 'subdir2'])
+    assert_fs('dir2', ['subdir', 'a'])
 
 
 def test_pickCutCopyPaste_remote_r2r():
-    wait_for_fs_unlock()
     nvim.input('zajvjjvjlh')
     assert_content('dir', ind=0, hi='dir')
     assert_content('subdir', ind=1, level=1, hi='pick')
@@ -405,7 +406,7 @@ def test_pickCutCopyPaste_remote_r2r():
     assert_fs_remote('dir2/subdir2', ['dir', 'placeholder'])
 
 
-def wait_for_fs_unlock():
+def wait_for_fs_free():
     while nvim.command_output('python3 print(ranger.num_fs_op)') != '0':
         pass
     return
@@ -421,7 +422,7 @@ def unlock_fs():
 
 def test_NETRDelete():
     nvim.input('zajvjjvD')
-    wait_for_fs_unlock()
+    wait_for_fs_free()
     assert_fs('dir', ['subdir2'])
     assert_content('dir', ind=0, hi='dir')
     assert_content('subdir2', ind=1, level=1, hi='dir')
@@ -430,7 +431,7 @@ def test_NETRDelete():
 
 def test_NETRDeleteSingle():
     nvim.input('DD')
-    wait_for_fs_unlock()
+    wait_for_fs_free()
     assert_content('dir2', ind=0, hi='dir', hi_fg=True)
 
 
@@ -452,14 +453,14 @@ def test_delete_single_fail_if_fs_lock():
 def test_NETRForceDelete():
     Shell.run('chmod u-w dir/a')
     nvim.input('zajjjvX')
-    wait_for_fs_unlock()
+    wait_for_fs_free()
     assert_content('dir2', ind=3, hi='dir', hi_fg=True)
 
 
 def test_NETRForceDeleteSingle():
     Shell.run('chmod u-w dir/a')
     nvim.input('zajjjXX')
-    wait_for_fs_unlock()
+    wait_for_fs_free()
     assert_content('dir2', ind=3, hi='dir', hi_fg=True)
 
 

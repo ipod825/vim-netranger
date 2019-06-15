@@ -76,6 +76,7 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
     * Press `x` or `d` to cut all selected files
     * Press `D` to delete (`rm -r`) all selected files
     * Press `X` to force delete (i.e. `rm -rf`) all selected files
+    * Press `u` to unselect/unhighlight all selected/copied/cut files
 2. An easier way of selecting multiple files is to first press `V` to enter vim's visual mode and then press `v` to select all files highlighted.
 3. For `y`, `x`, `d`, go to the target directory, press `p` to paste all cut/copied files/directories.
 4. Note that the directory you paste is vim's pwd (`getcwd()`). Hence, you can press `<Cr>` to change directory to an expanded directory and paste without changing directory into it.

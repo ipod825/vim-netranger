@@ -74,26 +74,25 @@ class FS(object):
     def rename(self, src, dst):
         shutil.move(src, dst)
 
-    def mv(self, src, dst):
-        shutil.move(src, dst)
+    def exec_fs_server_cmd(self, cmd, src_arr, dst=None, on_exit=None):
+        src = ' '.join(['"{}"'.format(s) for s in src_arr])
+        if dst:
+            dst = '"{}"'.format(dst)
+            cmd = 'python {} {} {} {}'.format(FS.FScmds, cmd, src, dst)
+            Shell.run_async(cmd, on_exit=on_exit)
+        else:
+            cmd = 'python {} {} {}'.format(FS.FScmds, cmd, src)
+            Shell.run_async(cmd, on_exit=on_exit)
 
-    def cp(self, src, dst):
-        if os.path.isdir(src) and src[-1] != '/':
-            src = src + '/'
-        if os.path.isdir(dst) and dst[-1] != '/':
-            dst = dst + '/'
-        Shell.run('cp -r "{}" "{}"'.format(src, dst))
+    def mv(self, src_arr, dst, on_exit=None):
+        self.exec_fs_server_cmd('mv', src_arr, dst, on_exit)
 
-    def rm(self, target_arr, force=False, on_exit=None):
-        def on_stdout(job_id, msg):
-            if msg:
-                VimChansend(job_id, VimUserInput(msg))
+    def cp(self, src_arr, dst, on_exit):
+        self.exec_fs_server_cmd('cp', src_arr, dst, on_exit)
 
-        cmd = 'python {} rm {{}}'.format(FS.FScmds)
-        target = ' '.join(['"{}"'.format(t) for t in target_arr])
-        Shell.run_async(cmd.format(target),
-                        on_stdout=on_stdout,
-                        on_exit=on_exit)
+    def rm(self, src_arr, force=False, on_exit=None):
+        # TODO force?
+        self.exec_fs_server_cmd('rm', src_arr, on_exit=on_exit)
 
     def mtime(self, fname):
         return os.stat(fname).st_mtime

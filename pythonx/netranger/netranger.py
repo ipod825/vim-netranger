@@ -17,7 +17,7 @@ from netranger.rifle import Rifle
 from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, SortUI
 from netranger.util import Shell, c256
 from netranger.Vim import (VimCurWinHeight, VimCurWinWidth, VimErrorMsg,
-                           VimTimer, VimUserInput, VimVar)
+                           VimTimer, VimUserInput, VimVar, VimWarningMsg)
 
 if platform == "win32":
     from os import getenv
@@ -1051,10 +1051,17 @@ class Netranger(object):
         # manually turn off highlight of current linen as synchronous
         # on_bufenter block on_cursormoved event handler
         cur_buf.cur_node.cursor_off()
+
+        # deal with content changed, e.g., file operation outside
         cur_buf.refresh_nodes()
+
+        # deal with highlight changed, e.g., pick, copy hi dismiss because of
+        # paste
         cur_buf.refresh_highlight()
-        cur_buf.sort()
+
+        # deal with window width changed
         cur_buf.render_if_winwidth_changed()
+
         # ensure pwd is correct
         if VimVar('NETRAutochdir'):
             self.vim.command('lcd ' + cur_buf.wd)
@@ -1086,6 +1093,10 @@ class Netranger(object):
         self.set_buf_option()
 
     def buf_existed(self, wd):
+        """ Check if there's an existing NETRangerBuf.
+        This avoids reinitializing a NETRangerBuf when the corresponding vim
+        buffer is wipeout and later a reentered.
+        """
         if wd not in self.wd2bufnum:
             return False
 
@@ -1257,6 +1268,7 @@ class Netranger(object):
             self.vim.command('silent lcd {}'.format(curName))
         else:
             self.vim.command('silent lcd {}'.format(os.path.dirname(curName)))
+        VimWarningMsg('Set pwd to {}'.format(self.vim.eval('getcwd()')))
 
     def NETRToggleExpand(self):
         self.cur_buf.toggle_expand()
@@ -1413,6 +1425,8 @@ class Netranger(object):
         highlight_outdated so that their highlight will be updated when
         entered again.
         """
+        if self.fs_busy():
+            return
         for buf, nodes in self.picked_nodes.items():
             buf.cut(nodes)
             self.cut_nodes[buf].update(nodes)
@@ -1420,6 +1434,8 @@ class Netranger(object):
         self.cur_buf.refresh_highlight()
 
     def NETRCutSingle(self):
+        if self.fs_busy():
+            return
         cur_buf = self.cur_buf
         cur_node = self.cur_node
         cur_node.cut()
@@ -1433,6 +1449,8 @@ class Netranger(object):
         highlight_outdated so that their highlight will be updated when
         entered again.
         """
+        if self.fs_busy():
+            return
         for buf, nodes in self.picked_nodes.items():
             buf.copy(nodes)
             self.copied_nodes[buf].update(nodes)
@@ -1440,6 +1458,8 @@ class Netranger(object):
         self.cur_buf.refresh_highlight()
 
     def NETRCopySingle(self):
+        if self.fs_busy():
+            return
         cur_buf = self.cur_buf
         cur_node = self.cur_node
         cur_node.copy()
@@ -1455,23 +1475,20 @@ class Netranger(object):
         else:
             return False
 
-    def lock_fs(self):
+    def inc_num_fs_op(self):
         self.num_fs_op += 1
 
-    def unlock_fs(self):
+    def dec_num_fs_op(self):
         if self.vim.current.buffer.number in self.bufs:
             self.cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
         self.num_fs_op -= 1
 
-    def NETRPaste(self):
-        """Perform mv from cut_nodes or cp from copied_nodes to cwd.
-
-        For each source (cut/copy) buffer, reset the highlight of the
-        cut/copied nodes and mark the buffer as highlight_outdated so
-        that the highlight will be updated when entered again.
-        """
+    def _NETRPaste_cut_nodes(self):
         cwd = self.vim.eval('getcwd()')
         cwd_is_remote = self.is_remote_path(cwd)
+        targets = []
+        remote_targets = []
+
         alreday_moved = set()
         for buf, nodes in self.cut_nodes.items():
             buf.reset_hi(nodes)
@@ -1490,22 +1507,52 @@ class Netranger(object):
             # We need to mv longer (deeper) file name first
             nodes = sorted(nodes, key=lambda n: n.fullpath, reverse=True)
             for node in nodes:
-                node.reset_hi()
                 if node.fullpath not in alreday_moved:
-                    fs = self.rclone if cwd_is_remote else buf.fs
-                    fs.mv(node.fullpath, cwd)
+                    if cwd_is_remote or self.is_remote_path(buf.wd):
+                        remote_targets.append(node.fullpath)
+                    else:
+                        targets.append(node.fullpath)
                     alreday_moved.add(node.fullpath)
+            self.cut_nodes = defaultdict(set)
+            if targets:
+                self.inc_num_fs_op()
+                self.fs.mv(targets, cwd, on_exit=lambda: self.dec_num_fs_op())
+            if remote_targets:
+                self.inc_num_fs_op()
+                self.rclone.mv(targets,
+                               cwd,
+                               on_exit=lambda: self.dec_num_fs_op())
 
+    def _NETRPaste_copied_nodes(self):
+        cwd = self.vim.eval('getcwd()')
+        cwd_is_remote = self.is_remote_path(cwd)
+        targets = []
+        remote_targets = []
         for buf, nodes in self.copied_nodes.items():
             buf.reset_hi(nodes)
             for node in nodes:
-                fs = self.rclone if cwd_is_remote else buf.fs
-                fs.cp(node.fullpath, cwd)
-
-        self.cut_nodes = defaultdict(set)
+                if cwd_is_remote or self.is_remote_path(buf.wd):
+                    remote_targets.append(node.fullpath)
+                else:
+                    targets.append(node.fullpath)
         self.copied_nodes = defaultdict(set)
-        self.cur_buf.refresh_highlight()
-        self.cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
+        if targets:
+            self.inc_num_fs_op()
+            self.fs.cp(targets, cwd, on_exit=lambda: self.dec_num_fs_op())
+        if remote_targets:
+            self.inc_num_fs_op()
+            self.rclone.cp(targets, cwd, on_exit=lambda: self.dec_num_fs_op())
+
+    def NETRPaste(self):
+        """Perform mv from cut_nodes or cp from copied_nodes to cwd.
+        For each source (cut/copy) buffer, reset the highlight of the cut/
+        copied nodes so that the highlight will be updated when entered again
+        in refresh_curbuf
+        """
+        if self.fs_busy():
+            return
+        self._NETRPaste_copied_nodes()
+        self._NETRPaste_cut_nodes()
 
     def NETRDelete(self, force=False):
         if self.fs_busy():
@@ -1523,20 +1570,22 @@ class Netranger(object):
         self.picked_nodes = defaultdict(set)
 
         if targets:
-            self.lock_fs()
-            self.fs.rm(targets, force, on_exit=lambda: self.unlock_fs())
+            self.inc_num_fs_op()
+            self.fs.rm(targets, force, on_exit=lambda: self.dec_num_fs_op())
         if remote_targets:
-            self.lock_fs()
-            self.fs.rm(remote_targets, force, on_exit=lambda: self.unlock_fs())
+            self.inc_num_fs_op()
+            self.rclone.rm(remote_targets,
+                           force,
+                           on_exit=lambda: self.dec_num_fs_op())
 
     def NETRDeleteSingle(self, force=False):
         if self.fs_busy():
             return
         self.cur_buf.content_outdated = True
-        self.lock_fs()
+        self.inc_num_fs_op()
         self.cur_buf.fs.rm([self.cur_node.fullpath],
                            force,
-                           on_exit=lambda: self.unlock_fs())
+                           on_exit=lambda: self.dec_num_fs_op())
 
     def NETRForceDelete(self):
         self.NETRDelete(force=True)
