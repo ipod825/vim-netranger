@@ -75,12 +75,17 @@ def assert_num_content_line(numLine):
                               len(nvim.current.buffer) - 1)
 
 
-def assert_fs(d, expected):
+def assert_fs(d, expected, root=None):
     """
     Test whether 'expected' exists in directory cwd/d, where
     cwd is /tmp/netrtest/local when testing local functions and
     cwd is /tmp/netrtest/remote when testing remote functions.
     """
+
+    if root:
+        old_cwd = os.getcwd()
+        os.chdir(root)
+
     real = None
     for i in range(10):
         real = Shell.run('ls --group-directories-first ' + d).split()
@@ -90,13 +95,20 @@ def assert_fs(d, expected):
 
     assert real == expected, 'expected: {}, real: {}'.format(expected, real)
 
+    if root:
+        os.chdir(old_cwd)
+
+
+def assert_fs_cache(d, expected):
+    assert_fs(d, expected, root=test_remote_cache_dir)
+
+
+def assert_fs_local(d, expected):
+    assert_fs(d, expected, root=test_local_dir)
+
 
 def assert_fs_remote(d, expected):
-    """
-    Test whether 'expected' exists in directory test_remote_cache_dir/d
-    (defaults to $HOME/.netranger/remote/netrtest/d)
-    """
-    assert_fs(os.path.join(test_remote_cache_dir, d), expected)
+    assert_fs(d, expected, root=test_remote_dir)
 
 
 def do_test(fn=None, fn_remote=None):
@@ -110,7 +122,7 @@ def do_test(fn=None, fn_remote=None):
     3. 'NETRemoteRoots' is passed to Rclone constructor, so that the rpath
        of the netrtest remote is mapped to '/tmp/netrtest/remote'.
     4. This just works in netranger. In cmd line, running
-       'rclone lsl netranger:/' still shows you the content of the root
+       'rclone lsl netrtest:/' still shows you the content of the root
        directory of the localhost.
     """
     old_cwd = os.getcwd()
@@ -135,10 +147,12 @@ def do_test(fn=None, fn_remote=None):
     prepare_test_dir(test_local_dir)
     if fn is not None:
         nvim.command('silent tabe {}'.format(test_local_dir))
+        ensure_buf_no_expand()
         fn()
         print('== {} success =='.format(str(fn.__name__)))
 
     prepare_test_dir(test_remote_dir)
+    Shell.run('rm -rf {}/*'.format(test_remote_cache_dir))
     if fn_remote is not None:
         nvim.command('NETRemoteList')
         found_remote = False
@@ -153,6 +167,7 @@ def do_test(fn=None, fn_remote=None):
         nvim.input('l')
         nvim.command('NETRemotePull')
         nvim.command('call cursor(2, 1)')
+        ensure_buf_no_expand()
         fn_remote()
         print('== {} success =='.format(str(fn_remote.__name__)))
 
@@ -258,21 +273,6 @@ def test_NETRNew():
     assert_fs('', ['dir', 'dir2', 'zd', 'zf'])
 
 
-def test_edit_remote():
-    return
-    nvim.input('za')
-    nvim.input('iiz<Left><Down>')
-    nvim.input('y<Left><Down>')
-    nvim.input('x<Left><Down>')
-    nvim.input('w')
-    nvim.input('')
-
-    assert_fs('', ['dir2', 'zdir'])
-    assert_fs('zdir', ['xsubdir2', 'ysubdir', 'wa'])
-    assert_fs_remote('', ['dir2', 'zdir'])
-    assert_fs_remote('zdir', ['xsubdir2', 'ysubdir', 'wa'])
-
-
 def test_NETRTogglePick():
     nvim.input('vjvklh')
     assert_content('dir', ind=0, hi='pick', hi_fg=True)
@@ -316,7 +316,7 @@ def test_NETRCopySingle():
 
 
 def test_NETRPaste_by_cut():
-    nvim.input('2Gzajddjjddkkkzajlp')
+    nvim.input('zajddjjddkkkzajlp')
     wait_for_fs_free()
     assert_content('subdir', ind=0, hi='dir')
     assert_content('a', ind=1, hi='file')
@@ -325,7 +325,7 @@ def test_NETRPaste_by_cut():
 
 
 def test_NETRPaste_by_copy():
-    nvim.input('2Gzajyyjjyykkkzajlp')
+    nvim.input('zajyyjjyykkkzajlp')
     wait_for_fs_free()
     assert_content('subdir', ind=0, hi='dir')
     assert_content('a', ind=1, hi='file')
@@ -334,76 +334,14 @@ def test_NETRPaste_by_copy():
 
 
 def test_NETRPaste_sided_by_side():
-    nvim.input('2Gzajyyjjddkkkza')
-    nvim.command('wincmd v')
-    nvim.command('wincmd l')
+    nvim.input('zajyyjjddkkkza')
+    nvim.command('vsplit')
     nvim.input('jlp')
     wait_for_fs_free()
     assert_content('subdir', ind=0, hi='dir')
     assert_content('a', ind=1, hi='file')
     assert_fs('dir', ['subdir', 'subdir2'])
     assert_fs('dir2', ['subdir', 'a'])
-
-
-def test_pickCutCopyPaste_remote_r2r():
-    nvim.input('zajvjjvjlh')
-    assert_content('dir', ind=0, hi='dir')
-    assert_content('subdir', ind=1, level=1, hi='pick')
-    assert_content('subdir2', ind=2, level=1, hi='dir')
-    assert_content('a', ind=3, level=1, hi='pick')
-
-    nvim.input('x')
-    assert_content('dir', ind=0, hi='dir')
-    assert_content('subdir', ind=1, level=1, hi='cut')
-    assert_content('subdir2', ind=2, level=1, hi='dir')
-    assert_content('a', ind=3, level=1, hi='cut')
-
-    nvim.input('lp')
-    assert_content('subdir', ind=0, hi='dir')
-    assert_content('a', ind=1, hi='file')
-    assert_fs('dir2', ['subdir', 'a'])
-    assert_fs_remote('dir2', ['subdir', 'a'])
-
-    nvim.input('hkddkdd')
-    assert_content('dir', ind=0, hi='cut')
-    assert_content('subdir2', ind=1, level=1, hi='cut')
-
-    nvim.input('jjlp')
-    assert_content('dir', ind=0, hi='dir')
-    assert_content('subdir', ind=1, hi='dir')
-    assert_content('subdir2', ind=2, hi='dir')
-    assert_content('a', ind=3, hi='file')
-    assert_fs('dir2', ['dir', 'subdir', 'subdir2', 'a'])
-    assert_fs_remote('dir2', ['dir', 'subdir', 'subdir2', 'a'])
-
-    nvim.input('Gvkkvjyy')
-    assert_content('dir', ind=0, hi='dir')
-    assert_content('subdir', ind=1, hi='pick')
-    assert_content('subdir2', ind=2, hi='copy')
-    assert_content('a', ind=3, hi='pick')
-
-    nvim.input('x')
-    assert_content('dir', ind=0, hi='dir')
-    assert_content('subdir', ind=1, hi='cut')
-    assert_content('subdir2', ind=2, hi='copy')
-    assert_content('a', ind=3, hi='cut')
-
-    nvim.command('wincmd v')
-    nvim.command('wincmd l')
-    nvim.input('hp')
-    assert_content('dir2', ind=0, hi='dir')
-    assert_content('subdir', ind=1, hi='dir')
-    assert_content('subdir2', ind=2, hi='dir')
-    assert_content('a', ind=3, hi='file')
-    assert_fs('', ['dir2', 'subdir', 'subdir2', 'a'])
-    assert_fs('dir2', ['dir', 'subdir2'])
-    assert_fs_remote('', ['dir2', 'subdir', 'subdir2', 'a'])
-    assert_fs_remote('dir2', ['dir', 'subdir2'])
-
-    nvim.input('zajddj<Cr>p')
-    assert_content('subdir2', ind=1, hi='dir', level=1)
-    assert_fs('dir2/subdir2', ['dir', 'placeholder'])
-    assert_fs_remote('dir2/subdir2', ['dir', 'placeholder'])
 
 
 def wait_for_fs_free():
@@ -418,6 +356,16 @@ def lock_fs():
 
 def unlock_fs():
     nvim.command('python3 ranger.num_fs_op=0')
+
+
+def ensure_buf_no_expand():
+    nvim.input('2G')
+    m2 = re.search(r'\[38;5;[0-9]+;7mdir.*', nvim.eval('getline(2)'))
+    assert m2, "Assumes line2 is dir"
+
+    m3 = re.search(r'\[38;5;[0-9]+mdir2.*', nvim.eval('getline(3)'))
+    if not m3:
+        nvim.input('za')
 
 
 def test_NETRDelete():
@@ -477,22 +425,6 @@ def test_force_delete_single_fail_if_fs_lock():
     nvim.input('XX')
     assert_content('dir', ind=0, hi='dir', hi_fg=True)
     unlock_fs()
-
-
-def test_delete_remote():
-    nvim.input('zajvjjvD')
-    assert_fs('dir', ['subdir2'])
-    assert_fs_remote('dir', ['subdir2'])
-    assert_content('dir', ind=0, hi='dir')
-    assert_content('subdir2', ind=1, level=1, hi='dir')
-    assert_content('dir2', ind=2, hi='dir', hi_fg=True)
-
-    nvim.input('kk  ')
-    assert_content('subdir2', ind=1, level=1, hi='dir')
-    nvim.input('XX')
-    assert_content('dir2', ind=0, hi='dir', hi_fg=True)
-    assert_fs('', ['dir2'])
-    assert_fs_remote('', ['dir2'])
 
 
 def test_bookmark():
@@ -615,6 +547,100 @@ def test_rifle():
     pass
 
 
+def test_NETRDelete_remote():
+    nvim.input('zajvjjvD')
+    wait_for_fs_free()
+    assert_fs('dir', ['subdir2'])
+    assert_fs_cache('dir', ['subdir2'])
+
+
+def test_NETRPaste_by_cut_remote2local():
+    nvim.input('zajvjjvd')
+    nvim.command('vsplit {}'.format(test_local_dir))
+    nvim.input('jlp')
+    wait_for_fs_free()
+    assert_content('subdir', ind=0, hi='dir')
+    assert_content('a', ind=1, hi='file')
+    nvim.command('bwipeout')
+
+    assert_fs_remote('dir', ['subdir2'])
+    assert_fs_cache('dir', ['subdir2'])
+    assert_fs_local('dir2', ['subdir', 'a'])
+
+
+def test_NETRPaste_by_cut_local2remote():
+    nvim.command('vsplit {}'.format(test_local_dir))
+    ensure_buf_no_expand()
+    nvim.input('zajvjjvd')
+    nvim.command('wincmd w')
+    nvim.input('jlp')
+    wait_for_fs_free()
+    assert_content('subdir', ind=0, hi='dir')
+    assert_content('a', ind=1, hi='file')
+    nvim.command('bwipeout')
+    assert_fs_local('dir', ['subdir2'])
+    assert_fs_remote('dir2', ['subdir', 'a'])
+    assert_fs_cache('dir2', ['subdir', 'a'])
+
+
+def test_NETRPaste_by_cut_remote2remote():
+    nvim.input('zajvjjvd')
+    nvim.input('Glp')
+    wait_for_fs_free()
+    assert_content('subdir', ind=0, hi='dir')
+    assert_content('a', ind=1, hi='file')
+
+    assert_fs_remote('dir', ['subdir2'])
+    assert_fs_remote('dir2', ['subdir', 'a'])
+
+    assert_fs_cache('dir', ['subdir2'])
+    assert_fs_cache('dir2', ['subdir', 'a'])
+
+
+def test_NETRPaste_by_copy_remote2local():
+    nvim.input('zajvjjvy')
+    nvim.command('vsplit {}'.format(test_local_dir))
+    ensure_buf_no_expand()
+    nvim.input('jlp')
+    wait_for_fs_free()
+    assert_content('subdir', ind=0, hi='dir')
+    assert_content('a', ind=1, hi='file')
+    nvim.command('bwipeout')
+
+    assert_fs_remote('dir', ['subdir', 'subdir2', 'a'])
+    assert_fs_cache('dir', ['subdir', 'subdir2', 'a'])
+    assert_fs_local('dir2', ['subdir', 'a'])
+
+
+def test_NETRPaste_by_copy_local2remote():
+    nvim.command('vsplit {}'.format(test_local_dir))
+    ensure_buf_no_expand()
+    nvim.input('zajvjjvy')
+    nvim.command('wincmd w')
+    nvim.input('jlp')
+    wait_for_fs_free()
+    assert_content('subdir', ind=0, hi='dir')
+    assert_content('a', ind=1, hi='file')
+    nvim.command('bwipeout')
+    assert_fs_local('dir', ['subdir', 'subdir2', 'a'])
+    assert_fs_remote('dir2', ['subdir', 'a'])
+    assert_fs_cache('dir2', ['subdir', 'a'])
+
+
+def test_NETRPaste_by_copy_remote2remote():
+    nvim.input('zajvjjvy')
+    nvim.input('Glp')
+    wait_for_fs_free()
+    assert_content('subdir', ind=0, hi='dir')
+    assert_content('a', ind=1, hi='file')
+
+    assert_fs_remote('dir', ['subdir', 'subdir2', 'a'])
+    assert_fs_remote('dir2', ['subdir', 'a'])
+
+    assert_fs_cache('dir', ['subdir', 'subdir2', 'a'])
+    assert_fs_cache('dir2', ['subdir', 'a'])
+
+
 def parse_arg(argv):
     parser = argparse.ArgumentParser(description='')
     parser.add_argument(
@@ -682,6 +708,18 @@ if __name__ == '__main__':
             do_test(test_NETRPaste_by_copy)
             do_test(test_NETRPaste_sided_by_side)
 
+        def do_test_delete_remote():
+            do_test(fn_remote=test_NETRDelete_remote)
+
+        def do_test_pickCopyCutPaste_remote():
+            do_test(fn_remote=test_NETRPaste_by_cut_local2remote)
+            do_test(fn_remote=test_NETRPaste_by_cut_remote2local)
+            do_test(fn_remote=test_NETRPaste_by_cut_remote2remote)
+
+            do_test(fn_remote=test_NETRPaste_by_copy_local2remote)
+            do_test(fn_remote=test_NETRPaste_by_copy_remote2local)
+            do_test(fn_remote=test_NETRPaste_by_copy_remote2remote)
+
         do_test_navigation()
         do_test(test_NETREdit)
         do_test(test_NETRNew)
@@ -693,10 +731,11 @@ if __name__ == '__main__':
         do_test(test_sort)
         do_test(test_opt_Autochdir)
 
+        do_test_delete_remote()
+        do_test_pickCopyCutPaste_remote()
+
         # do_test(test_rifle)
         # do_test(fn_remote=test_edit_remote)
-        # do_test(fn_remote=test_delete_remote)
-        # do_test(fn_remote=test_pickCutCopyPaste_remote_r2r)
         # # TODO
         # # add SORT test for broken link #issue 21
 

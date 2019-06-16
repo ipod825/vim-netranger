@@ -40,7 +40,7 @@ class Shell():
 
     @classmethod
     def touch(cls, name):
-        Shell.run('touch "{}"'.format(name))
+        open(name, 'a').close()
 
     @classmethod
     def rm(cls, name):

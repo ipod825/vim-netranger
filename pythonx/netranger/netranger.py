@@ -17,7 +17,8 @@ from netranger.rifle import Rifle
 from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, SortUI
 from netranger.util import Shell, c256
 from netranger.Vim import (VimCurWinHeight, VimCurWinWidth, VimErrorMsg,
-                           VimTimer, VimUserInput, VimVar, VimWarningMsg)
+                           VimTimer, VimUserInput, VimVar, VimWarningMsg,
+                           debug)
 
 if platform == "win32":
     from os import getenv
@@ -1298,10 +1299,10 @@ class Netranger(object):
         cwd = os.path.dirname(self.cur_node.fullpath)
         if opt == 'd':
             name = VimUserInput('New directory name')
-            Shell.mkdir(os.path.join(cwd, name))
+            self.cur_buf.fs.mkdir(os.path.join(cwd, name))
         elif opt == 'f':
             name = VimUserInput('New file name')
-            Shell.touch(os.path.join(cwd, name))
+            self.cur_buf.fs.touch(os.path.join(cwd, name))
         self.cur_buf.refresh_nodes()
 
     def NETREdit(self):
@@ -1534,7 +1535,7 @@ class Netranger(object):
                 self.fs.mv(targets, cwd, on_exit=lambda: self.dec_num_fs_op())
             if remote_targets:
                 self.inc_num_fs_op()
-                self.rclone.mv(targets,
+                self.rclone.mv(remote_targets,
                                cwd,
                                on_exit=lambda: self.dec_num_fs_op())
 
@@ -1556,7 +1557,9 @@ class Netranger(object):
             self.fs.cp(targets, cwd, on_exit=lambda: self.dec_num_fs_op())
         if remote_targets:
             self.inc_num_fs_op()
-            self.rclone.cp(targets, cwd, on_exit=lambda: self.dec_num_fs_op())
+            self.rclone.cp(remote_targets,
+                           cwd,
+                           on_exit=lambda: self.dec_num_fs_op())
 
     def NETRPaste(self):
         """Perform mv from cut_nodes or cp from copied_nodes to cwd.

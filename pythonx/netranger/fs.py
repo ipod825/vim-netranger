@@ -1,13 +1,15 @@
 from __future__ import absolute_import
 
 import os
+import pickle
 import re
 import shutil
+import tempfile
 
 from netranger.config import file_sz_display_wid
 from netranger.enum import Enum
 from netranger.util import Shell
-from netranger.Vim import VimChansend, VimUserInput
+from netranger.Vim import VimUserInput, debug
 
 FType = Enum('FileType', 'SOCK, LNK, REG, BLK, DIR, CHR, FIFO')
 
@@ -94,6 +96,12 @@ class FS(object):
         # TODO force?
         self.exec_fs_server_cmd('rm', src_arr, on_exit=on_exit)
 
+    def touch(self, name):
+        Shell.touch(name)
+
+    def mkdir(self, name):
+        Shell.mkdir(name)
+
     def mtime(self, fname):
         return os.stat(fname).st_mtime
 
@@ -126,6 +134,8 @@ class FS(object):
 
 
 class Rclone(FS):
+    FScmds = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          '../rclone_server.py')
     SyncDirection = Enum('SyncDirection', 'DOWN, UP')
 
     def sync_src_dst(self, lpath, direction):
@@ -185,7 +195,6 @@ class Rclone(FS):
                 name for name in Shell.run('rclone lsf "{}"'.format(
                     self.rpath(dirname))).split('\n') if len(name) > 0
             ])
-
             for name in remote_files.difference(local_files):
                 if name[-1] == '/':
                     Shell.mkdir(os.path.join(dirname, name))
@@ -193,7 +202,7 @@ class Rclone(FS):
                     Shell.touch(os.path.join(dirname, name))
 
             for name in local_files.difference(remote_files):
-                Shell.run('rclone copyto "{}" "{}"'.format(
+                Shell.run('rclone copyto --tpslimit=10 "{}" "{}"'.format(
                     os.path.join(dirname, name),
                     os.path.join(self.rpath(dirname), name)))
         return super(Rclone, self).ls(dirname)
@@ -201,28 +210,51 @@ class Rclone(FS):
     def ensure_downloaded(self, lpath):
         if os.stat(lpath).st_size == 0:
             src, dst = self.sync_src_dst(lpath, Rclone.SyncDirection.DOWN)
-            Shell.run('rclone copyto "{}" "{}"'.format(src, dst))
+            Shell.run('rclone copyto --tpslimit=10 "{}" "{}"'.format(src, dst))
 
     def rename(self, src, dst):
         Shell.run('rclone moveto "{}" "{}"'.format(self.rpath(src),
                                                    self.rpath(dst)))
         super(Rclone, self).rename(src, dst)
 
-    def mv(self, src, dst):
-        # TODO could be more efficient without calling rclone two times
-        self.cp(src, dst)
-        self.rm(src)
+    def exec_rclone_server_cmd(self, cmd, on_exit, arguments):
+        fname = tempfile.mkstemp()[1]
+        with open(fname, 'ab') as f:
+            pickle.dump(arguments, f)
+        Shell.run_async('python {} {} {}'.format(Rclone.FScmds, cmd, fname),
+                        on_exit=on_exit)
 
-    def cp(self, src, dst):
+    def mv(self, src_arr, dst, on_exit):
+        self.exec_rclone_server_cmd(
+            'mv', on_exit, {
+                'rsrc': [self.rpath(s) for s in src_arr],
+                'src': src_arr,
+                'rdst': self.rpath(dst),
+                'dst': dst
+            })
+
+    def cp(self, src_arr, dst, on_exit):
+        self.exec_rclone_server_cmd(
+            'cp', on_exit, {
+                'rsrc': [self.rpath(s) for s in src_arr],
+                'src': src_arr,
+                'rdst': self.rpath(dst),
+                'dst': dst
+            })
+
+    def rm(self, src_arr, force=False, on_exit=None):
+        self.exec_rclone_server_cmd('rm', on_exit, {
+            'rsrc': [self.rpath(s) for s in src_arr],
+            'src': src_arr
+        })
+
+    def touch(self, name):
+        Shell.touch(name)
         Shell.run('rclone copyto "{}" "{}"'.format(
-            self.rpath(src),
-            os.path.join(self.rpath(dst), os.path.basename(src))))
-        super(Rclone, self).cp(src, dst)
+            name, os.path.join(self.rpath(name), os.path.basename(name))))
 
-    def rm(self, target, force=False):
-        cmd = 'purge' if os.path.isdir(target) else 'delete'
-        Shell.run('rclone {} "{}"'.format(cmd, self.rpath(target)))
-        super(Rclone, self).rm(target, force=True)
+    def mkdir(self, name):
+        Shell.mkdir(name)
 
     def sync(self, lpath, direction):
         src, dst = self.sync_src_dst(lpath, direction)

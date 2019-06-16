@@ -119,6 +119,10 @@ def VimErrorMsg(exception):
             msg.replace('"', '\\"')))
 
 
+def debug(*msg):
+    vim.command('unsilent echom "{}"'.format(' '.join([str(m) for m in msg])))
+
+
 def VimWarningMsg(msg):
     vim.command(
         'unsilent echohl WarningMsg | unsilent echo "{}" | echohl None '.
