@@ -305,6 +305,7 @@ class NetRangerBuf(object):
         self.vim = vim
         self.wd = wd
         self.fs = fs
+        self.num_fs_op = 0
 
         self.content_outdated = False
         self.highlight_outdated_nodes = set()
@@ -332,6 +333,22 @@ class NetRangerBuf(object):
         self.visual_start_line = 0
         self.vim_buf_handel = self.vim.current.buffer
         self.render()
+
+    def fs_busy(self, echo=True):
+        if self.num_fs_op > 0:
+            if echo:
+                VimErrorMsg(
+                    'Previous operation that might change the view is not done'
+                    ' yet. Try again later')
+            return True
+        else:
+            return False
+
+    def inc_num_fs_op(self):
+        self.num_fs_op += 1
+
+    def dec_num_fs_op(self):
+        self.num_fs_op -= 1
 
     def abbrev_cwd(self, width):
         res = self.wd.replace(Shell.userhome, '~')
@@ -890,7 +907,6 @@ class Netranger(object):
         self.bufs = {}
         self.wd2bufnum = {}
         self.picked_nodes = defaultdict(set)
-        self.num_fs_op = 0
         self.cut_nodes = defaultdict(set)
         self.copied_nodes = defaultdict(set)
         self.bookmarkUI = None
@@ -1397,6 +1413,43 @@ class Netranger(object):
         self.cut_nodes = defaultdict(set)
         self.copied_nodes = defaultdict(set)
 
+    def inc_num_fs_op(self, bufs):
+        """Increase number of filesystem operation for buffers.
+        The mechanisms of filesystem operation locking are as follows:
+        1. The general guideline is that after operation, if the content (but
+        1not highlight) of the buffer will change, the buffer should be locked.
+        2. When a buffer contains nodes under deletion, the buffer should be
+        locked.
+        3. When performing paste operation on a buffer, the buffer should be
+        locked. The source buffers for cut nodes should also be locked.
+        However, The source buffers for copied nodes need not be locked as
+        only highlight will change.
+        4. When a buffer is locked, NETRTogglePick/NETRDeleteSingle/NETRPaste
+        are forbidden, i.e. operation that will change content of the buffer.
+        5. Note that NETRCut/NETRCopy/NETRDelete get their sources from
+        picked_nodes, so they are not forbidden though you still can't pick
+        nodes and then perform cut/copy/delete in the current buffer (as
+        NETRTogglePick is forbidden in the current buffer)
+        5. To lock a buffer, we increase it's num_fs_op by 1.
+        6. To unlock a buffer, we decrease it's num_fs_op by 1.
+        7. A buffer is considered as locked if its num_fs_op>0.
+        """
+        for buf in bufs:
+            buf.inc_num_fs_op()
+
+    def dec_num_fs_op(self, bufs):
+        """Decrease number of filesystem operation for buffers.
+        See inc_num_fs_op.
+        """
+
+        for buf in bufs:
+            buf.dec_num_fs_op()
+
+        if self.vim.current.buffer.number in self.bufs:
+            cur_buf = self.cur_buf
+            if not cur_buf.fs_busy(echo=False):
+                cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
+
     def NETRCancelPickCutCopy(self):
         self.reset_pick_cut_copy()
         self.cur_buf.refresh_highlight()
@@ -1406,10 +1459,10 @@ class Netranger(object):
 
         Also update the highlight of the current line.
         """
-        if self.fs_busy():
+        cur_buf = self.cur_buf
+        if cur_buf.fs_busy():
             return
         cur_node = self.cur_node
-        cur_buf = self.cur_buf
         res = cur_node.toggle_pick()
         if res == Node.ToggleOpRes.ON:
             self.picked_nodes[cur_buf].add(cur_node)
@@ -1418,12 +1471,12 @@ class Netranger(object):
         self.cur_buf.refresh_cur_line_hi()
 
     def NETRTogglePickVisual(self):
-        if self.fs_busy():
+        cur_buf = self.cur_buf
+        if cur_buf.fs_busy():
             return
         self.vim.command('normal! gv')
         beg = int(self.vim.eval('line("\'<")')) - 1
         end = int(self.vim.eval('line("\'>")'))
-        cur_buf = self.cur_buf
         for i in range(beg, end):
             node = cur_buf.nodes[i]
             res = node.toggle_pick()
@@ -1441,8 +1494,6 @@ class Netranger(object):
         highlight_outdated so that their highlight will be updated when
         entered again.
         """
-        if self.fs_busy():
-            return
         for buf, nodes in self.picked_nodes.items():
             buf.cut(nodes)
             self.cut_nodes[buf].update(nodes)
@@ -1450,9 +1501,9 @@ class Netranger(object):
         self.cur_buf.refresh_highlight()
 
     def NETRCutSingle(self):
-        if self.fs_busy():
-            return
         cur_buf = self.cur_buf
+        if cur_buf.fs_busy():
+            return
         cur_node = self.cur_node
         cur_node.cut()
         self.cut_nodes[cur_buf].add(cur_node)
@@ -1465,8 +1516,6 @@ class Netranger(object):
         highlight_outdated so that their highlight will be updated when
         entered again.
         """
-        if self.fs_busy():
-            return
         for buf, nodes in self.picked_nodes.items():
             buf.copy(nodes)
             self.copied_nodes[buf].update(nodes)
@@ -1474,32 +1523,15 @@ class Netranger(object):
         self.cur_buf.refresh_highlight()
 
     def NETRCopySingle(self):
-        if self.fs_busy():
-            return
         cur_buf = self.cur_buf
+        if cur_buf.fs_busy():
+            return
         cur_node = self.cur_node
         cur_node.copy()
         self.copied_nodes[cur_buf].add(cur_node)
         cur_buf.refresh_cur_line_hi()
 
-    def fs_busy(self):
-        if self.num_fs_op > 0:
-            VimErrorMsg(
-                'Previous operation that might change the view is not done'
-                'yet. Try again later')
-            return True
-        else:
-            return False
-
-    def inc_num_fs_op(self):
-        self.num_fs_op += 1
-
-    def dec_num_fs_op(self):
-        if self.vim.current.buffer.number in self.bufs:
-            self.cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
-        self.num_fs_op -= 1
-
-    def _NETRPaste_cut_nodes(self):
+    def _NETRPaste_cut_nodes(self, busy_bufs):
         cwd = self.vim.eval('getcwd()')
         cwd_is_remote = self.is_remote_path(cwd)
         targets = []
@@ -1529,17 +1561,21 @@ class Netranger(object):
                     else:
                         targets.append(node.fullpath)
                     alreday_moved.add(node.fullpath)
+
             self.cut_nodes = defaultdict(set)
+
             if targets:
-                self.inc_num_fs_op()
-                self.fs.mv(targets, cwd, on_exit=lambda: self.dec_num_fs_op())
+                self.inc_num_fs_op(busy_bufs)
+                self.fs.mv(targets,
+                           cwd,
+                           on_exit=lambda: self.dec_num_fs_op(busy_bufs))
             if remote_targets:
-                self.inc_num_fs_op()
+                self.inc_num_fs_op(busy_bufs)
                 self.rclone.mv(remote_targets,
                                cwd,
-                               on_exit=lambda: self.dec_num_fs_op())
+                               on_exit=lambda: self.dec_num_fs_op(busy_bufs))
 
-    def _NETRPaste_copied_nodes(self):
+    def _NETRPaste_copied_nodes(self, busy_bufs):
         cwd = self.vim.eval('getcwd()')
         cwd_is_remote = self.is_remote_path(cwd)
         targets = []
@@ -1551,15 +1587,18 @@ class Netranger(object):
                     remote_targets.append(node.fullpath)
                 else:
                     targets.append(node.fullpath)
+
         self.copied_nodes = defaultdict(set)
         if targets:
-            self.inc_num_fs_op()
-            self.fs.cp(targets, cwd, on_exit=lambda: self.dec_num_fs_op())
+            self.inc_num_fs_op(busy_bufs)
+            self.fs.cp(targets,
+                       cwd,
+                       on_exit=lambda: self.dec_num_fs_op(busy_bufs))
         if remote_targets:
-            self.inc_num_fs_op()
+            self.inc_num_fs_op(busy_bufs)
             self.rclone.cp(remote_targets,
                            cwd,
-                           on_exit=lambda: self.dec_num_fs_op())
+                           on_exit=lambda: self.dec_num_fs_op(busy_bufs))
 
     def NETRPaste(self):
         """Perform mv from cut_nodes or cp from copied_nodes to cwd.
@@ -1567,14 +1606,18 @@ class Netranger(object):
         copied nodes so that the highlight will be updated when entered again
         in refresh_curbuf
         """
-        if self.fs_busy():
+        cur_buf = self.cur_buf
+        if cur_buf.fs_busy():
             return
-        self._NETRPaste_copied_nodes()
-        self._NETRPaste_cut_nodes()
+
+        # Set locked bufs. See comments in inc_num_fs_op.
+        cut_busy_bufs = list(self.cut_nodes.keys()) + [cur_buf]
+        copy_busy_bufs = [cur_buf]
+
+        self._NETRPaste_copied_nodes(cut_busy_bufs)
+        self._NETRPaste_cut_nodes(copy_busy_bufs)
 
     def NETRDelete(self, force=False):
-        if self.fs_busy():
-            return
         targets = []
         remote_targets = []
         for buf, nodes in self.picked_nodes.items():
@@ -1585,25 +1628,30 @@ class Netranger(object):
             else:
                 targets += [n.fullpath for n in nodes]
 
+        # Set locked bufs. See comments in inc_num_fs_op.
+        busy_bufs = list(self.picked_nodes.keys())
         self.picked_nodes = defaultdict(set)
 
         if targets:
-            self.inc_num_fs_op()
-            self.fs.rm(targets, force, on_exit=lambda: self.dec_num_fs_op())
+            self.inc_num_fs_op(busy_bufs)
+            self.fs.rm(targets,
+                       force,
+                       on_exit=lambda: self.dec_num_fs_op(busy_bufs))
         if remote_targets:
-            self.inc_num_fs_op()
+            self.inc_num_fs_op(busy_bufs)
             self.rclone.rm(remote_targets,
                            force,
-                           on_exit=lambda: self.dec_num_fs_op())
+                           on_exit=lambda: self.dec_num_fs_op(busy_bufs))
 
     def NETRDeleteSingle(self, force=False):
-        if self.fs_busy():
+        cur_buf = self.cur_buf
+        if cur_buf.fs_busy():
             return
-        self.cur_buf.content_outdated = True
-        self.inc_num_fs_op()
+        cur_buf.content_outdated = True
+        self.inc_num_fs_op([cur_buf])
         self.cur_buf.fs.rm([self.cur_node.fullpath],
                            force,
-                           on_exit=lambda: self.dec_num_fs_op())
+                           on_exit=lambda: self.dec_num_fs_op([cur_buf]))
 
     def NETRForceDelete(self):
         self.NETRDelete(force=True)
