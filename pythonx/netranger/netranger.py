@@ -646,11 +646,14 @@ class NetRangerBuf(object):
         for hooker in Hookers['render_end']:
             hooker(self)
 
-    def render_if_winwidth_changed(self):
+    def refresh_hi_if_winwidth_changed(self):
+        if self.is_editing:
+            return
+
         winwidth = VimCurWinWidth()
         if self.winwidth != winwidth:
             self.winwidth = winwidth
-            self.render()
+            self.refresh_lines_hi(range(len(self.nodes)))
 
     def on_cursormoved(self):
         """Remember the current line no.
@@ -1018,7 +1021,7 @@ class Netranger(object):
     def on_winenter(self, bufnum):
         # deal with window width changed
         if bufnum in self.bufs:
-            self.cur_buf.render_if_winwidth_changed()
+            self.cur_buf.refresh_hi_if_winwidth_changed()
 
     def on_bufenter(self, bufnum):
         """There are four cases on bufenter:
