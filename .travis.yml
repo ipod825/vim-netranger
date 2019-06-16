@@ -13,11 +13,12 @@ install:
     - chmod u+x $BIN/nvim
     - pip install pynvim
     - curl -o $BIN/rclone.zip https://downloads.rclone.org/rclone-current-linux-arm64.zip
-    - cd $BIN
+    - pushd $BIN
     - unzip rclone.zip
     - mv rclone-*/rclone .
     - mkdir -p $HOME/.config/rclone
     - echo "[netrtest]\ntype = local" > $HOME/.config/rclone/rclone.conf
+    - popd
 
 
 script:
