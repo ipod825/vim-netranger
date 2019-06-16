@@ -7,11 +7,18 @@ python:
   - 3.7
 
 install:
-    - export NVIMDIR=$HOME/neovim/bin
-    - mkdir -p $NVIMDIR
-    - curl -o $NVIMDIR/nvim -L https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
-    - chmod u+x $NVIMDIR/nvim
+    - export BIN=$HOME/bin
+    - mkdir -p $BIN
+    - curl -o $BIN/nvim -L https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
+    - chmod u+x $BIN/nvim
     - pip install pynvim
+    - curl -o $BIN/rclone.zip https://downloads.rclone.org/rclone-current-linux-arm64.zip
+    - cd $BIN
+    - unzip rclone.zip
+    - mv rclone-*/rclone .
+    - mkdir -p $HOME/.config/rclone
+    - echo "[netrtest]\ntype = local" > $HOME/.config/rclone/rclone.conf
+
 
 script:
     - PATH="$NVIMDIR:$PATH"
