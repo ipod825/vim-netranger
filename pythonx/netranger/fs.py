@@ -165,7 +165,7 @@ class Rclone(FS):
         for remote in remotes.difference(local_remotes):
             Shell.mkdir(os.path.join(root_dir, remote))
         for remote in local_remotes.difference(remotes):
-            super(Rclone, self).rm(os.path.join(root_dir, remote), True)
+            Shell.rm(os.path.join(root_dir, remote))
 
         self.has_remote = len(remotes) > 0
         self.ls_time_stamp = {}

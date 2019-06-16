@@ -44,7 +44,10 @@ class Shell():
 
     @classmethod
     def rm(cls, name):
-        Shell.run('rm -r ' + name)
+        if os.path.isdir(name):
+            shutil.rmtree(name)
+        else:
+            os.remove(name)
 
     @classmethod
     def shellrc(cls):
@@ -53,7 +56,10 @@ class Shell():
 
     @classmethod
     def cp(cls, src, dst):
-        shutil.copy2(src, dst)
+        if os.path.isdir(src):
+            shutil.copytree(src, os.path.join(dst, os.path.basename(src)))
+        else:
+            shutil.copy(src, dst)
 
     @classmethod
     def mkdir(cls, name):
