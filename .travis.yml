@@ -18,6 +18,7 @@ install:
     - mv rclone-*/rclone .
     - mkdir -p $HOME/.config/rclone
     - rclone config file
+    - echo $HOME/.config/rclone/rclone.conf
     - echo "[netrtest]\ntype = local" > $HOME/.config/rclone/rclone.conf
     - popd
 
