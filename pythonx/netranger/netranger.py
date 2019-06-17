@@ -1306,6 +1306,8 @@ class Netranger(object):
         self.cur_buf.toggle_expand()
 
     def NETRNew(self):
+        if self.cur_buf.fs_busy():
+            return
         if self.newUI is None:
             self.newUI = NewUI(self.vim)
         self.newUI.show()
@@ -1322,6 +1324,8 @@ class Netranger(object):
         self.cur_buf.refresh_nodes()
 
     def NETREdit(self):
+        if self.cur_buf.fs_busy():
+            return
         self.unmap_keys()
         self.cur_buf.edit()
 
@@ -1385,6 +1389,8 @@ class Netranger(object):
         self.bookmarkUI.edit()
 
     def NETRSort(self):
+        if self.cur_buf.fs_busy():
+            return
         if self.sortUI is None:
             self.sortUI = SortUI(self.vim)
         self.sortUI.show()
