@@ -311,7 +311,6 @@ class NetRangerBuf(object):
         self.highlight_outdated_nodes = set()
         self.nodes_order_outdated = False
 
-        self.vim.command('silent file N:{}'.format(os.path.basename(wd)))
         if VimVar('NETRAutochdir'):
             self.vim.command('lcd ' + wd)
 
@@ -1116,6 +1115,7 @@ class Netranger(object):
         else:
             self.bufs[bufnum] = NetRangerBuf(self, self.vim,
                                              os.path.abspath(bufname), self.fs)
+        self.vim.command('silent file N:{}'.format(bufname))
 
         self.map_keys()
         self.wd2bufnum[bufname] = bufnum
