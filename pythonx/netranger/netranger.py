@@ -1314,13 +1314,13 @@ class Netranger(object):
         self.pend_onuiquit(self.new_onuiiquit, numArgs=1)
 
     def new_onuiiquit(self, opt):
-        cwd = os.path.dirname(self.cur_node.fullpath)
+        cur_buf = self.cur_buf
         if opt == 'd':
             name = VimUserInput('New directory name')
-            self.cur_buf.fs.mkdir(os.path.join(cwd, name))
+            cur_buf.fs.mkdir(os.path.join(cur_buf.wd, name))
         elif opt == 'f':
             name = VimUserInput('New file name')
-            self.cur_buf.fs.touch(os.path.join(cwd, name))
+            cur_buf.fs.touch(os.path.join(cur_buf.wd, name))
         self.cur_buf.refresh_nodes()
 
     def NETREdit(self):
