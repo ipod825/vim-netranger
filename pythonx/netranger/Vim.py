@@ -23,12 +23,16 @@ else:
 
 if vim.eval('has("timers")') == "1" and not vim.vars.get("_NETRDebug", False):
 
-    def VimTimer(delay, fn, pyfn):
-        vim.command('call timer_start({}, "{}")'.format(delay, fn))
+    def VimTimer(delay, fn, pyfn, *args):
+        if len(args):
+            vim.command('call timer_start({}, function("{}", {}))'.format(
+                delay, fn, list(args)))
+        else:
+            vim.command('call timer_start({}, "{}")'.format(delay, fn))
 else:
 
-    def VimTimer(delay, fn, pyfn):
-        pyfn()
+    def VimTimer(delay, fn, pyfn, *args):
+        pyfn(*args)
 
 
 def decode_if_bytes(obj, mode=True):

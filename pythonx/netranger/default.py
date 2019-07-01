@@ -79,8 +79,7 @@ variables = {
     'NETRPanelSize': 1.5,
     'NETRColors': {},
     'NETRRedrawDelay': 200,
-    'NETRMaxFileNumToEagerlyDisplay': 1000,
-    'NETRMinFileNumToLoadInParallel': 100,
+    'NETRLazyLoadStat': False,
 }
 
 internal_variables = {

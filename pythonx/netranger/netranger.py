@@ -16,9 +16,8 @@ from netranger.fs import FS, Rclone
 from netranger.rifle import Rifle
 from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, SortUI
 from netranger.util import Shell, c256
-from netranger.Vim import (VimCurWinHeight, VimCurWinWidth, VimErrorMsg,
-                           VimTimer, VimUserInput, VimVar, VimWarningMsg,
-                           debug)
+from netranger.Vim import (VimCurWinWidth, VimErrorMsg, VimTimer, VimUserInput,
+                           VimVar, VimWarningMsg)
 
 if platform == "win32":
     from os import getenv
@@ -171,19 +170,22 @@ class EntryNode(Node):
     def __init__(self, fullpath, name, fs, level=0, buf=None):
         self.fullpath = fullpath
         self.buf = buf
-        self.re_stat(fs)
+        self.re_stat(fs, lazy=VimVar('NETRLazyLoadStat'))
         highlight = self.decide_hi()
         super(EntryNode, self).__init__(fullpath, name, highlight, level=level)
         self.ori_highlight = self.highlight
 
-    def re_stat(self, fs):
+    def re_stat(self, fs, lazy=False):
         self.linkto = None
         if os.path.islink(self.fullpath):
             self.linkto = os.readlink(self.fullpath)
 
-        try:
-            self.stat = os.stat(self.fullpath)
-        except FileNotFoundError:
+        if not lazy:
+            try:
+                self.stat = os.stat(self.fullpath)
+            except FileNotFoundError:
+                self.stat = None
+        else:
             self.stat = None
 
         if self.stat:
@@ -211,11 +213,11 @@ class EntryNode(Node):
 
     def decide_hi(self):
         if self.linkto is not None:
-            if self.stat is None:
-                return default.color['brokenlink']
-            else:
+            if os.path.exists(self.fullpath):
                 return default.color['link']
-        elif self.acl[0] == 'd':
+            else:
+                return default.color['brokenlink']
+        elif self.is_DIR:
             return default.color['dir']
         elif os.access(self.fullpath, os.X_OK):
             return default.color['exe']
@@ -306,6 +308,7 @@ class NetRangerBuf(object):
         self.wd = wd
         self.fs = fs
         self.num_fs_op = 0
+        self.pending_on_cursormoved_post = 0
 
         self.content_outdated = False
         self.highlight_outdated_nodes = set()
@@ -316,8 +319,7 @@ class NetRangerBuf(object):
 
         self.header_node = HeaderNode(wd)
         self.footer_node = FooterNode()
-        self.nodes = self.nodes_plus_header_footer(
-            self.create_nodes(self.wd, truncate_if_too_many_nodes=True))
+        self.nodes = self.nodes_plus_header_footer(self.create_nodes(self.wd))
 
         self.clineNo = 1
         self.nodes[self.clineNo].cursor_on()
@@ -434,44 +436,13 @@ class NetRangerBuf(object):
         else:
             self.pseudo_footer_lineNo = None
 
-    def create_nodes(self, wd, level=0, truncate_if_too_many_nodes=False):
-        nodes = self.create_nodes_with_file_names(self.fs.ls(wd), wd, level,
-                                                  truncate_if_too_many_nodes)
+    def create_nodes(self, wd, level=0):
+        nodes = self.create_nodes_with_file_names(self.fs.ls(wd), wd, level)
         return self.sort_nodes(nodes)
 
-    def create_nodes_with_file_names(self,
-                                     files,
-                                     dirpath,
-                                     level,
-                                     truncate_if_too_many_nodes=False):
-        if truncate_if_too_many_nodes:
-            if len(files) > VimVar('NETRMaxFileNumToEagerlyDisplay'):
-                files = files[:VimCurWinHeight() - 2]
-                VimErrorMsg(
-                    'Part of the files are not shown for efficiency. Press r'
-                    'to show all of them\n')
-            files = [f for f in files if not self.controler.should_ignore(f)]
-            nodes = [self.create_node(dirpath, f, level) for f in files]
-        else:
-            files = [f for f in files if not self.controler.should_ignore(f)]
-            if len(files) > VimVar('NETRMinFileNumToLoadInParallel'):
-                nodes = []
-                import concurrent
-                from concurrent.futures import ThreadPoolExecutor
-                from netranger.Vim import pbar
-                with ThreadPoolExecutor(
-                        max_workers=len(os.sched_getaffinity(0))) as executor:
-                    futures = [
-                        executor.submit(self.create_node, dirpath, f, level)
-                        for f in files
-                    ]
-                    for future in pbar(
-                            concurrent.futures.as_completed(futures),
-                            total=len(files)):
-                        nodes.append(future.result())
-            else:
-                nodes = [self.create_node(dirpath, f, level) for f in files]
-        return nodes
+    def create_nodes_with_file_names(self, files, dirpath, level):
+        files = [f for f in files if not self.controler.should_ignore(f)]
+        return [self.create_node(dirpath, f, level) for f in files]
 
     def create_node(self, dirname, basename, level):
         fullpath = os.path.join(dirname, basename)
@@ -686,10 +657,29 @@ class NetRangerBuf(object):
 
         self.set_clineno(clineNo)
 
+        # Avoid throttling by avoiding rerender the buffer (in
+        # on_cursormoved_post) for each call of on_cursormoved (e.g. when the
+        # user press j and don't let go).
+        self.pending_on_cursormoved_post += 1
+
     def on_cursormoved_post(self):
+        self.pending_on_cursormoved_post -= 1
+        if self.pending_on_cursormoved_post > 0:
+            return
+
+        # Avoid rerender if this buffer is not the current vim buffer.
+        if self.vim_buf_handel.number != self.vim.current.buffer.number:
+            return
+
         self.vim.command("setlocal modifiable")
         self.set_header_content()
         self.set_footer_content()
+
+        # set_footer_content re_stat the node, now we refresh the current
+        # node to update the size information
+        self.vim_set_line(self.clineNo,
+                          self.nodes[self.clineNo].highlight_content)
+
         self.set_pseudo_header_content(self.clineNo)
         self.set_pseudo_footer_content(self.clineNo)
         self.vim.command("setlocal nomodifiable")
@@ -1163,16 +1153,18 @@ class Netranger(object):
         if bufnum in self.bufs and not self.bufs[bufnum].is_editing:
             self.bufs[bufnum].on_cursormoved()
             VimTimer(VimVar('NETRRedrawDelay'), '_NETROnCursorMovedPost',
-                     self.on_cursormoved_post)
+                     self.on_cursormoved_post, bufnum)
 
-    def on_cursormoved_post(self):
+    def on_cursormoved_post(self, bufnum):
         """Refresh header and footer content.
-        This is a heavy task (compared to setting highlight when cursor moved).
-        We alieviate its load by using timer.
+        re_stat is a heavy task (compared to setting highlight when cursor
+        moved). To avoid unnecessary calling of re_stat (e.g. when the user
+        keep pressing j just to move down and don't care the stat information
+        ), we delay re_stat in on_cursormoved by using timer and avoid
+        re_stat throttling using a trick documented in NETRangerBuf.
+        on_cursormoved_post.
         """
-        bufnum = self.vim.current.buffer.number
-        if bufnum in self.bufs:
-            self.bufs[bufnum].on_cursormoved_post()
+        self.bufs[bufnum].on_cursormoved_post()
 
     def pend_onuiquit(self, fn, numArgs=0):
         """Called by UIs to perform actions after reentering netranger buffer.

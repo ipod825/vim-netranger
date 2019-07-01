@@ -39,8 +39,8 @@ func! _NETRInvokeMap(fn)
     exec s:pyx 'ranger.invoke_map("'.a:fn.'")'
 endfunc
 
-func! _NETROnCursorMovedPost(...)
-    exec s:pyx 'ranger.on_cursormoved_post()'
+func! _NETROnCursorMovedPost(bufnum, timerid)
+    exec s:pyx 'ranger.on_cursormoved_post('.a:bufnum.')'
 endfunc
 
 command! NETRemoteList exec s:pyx 'ranger.NETRemoteList()'

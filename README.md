@@ -139,8 +139,7 @@ let g:NETRBookmarkGo = ["m"]
 | g:NETRSplitOrientation | Split orientation when a split buffer is created | 'belowright'          |
 | g:NETRColors  | Colors for nodes in vim-netranger buffer. See below.      | {}                    |
 | g:NETRPanelSize| Controls the size of split in [panel mode](#panel-mode). | 1.5                   |
-| g:NETRMaxFileNumToEagerlyDisplay| When the number of the files/directories to be displayed exceeds this number, vim-netranger will only display part of them with an warning message popped out (users can press `r` to show the undisplayed files.)          | 1000                  |
-| g:NETRMinFileNumToLoadInParallel| When the number of the files/directories to be displayed exceeds this number, vim-netranger will load the files in parallel.    | 100|
+| g:NETRNETRLazyLoadStat| Whether to load stat information for each node. Set this to false if you find loading a netranger buffer is very slow (due to loading stat information).  | v:false                   |
 
 ### Colors
 1. Set `g:NETRColors` to a dictionary to overwrite the default colors. Possible keys are:
