@@ -139,7 +139,7 @@ let g:NETRBookmarkGo = ["m"]
 | g:NETRSplitOrientation | Split orientation when a split buffer is created | 'belowright'          |
 | g:NETRColors  | Colors for nodes in vim-netranger buffer. See below.      | {}                    |
 | g:NETRPanelSize| Controls the size of split in [panel mode](#panel-mode). | 1.5                   |
-| g:NETRNETRLazyLoadStat| Whether to load stat information for each node. Set this to false if you find loading a netranger buffer is very slow (due to loading stat information).  | v:false                   |
+| g:NETRNETRLazyLoadStat| Whether to load stat information lazily for each node. Set this to true if you find loading a vim-netranger buffer is very slow (due to loading stat information).  | v:false                   |
 
 ### Colors
 1. Set `g:NETRColors` to a dictionary to overwrite the default colors. Possible keys are:
