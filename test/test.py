@@ -271,6 +271,9 @@ def test_NETRNew():
     assert_content('zd', ind=2, hi='dir', level=0)
     assert_content('zf', ind=3, hi='file', level=0)
     assert_fs('', ['dir', 'dir2', 'zd', 'zf'])
+    nvim.input('<CR>odzd<CR>')
+    nvim.input('ofzf<CR>')
+    assert_fs('dir', ['subdir', 'subdir2', 'zd', 'a', 'zf'])
 
 
 def test_NETRTogglePick():

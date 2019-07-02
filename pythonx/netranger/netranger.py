@@ -306,6 +306,7 @@ class NetRangerBuf(object):
         self.controler = controler
         self.vim = vim
         self.wd = wd
+        self.last_vim_pwd = self.wd
         self.fs = fs
         self.num_fs_op = 0
         self.pending_on_cursormoved_post = 0
@@ -761,6 +762,13 @@ class NetRangerBuf(object):
     def refresh_cur_line_hi(self):
         self.refresh_lines_hi([self.clineNo])
 
+    def VimCD(self):
+        target_dir = self.cur_node.fullpath
+        if not os.path.isdir(target_dir):
+            target_dir = os.path.dirname(target_dir)
+        self.vim.command('silent lcd {}'.format(target_dir))
+        self.last_vim_pwd = target_dir
+
     def toggle_expand(self):
         """Create subnodes for the target directory.
 
@@ -1082,7 +1090,7 @@ class Netranger(object):
 
         # ensure pwd is correct
         if VimVar('NETRAutochdir'):
-            self.vim.command('lcd ' + cur_buf.wd)
+            self.vim.command('lcd ' + cur_buf.last_vim_pwd)
 
     def show_existing_buf(self, bufname):
         ori_bufnum = self.vim.current.buffer.number
@@ -1287,11 +1295,7 @@ class Netranger(object):
         cur_buf.on_cursormoved()
 
     def NETRVimCD(self):
-        curName = self.cur_node.fullpath
-        if os.path.isdir(curName):
-            self.vim.command('silent lcd {}'.format(curName))
-        else:
-            self.vim.command('silent lcd {}'.format(os.path.dirname(curName)))
+        self.cur_buf.VimCD()
         VimWarningMsg('Set pwd to {}'.format(self.vim.eval('getcwd()')))
 
     def NETRToggleExpand(self):
@@ -1309,10 +1313,10 @@ class Netranger(object):
         cur_buf = self.cur_buf
         if opt == 'd':
             name = VimUserInput('New directory name')
-            cur_buf.fs.mkdir(os.path.join(cur_buf.wd, name))
+            cur_buf.fs.mkdir(os.path.join(cur_buf.last_vim_pwd, name))
         elif opt == 'f':
             name = VimUserInput('New file name')
-            cur_buf.fs.touch(os.path.join(cur_buf.wd, name))
+            cur_buf.fs.touch(os.path.join(cur_buf.last_vim_pwd, name))
         self.cur_buf.refresh_nodes()
 
     def NETREdit(self):
@@ -1612,6 +1616,7 @@ class Netranger(object):
         cut_busy_bufs = list(self.cut_nodes.keys()) + [cur_buf]
         copy_busy_bufs = [cur_buf]
 
+        VimWarningMsg('Paste to {}'.format(self.vim.eval('getcwd()')))
         self._NETRPaste_copied_nodes(cut_busy_bufs)
         self._NETRPaste_cut_nodes(copy_busy_bufs)
 
