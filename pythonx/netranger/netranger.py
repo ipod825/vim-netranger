@@ -12,7 +12,7 @@ from netranger.api import HasHooker, Hookers
 from netranger.colortbl import colorhexstr2ind, colorname2ind
 from netranger.config import file_sz_display_wid
 from netranger.enum import Enum
-from netranger.fs import FS, Rclone
+from netranger.fs import FS, FSAutoFilter, Rclone
 from netranger.rifle import Rifle
 from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, SortUI
 from netranger.util import Shell, c256
@@ -1535,9 +1535,7 @@ class Netranger(object):
 
     def _NETRPaste_cut_nodes(self, busy_bufs):
         cwd = self.vim.eval('getcwd()')
-        cwd_is_remote = self.is_remote_path(cwd)
-        targets = []
-        remote_targets = []
+        fsfilter = FSAutoFilter(cwd, self.fs, self.rclone)
 
         alreday_moved = set()
         for buf, nodes in self.cut_nodes.items():
@@ -1558,49 +1556,28 @@ class Netranger(object):
             nodes = sorted(nodes, key=lambda n: n.fullpath, reverse=True)
             for node in nodes:
                 if node.fullpath not in alreday_moved:
-                    if cwd_is_remote or self.is_remote_path(buf.wd):
-                        remote_targets.append(node.fullpath)
-                    else:
-                        targets.append(node.fullpath)
+                    fsfilter.append(node.fullpath)
                     alreday_moved.add(node.fullpath)
 
             self.cut_nodes = defaultdict(set)
 
-            if targets:
-                self.inc_num_fs_op(busy_bufs)
-                self.fs.mv(targets,
-                           cwd,
-                           on_exit=lambda: self.dec_num_fs_op(busy_bufs))
-            if remote_targets:
-                self.inc_num_fs_op(busy_bufs)
-                self.rclone.mv(remote_targets,
-                               cwd,
-                               on_exit=lambda: self.dec_num_fs_op(busy_bufs))
+            fsfilter.mv(cwd,
+                        on_begin=lambda: self.inc_num_fs_op(busy_bufs),
+                        on_exit=lambda: self.dec_num_fs_op(busy_bufs))
 
     def _NETRPaste_copied_nodes(self, busy_bufs):
         cwd = self.vim.eval('getcwd()')
-        cwd_is_remote = self.is_remote_path(cwd)
-        targets = []
-        remote_targets = []
+        fsfilter = FSAutoFilter(cwd, self.fs, self.rclone)
+
         for buf, nodes in self.copied_nodes.items():
             buf.reset_hi(nodes)
             for node in nodes:
-                if cwd_is_remote or self.is_remote_path(buf.wd):
-                    remote_targets.append(node.fullpath)
-                else:
-                    targets.append(node.fullpath)
+                fsfilter.append(node.fullpath)
 
         self.copied_nodes = defaultdict(set)
-        if targets:
-            self.inc_num_fs_op(busy_bufs)
-            self.fs.cp(targets,
-                       cwd,
-                       on_exit=lambda: self.dec_num_fs_op(busy_bufs))
-        if remote_targets:
-            self.inc_num_fs_op(busy_bufs)
-            self.rclone.cp(remote_targets,
-                           cwd,
-                           on_exit=lambda: self.dec_num_fs_op(busy_bufs))
+        fsfilter.cp(cwd,
+                    on_begin=lambda: self.inc_num_fs_op(busy_bufs),
+                    on_exit=lambda: self.dec_num_fs_op(busy_bufs))
 
     def NETRPaste(self):
         """Perform mv from cut_nodes or cp from copied_nodes to cwd.
@@ -1617,34 +1594,24 @@ class Netranger(object):
         copy_busy_bufs = [cur_buf]
 
         VimWarningMsg('Paste to {}'.format(self.vim.eval('getcwd()')))
-        self._NETRPaste_copied_nodes(cut_busy_bufs)
-        self._NETRPaste_cut_nodes(copy_busy_bufs)
+        self._NETRPaste_copied_nodes(copy_busy_bufs)
+        self._NETRPaste_cut_nodes(cut_busy_bufs)
 
     def NETRDelete(self, force=False):
-        targets = []
-        remote_targets = []
+        fsfilter = FSAutoFilter('', self.fs, self.rclone)
+
         for buf, nodes in self.picked_nodes.items():
             buf.content_outdated = True
             buf.reset_hi(nodes)
-            if self.is_remote_path(buf.wd):
-                remote_targets += [n.fullpath for n in nodes]
-            else:
-                targets += [n.fullpath for n in nodes]
+            fsfilter.extend([n.fullpath for n in nodes], hint=buf.wd)
 
         # Set locked bufs. See comments in inc_num_fs_op.
         busy_bufs = list(self.picked_nodes.keys())
         self.picked_nodes = defaultdict(set)
 
-        if targets:
-            self.inc_num_fs_op(busy_bufs)
-            self.fs.rm(targets,
-                       force,
-                       on_exit=lambda: self.dec_num_fs_op(busy_bufs))
-        if remote_targets:
-            self.inc_num_fs_op(busy_bufs)
-            self.rclone.rm(remote_targets,
-                           force,
-                           on_exit=lambda: self.dec_num_fs_op(busy_bufs))
+        fsfilter.rm(force,
+                    on_begin=lambda: self.inc_num_fs_op(busy_bufs),
+                    on_exit=lambda: self.dec_num_fs_op(busy_bufs))
 
     def NETRDeleteSingle(self, force=False):
         cur_buf = self.cur_buf

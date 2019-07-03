@@ -9,9 +9,58 @@ import tempfile
 from netranger.config import file_sz_display_wid
 from netranger.enum import Enum
 from netranger.util import Shell
-from netranger.Vim import VimUserInput, debug
+from netranger.Vim import VimUserInput, VimVar, debug
 
 FType = Enum('FileType', 'SOCK, LNK, REG, BLK, DIR, CHR, FIFO')
+
+
+class FSAutoFilter(object):
+    def __init__(self, target_path='', fs=None, rclone=None):
+        self.fs = fs
+        self.rclone = rclone
+        self.remote_targets = []
+        self.local_targets = []
+        self.remote_root = VimVar('NETRemoteCacheDir')
+        self.is_remote = self.is_remote_path(target_path)
+
+    def is_remote_path(self, path):
+        return path and path.startswith(self.remote_root)
+
+    def append(self, path):
+        if self.is_remote or self.is_remote_path(path):
+            self.remote_targets.append(path)
+        else:
+            self.local_targets.append(path)
+
+    def extend(self, paths, hint=None):
+        if hint and self.is_remote_path(hint):
+            self.remote_targets.extend(paths)
+        else:
+            self.local_targets.extend(paths)
+
+    def mv(self, target_dir, on_begin, on_exit):
+        if self.local_targets:
+            on_begin()
+            self.fs.mv(self.local_targets, target_dir, on_exit=on_exit)
+        if self.remote_targets:
+            on_begin()
+            self.rclone.mv(self.remote_targets, target_dir, on_exit=on_exit)
+
+    def cp(self, target_dir, on_begin, on_exit):
+        if self.local_targets:
+            on_begin()
+            self.fs.cp(self.local_targets, target_dir, on_exit=on_exit)
+        if self.remote_targets:
+            on_begin()
+            self.rclone.cp(self.remote_targets, target_dir, on_exit=on_exit)
+
+    def rm(self, force, on_begin, on_exit):
+        if self.local_targets:
+            on_begin()
+            self.fs.rm(self.local_targets, force, on_exit=on_exit)
+        if self.remote_targets:
+            on_begin()
+            self.rclone.rm(self.remote_targets, force, on_exit=on_exit)
 
 
 class FS(object):
