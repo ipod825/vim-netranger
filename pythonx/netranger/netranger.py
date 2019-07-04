@@ -910,10 +910,12 @@ class Netranger(object):
         self.newUI = None
         self.onuiquit_num_args = 0
         self.fs = FS
-        self.rclone = None
+        self.rclone = Rclone
 
         self.init_vim_variables()
         self.init_keymaps()
+
+        Rclone.init(VimVar('NETRemoteCacheDir'), VimVar('NETRemoteRoots'))
         Shell.mkdir(default.variables['NETRRootDir'])
         self.rifle = Rifle(self.vim, VimVar('NETRRifleFile'))
 
@@ -1531,7 +1533,7 @@ class Netranger(object):
 
     def _NETRPaste_cut_nodes(self, busy_bufs):
         cwd = self.vim.eval('getcwd()')
-        fsfilter = FSAutoFilter(cwd, self.rclone)
+        fsfilter = FSAutoFilter(cwd)
 
         alreday_moved = set()
         for buf, nodes in self.cut_nodes.items():
@@ -1563,7 +1565,7 @@ class Netranger(object):
 
     def _NETRPaste_copied_nodes(self, busy_bufs):
         cwd = self.vim.eval('getcwd()')
-        fsfilter = FSAutoFilter(cwd, self.rclone)
+        fsfilter = FSAutoFilter(cwd)
 
         for buf, nodes in self.copied_nodes.items():
             buf.reset_hi(nodes)
@@ -1594,7 +1596,7 @@ class Netranger(object):
         self._NETRPaste_cut_nodes(cut_busy_bufs)
 
     def NETRDelete(self, force=False):
-        fsfilter = FSAutoFilter('', self.rclone)
+        fsfilter = FSAutoFilter('')
 
         for buf, nodes in self.picked_nodes.items():
             buf.content_outdated = True
@@ -1613,7 +1615,7 @@ class Netranger(object):
         cur_buf = self.cur_buf
         if cur_buf.fs_busy():
             return
-        fsfilter = FSAutoFilter('', self.rclone)
+        fsfilter = FSAutoFilter('')
 
         cur_buf.content_outdated = True
         fsfilter.append(self.cur_node.fullpath)
@@ -1644,7 +1646,7 @@ class Netranger(object):
         if not self.is_remote_path(cur_buf.wd):
             VimErrorMsg('Not a remote directory')
         else:
-            self.rclone.sync(cur_buf.wd, Rclone.SyncDirection.DOWN)
+            Rclone.sync(cur_buf.wd, Rclone.SyncDirection.DOWN)
         cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
 
     def NETRemotePush(self):
@@ -1659,15 +1661,12 @@ class Netranger(object):
         if not self.is_remote_path(cur_buf.wd):
             VimErrorMsg('Not a remote directory')
         else:
-            self.rclone.sync(cur_buf.wd, Rclone.SyncDirection.UP)
+            Rclone.sync(cur_buf.wd, Rclone.SyncDirection.UP)
 
     def NETRemoteList(self):
-        if self.rclone is None:
-            Rclone.valid_or_install(self.vim)
-            self.rclone = Rclone(VimVar('NETRemoteCacheDir'),
-                                 VimVar('NETRemoteRoots'))
+        Rclone.valid_or_install(self.vim)
 
-        if self.rclone.has_remote:
+        if Rclone.has_remote:
             self.vim.command('tabe ' + VimVar('NETRemoteCacheDir'))
         else:
             VimErrorMsg(

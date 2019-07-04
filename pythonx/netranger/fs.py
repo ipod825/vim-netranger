@@ -15,8 +15,7 @@ FType = Enum('FileType', 'SOCK, LNK, REG, BLK, DIR, CHR, FIFO')
 
 
 class FSAutoFilter(object):
-    def __init__(self, target_path='', rclone=None):
-        self.rclone = rclone
+    def __init__(self, target_path=''):
         self.remote_targets = []
         self.local_targets = []
         self.remote_root = VimVar('NETRemoteCacheDir')
@@ -43,7 +42,7 @@ class FSAutoFilter(object):
             FS.mv(self.local_targets, target_dir, on_exit=on_exit)
         if self.remote_targets:
             on_begin()
-            self.rclone.mv(self.remote_targets, target_dir, on_exit=on_exit)
+            Rclone.mv(self.remote_targets, target_dir, on_exit=on_exit)
 
     def cp(self, target_dir, on_begin, on_exit):
         if self.local_targets:
@@ -51,7 +50,7 @@ class FSAutoFilter(object):
             FS.cp(self.local_targets, target_dir, on_exit=on_exit)
         if self.remote_targets:
             on_begin()
-            self.rclone.cp(self.remote_targets, target_dir, on_exit=on_exit)
+            Rclone.cp(self.remote_targets, target_dir, on_exit=on_exit)
 
     def rm(self, force, on_begin, on_exit):
         if self.local_targets:
@@ -59,7 +58,7 @@ class FSAutoFilter(object):
             FS.rm(self.local_targets, force, on_exit=on_exit)
         if self.remote_targets:
             on_begin()
-            self.rclone.rm(self.remote_targets, force, on_exit=on_exit)
+            Rclone.rm(self.remote_targets, force, on_exit=on_exit)
 
 
 class FS(object):
@@ -199,6 +198,7 @@ class Rclone(FS):
                           '../rclone_server.py')
     SyncDirection = Enum('SyncDirection', 'DOWN, UP')
 
+    @classmethod
     def sync_src_dst(self, lpath, direction):
         rpath = self.rpath(lpath)
         if direction == Rclone.SyncDirection.UP:
@@ -206,7 +206,8 @@ class Rclone(FS):
         else:
             return rpath, lpath
 
-    def __init__(self, root_dir, remote_remap):
+    @classmethod
+    def init(self, root_dir, remote_remap):
         if root_dir[-1] == '/':
             root_dir = root_dir[:-1]
 
@@ -231,6 +232,7 @@ class Rclone(FS):
         self.has_remote = len(remotes) > 0
         self.ls_time_stamp = {}
 
+    @classmethod
     def rpath(self, lpath):
         if not lpath.startswith(self.root_dir):
             return lpath
@@ -245,6 +247,7 @@ class Rclone(FS):
                 rpath = rpath.replace('/', root, 1)
         return rpath
 
+    @classmethod
     def ls(self, dirname, cheap_remote_ls=False):
         if not cheap_remote_ls and len(dirname) > len(self.root_dir):
             local_files = set([
@@ -268,16 +271,19 @@ class Rclone(FS):
                     os.path.join(self.rpath(dirname), name)))
         return super(Rclone, self).ls(dirname)
 
+    @classmethod
     def ensure_downloaded(self, lpath):
         if os.stat(lpath).st_size == 0:
             src, dst = self.sync_src_dst(lpath, Rclone.SyncDirection.DOWN)
             Shell.run('rclone copyto --tpslimit=10 "{}" "{}"'.format(src, dst))
 
+    @classmethod
     def rename(self, src, dst):
         Shell.run('rclone moveto "{}" "{}"'.format(self.rpath(src),
                                                    self.rpath(dst)))
         super(Rclone, self).rename(src, dst)
 
+    @classmethod
     def exec_rclone_server_cmd(self, cmd, on_exit, arguments):
         fname = tempfile.mkstemp()[1]
         with open(fname, 'ab') as f:
@@ -285,6 +291,7 @@ class Rclone(FS):
         Shell.run_async('python {} {} {}'.format(Rclone.FScmds, cmd, fname),
                         on_exit=on_exit)
 
+    @classmethod
     def mv(self, src_arr, dst, on_exit):
         self.exec_rclone_server_cmd(
             'mv', on_exit, {
@@ -294,6 +301,7 @@ class Rclone(FS):
                 'dst': dst
             })
 
+    @classmethod
     def cp(self, src_arr, dst, on_exit):
         self.exec_rclone_server_cmd(
             'cp', on_exit, {
@@ -303,24 +311,29 @@ class Rclone(FS):
                 'dst': dst
             })
 
+    @classmethod
     def rm(self, src_arr, force=False, on_exit=None):
         self.exec_rclone_server_cmd('rm', on_exit, {
             'rsrc': [self.rpath(s) for s in src_arr],
             'src': src_arr
         })
 
+    @classmethod
     def touch(self, name):
         Shell.touch(name)
         Shell.run('rclone copyto "{}" "{}"'.format(
             name, os.path.join(self.rpath(name), os.path.basename(name))))
 
+    @classmethod
     def mkdir(self, name):
         Shell.mkdir(name)
 
+    @classmethod
     def sync(self, lpath, direction):
         src, dst = self.sync_src_dst(lpath, direction)
         Shell.run('rclone sync "{}" "{}"'.format(src, dst))
 
+    @classmethod
     def parent_dir(self, cwd):
         if len(cwd) == self.rplen - 1:
             return cwd
