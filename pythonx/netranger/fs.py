@@ -154,7 +154,8 @@ class FS(object):
     def mtime(self, fname):
         return os.stat(fname).st_mtime
 
-    def size_str(self, path, statinfo):
+    @classmethod
+    def size_str(cls, path, statinfo):
         if os.path.isdir(path):
             return str(len(os.listdir(path)))
 
@@ -167,7 +168,8 @@ class FS(object):
             res /= 1024
         return '?' * file_sz_display_wid
 
-    def acl_str(self, statinfo):
+    @classmethod
+    def acl_str(cls, statinfo):
         statinfo = oct(statinfo.st_mode)
         acl = statinfo[-4:]
         rwx = FS.acl_tbl[acl[1]] + FS.acl_tbl[acl[2]] + FS.acl_tbl[acl[3]]

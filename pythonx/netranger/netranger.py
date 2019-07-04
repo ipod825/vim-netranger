@@ -66,7 +66,7 @@ class Node(object):
     def toggle_pick(self):
         return Node.ToggleOpRes.INVALID
 
-    def re_stat(self, fs):
+    def re_stat(self):
         pass
 
 
@@ -88,7 +88,7 @@ class HeaderNode(Node):
                                          level=0)
         self.re_stat()
 
-    def re_stat(self, fs=None):
+    def re_stat(self):
         self.stat = os.stat(self.fullpath)
 
     @property
@@ -167,15 +167,15 @@ class EntryNode(Node):
         else:
             return ''
 
-    def __init__(self, fullpath, name, fs, level=0, buf=None):
+    def __init__(self, fullpath, name, level=0, buf=None):
         self.fullpath = fullpath
         self.buf = buf
-        self.re_stat(fs, lazy=VimVar('NETRLazyLoadStat'))
+        self.re_stat(lazy=VimVar('NETRLazyLoadStat'))
         highlight = self.decide_hi()
         super(EntryNode, self).__init__(fullpath, name, highlight, level=level)
         self.ori_highlight = self.highlight
 
-    def re_stat(self, fs, lazy=False):
+    def re_stat(self, lazy=False):
         self.linkto = None
         if os.path.islink(self.fullpath):
             self.linkto = os.readlink(self.fullpath)
@@ -190,11 +190,11 @@ class EntryNode(Node):
 
         if self.stat:
             try:
-                self.size = fs.size_str(self.fullpath, self.stat)
+                self.size = FS.size_str(self.fullpath, self.stat)
             except PermissionError:
                 self.size = '?'
 
-            self.acl = fs.acl_str(self.stat)
+            self.acl = FS.acl_str(self.stat)
             try:
                 if platform == "win32":
                     self.user = getenv("USERNAME")
@@ -379,7 +379,7 @@ class NetRangerBuf(object):
         meta = ''
         cur_node = self.cur_node
         if not cur_node.is_INFO:
-            cur_node.re_stat(self.fs)
+            cur_node.re_stat()
             meta = ' {} {} {} {}'.format(cur_node.acl, cur_node.user,
                                          cur_node.group, cur_node.mtime)
         self.footer_node.name = meta.strip()
@@ -448,13 +448,9 @@ class NetRangerBuf(object):
     def create_node(self, dirname, basename, level):
         fullpath = os.path.join(dirname, basename)
         if os.path.isdir(fullpath):
-            return DirNode(fullpath, basename, self.fs, level=level, buf=self)
+            return DirNode(fullpath, basename, level=level, buf=self)
         else:
-            return EntryNode(fullpath,
-                             basename,
-                             self.fs,
-                             level=level,
-                             buf=self)
+            return EntryNode(fullpath, basename, level=level, buf=self)
 
     def creat_nodes_if_not_exist(self, nodes, dirpath, level, cheap_remote_ls):
         old_paths = set([node.fullpath for node in nodes if not node.is_INFO])
@@ -484,7 +480,7 @@ class NetRangerBuf(object):
         for node in self.expanded_nodes:
             if os.access(node.fullpath, os.R_OK):
                 ori_mtime = node.stat.st_mtime
-                node.re_stat(self.fs)
+                node.re_stat()
                 new_mtime = node.stat.st_mtime
                 if new_mtime > ori_mtime:
                     self.content_outdated = True
@@ -569,7 +565,7 @@ class NetRangerBuf(object):
             return
         self.nodes_order_outdated = False
         for node in self.nodes:
-            node.re_stat(self.fs)
+            node.re_stat()
         self.nodes = self.nodes_plus_header_footer(self.sort_nodes(self.nodes))
         self.render()
         self.set_clineno_by_node(self.lastNodeId)
