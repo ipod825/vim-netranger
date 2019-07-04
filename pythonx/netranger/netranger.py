@@ -1531,7 +1531,7 @@ class Netranger(object):
 
     def _NETRPaste_cut_nodes(self, busy_bufs):
         cwd = self.vim.eval('getcwd()')
-        fsfilter = FSAutoFilter(cwd, self.fs, self.rclone)
+        fsfilter = FSAutoFilter(cwd, self.rclone)
 
         alreday_moved = set()
         for buf, nodes in self.cut_nodes.items():
@@ -1563,7 +1563,7 @@ class Netranger(object):
 
     def _NETRPaste_copied_nodes(self, busy_bufs):
         cwd = self.vim.eval('getcwd()')
-        fsfilter = FSAutoFilter(cwd, self.fs, self.rclone)
+        fsfilter = FSAutoFilter(cwd, self.rclone)
 
         for buf, nodes in self.copied_nodes.items():
             buf.reset_hi(nodes)
@@ -1594,7 +1594,7 @@ class Netranger(object):
         self._NETRPaste_cut_nodes(cut_busy_bufs)
 
     def NETRDelete(self, force=False):
-        fsfilter = FSAutoFilter('', self.fs, self.rclone)
+        fsfilter = FSAutoFilter('', self.rclone)
 
         for buf, nodes in self.picked_nodes.items():
             buf.content_outdated = True
@@ -1613,11 +1613,15 @@ class Netranger(object):
         cur_buf = self.cur_buf
         if cur_buf.fs_busy():
             return
+        fsfilter = FSAutoFilter('', self.rclone)
+
         cur_buf.content_outdated = True
-        self.inc_num_fs_op([cur_buf])
-        self.cur_buf.fs.rm([self.cur_node.fullpath],
-                           force,
-                           on_exit=lambda: self.dec_num_fs_op([cur_buf]))
+        fsfilter.append(self.cur_node.fullpath)
+        busy_bufs = [cur_buf]
+
+        fsfilter.rm(force,
+                    on_begin=lambda: self.inc_num_fs_op(busy_bufs),
+                    on_exit=lambda: self.dec_num_fs_op(busy_bufs))
 
     def NETRForceDelete(self):
         self.NETRDelete(force=True)

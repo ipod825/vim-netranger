@@ -693,7 +693,7 @@ if __name__ == '__main__':
             do_test(test_NETRForceDelete)
             do_test(test_NETRForceDeleteSingle)
 
-            ## Can't pass on travis, don't know why
+            # # Can't pass on travis, don't know why
             # do_test(test_delete_fail_if_fs_lock)
             # do_test(test_delete_single_fail_if_fs_lock)
             # do_test(test_force_delete_fail_if_fs_lock)

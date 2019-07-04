@@ -9,14 +9,13 @@ import tempfile
 from netranger.config import file_sz_display_wid
 from netranger.enum import Enum
 from netranger.util import Shell
-from netranger.Vim import VimUserInput, VimVar, debug
+from netranger.Vim import VimUserInput, VimVar
 
 FType = Enum('FileType', 'SOCK, LNK, REG, BLK, DIR, CHR, FIFO')
 
 
 class FSAutoFilter(object):
-    def __init__(self, target_path='', fs=None, rclone=None):
-        self.fs = fs
+    def __init__(self, target_path='', rclone=None):
         self.rclone = rclone
         self.remote_targets = []
         self.local_targets = []
@@ -41,7 +40,7 @@ class FSAutoFilter(object):
     def mv(self, target_dir, on_begin, on_exit):
         if self.local_targets:
             on_begin()
-            self.fs.mv(self.local_targets, target_dir, on_exit=on_exit)
+            FS.mv(self.local_targets, target_dir, on_exit=on_exit)
         if self.remote_targets:
             on_begin()
             self.rclone.mv(self.remote_targets, target_dir, on_exit=on_exit)
@@ -49,7 +48,7 @@ class FSAutoFilter(object):
     def cp(self, target_dir, on_begin, on_exit):
         if self.local_targets:
             on_begin()
-            self.fs.cp(self.local_targets, target_dir, on_exit=on_exit)
+            FS.cp(self.local_targets, target_dir, on_exit=on_exit)
         if self.remote_targets:
             on_begin()
             self.rclone.cp(self.remote_targets, target_dir, on_exit=on_exit)
@@ -57,7 +56,7 @@ class FSAutoFilter(object):
     def rm(self, force, on_begin, on_exit):
         if self.local_targets:
             on_begin()
-            self.fs.rm(self.local_targets, force, on_exit=on_exit)
+            FS.rm(self.local_targets, force, on_exit=on_exit)
         if self.remote_targets:
             on_begin()
             self.rclone.rm(self.remote_targets, force, on_exit=on_exit)
@@ -125,6 +124,7 @@ class FS(object):
     def rename(self, src, dst):
         shutil.move(src, dst)
 
+    @classmethod
     def exec_fs_server_cmd(self, cmd, src_arr, dst=None, on_exit=None):
         src = ' '.join(['"{}"'.format(s) for s in src_arr])
         if dst:
@@ -135,12 +135,15 @@ class FS(object):
             cmd = 'python {} {} {}'.format(FS.FScmds, cmd, src)
             Shell.run_async(cmd, on_exit=on_exit)
 
+    @classmethod
     def mv(self, src_arr, dst, on_exit=None):
         self.exec_fs_server_cmd('mv', src_arr, dst, on_exit)
 
+    @classmethod
     def cp(self, src_arr, dst, on_exit):
         self.exec_fs_server_cmd('cp', src_arr, dst, on_exit)
 
+    @classmethod
     def rm(self, src_arr, force=False, on_exit=None):
         # TODO force?
         self.exec_fs_server_cmd('rm', src_arr, on_exit=on_exit)
