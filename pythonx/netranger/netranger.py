@@ -909,7 +909,7 @@ class Netranger(object):
         self.onuiquit = None
         self.newUI = None
         self.onuiquit_num_args = 0
-        self.fs = FS()
+        self.fs = FS
         self.rclone = None
 
         self.init_vim_variables()

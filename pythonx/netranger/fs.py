@@ -104,12 +104,15 @@ class FS(object):
         'o1': 'p',
     }
 
+    @classmethod
     def ls(self, dirname, cheap_remote_ls=False):
         return sorted(os.listdir(dirname), key=lambda x: os.path.isdir(x))
 
+    @classmethod
     def parent_dir(self, cwd):
         return os.path.abspath(os.path.join(cwd, os.pardir))
 
+    @classmethod
     def fftype(self, fname):
         if os.path.islink(fname):
             catlog = 'link'
@@ -121,6 +124,7 @@ class FS(object):
             catlog = 'file'
         return catlog
 
+    @classmethod
     def rename(self, src, dst):
         shutil.move(src, dst)
 
@@ -148,12 +152,15 @@ class FS(object):
         # TODO force?
         self.exec_fs_server_cmd('rm', src_arr, on_exit=on_exit)
 
+    @classmethod
     def touch(self, name):
         Shell.touch(name)
 
+    @classmethod
     def mkdir(self, name):
         Shell.mkdir(name)
 
+    @classmethod
     def mtime(self, fname):
         return os.stat(fname).st_mtime
 
