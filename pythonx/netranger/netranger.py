@@ -8,14 +8,14 @@ from collections import defaultdict
 from sys import platform
 
 from netranger import Vim, default
-from netranger.api import HasHooker, Hookers
+from netranger.api import NETRApi
 from netranger.colortbl import colorhexstr2ind, colorname2ind
 from netranger.config import file_sz_display_wid
 from netranger.enum import Enum
 from netranger.fs import FSTarget, LocalFS, Rclone
 from netranger.rifle import Rifle
-from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, SortUI
 from netranger.shell import Shell
+from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, SortUI
 
 if platform == "win32":
     from os import getenv
@@ -138,17 +138,18 @@ class EntryNode(Node):
         def c(msg):
             return c256(msg, self.highlight, self.is_cursor_on)
 
-        if HasHooker('node_highlight_content_l', 'node_highlight_content_r'):
+        if NETRApi.HasHooker('node_highlight_content_l',
+                             'node_highlight_content_r'):
             left_extra = ''
             left_extra_len = 0
-            for hooker in Hookers['node_highlight_content_l']:
+            for hooker in NETRApi.Hookers['node_highlight_content_l']:
                 l_s, l_h = hooker(self)
                 left_extra_len += len(l_s)
                 left_extra += c256(l_s, l_h, False)
 
             right_extra = ''
             right_extra_len = 0
-            for hooker in Hookers['node_highlight_content_r']:
+            for hooker in NETRApi.Hookers['node_highlight_content_r']:
                 r_s, r_h = hooker(self)
                 right_extra_len += len(r_s)
                 right_extra += c256(r_s, r_h, False)
@@ -618,7 +619,7 @@ class NetRangerBuf(object):
         return sortedNodes
 
     def render(self, plain=False):
-        for hooker in Hookers['render_begin']:
+        for hooker in NETRApi.Hookers['render_begin']:
             hooker(self)
 
         self.vim_buf_handel.options['modifiable'] = True
@@ -630,7 +631,7 @@ class NetRangerBuf(object):
         if Vim.current.buffer.number is self.vim_buf_handel.number:
             self.move_vim_cursor(self.clineNo)
 
-        for hooker in Hookers['render_end']:
+        for hooker in NETRApi.Hookers['render_end']:
             hooker(self)
 
     def refresh_hi_if_winwidth_changed(self):
@@ -900,7 +901,7 @@ class Netranger(object):
     def cwd(self):
         return self.cur_buf.wd
 
-    def __init__(self, vim):
+    def __init__(self):
         self.inited = False
         self.bufs = {}
         self.wd2bufnum = {}

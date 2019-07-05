@@ -21,12 +21,11 @@ let g:loaded_netrw = 0
 " endif
 let s:pyx = 'python3 '
 
-exec s:pyx "import vim"
 exec s:pyx "import netranger"
 exec s:pyx "from netranger.netranger import Netranger"
-exec s:pyx "ranger = Netranger(vim)"
+exec s:pyx "ranger = Netranger()"
 exec s:pyx "from netranger.api import NETRApi"
-exec s:pyx "NETRApi.set_ranger(ranger)"
+exec s:pyx "NETRApi.init(ranger)"
 
 augroup NETRANGER
     autocmd!

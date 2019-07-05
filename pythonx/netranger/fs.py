@@ -229,7 +229,7 @@ class Rclone(LocalFS):
     @classmethod
     def init_on_demand(self):
         """
-        This is called when in valid_or_install when the user really need 
+        This is called when in valid_or_install when the user really need
         remote functionallity.
         """
         remotes = set([
