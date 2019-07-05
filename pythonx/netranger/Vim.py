@@ -4,6 +4,13 @@ import vim
 
 _hasnvim = int(vim.eval('has("nvim")'))
 
+# original api
+command = vim.command
+current = vim.current
+eval = vim.eval
+vars = vim.vars
+buffers = vim.buffers
+
 if _hasnvim:
 
     def walk(fn, obj, *args, **kwargs):
@@ -23,7 +30,7 @@ else:
 
 if vim.eval('has("timers")') == "1" and not vim.vars.get("_NETRDebug", False):
 
-    def VimTimer(delay, fn, pyfn, *args):
+    def Timer(delay, fn, pyfn, *args):
         if len(args):
             vim.command('call timer_start({}, function("{}", {}))'.format(
                 delay, fn, list(args)))
@@ -31,7 +38,7 @@ if vim.eval('has("timers")') == "1" and not vim.vars.get("_NETRDebug", False):
             vim.command('call timer_start({}, "{}")'.format(delay, fn))
 else:
 
-    def VimTimer(delay, fn, pyfn, *args):
+    def Timer(delay, fn, pyfn, *args):
         pyfn(*args)
 
 
@@ -87,7 +94,7 @@ else:
         return cur_time
 
 
-def VimAsyncRun(cmd, on_stdout=None, on_stderr=None, on_exit=None):
+def AsyncRun(cmd, on_stdout=None, on_stderr=None, on_exit=None):
 
     if on_stdout is None:
         on_stdout = do_nothing_with_args
@@ -104,13 +111,17 @@ def VimAsyncRun(cmd, on_stdout=None, on_stderr=None, on_exit=None):
     }
 
 
-def VimVar(name, default=None):
+def Var(name, default=None):
     if name not in vim.vars:
         return default
     return walk(decode_if_bytes, vim.vars[name])
 
 
-def VimErrorMsg(exception):
+def SetVar(name, value):
+    vim.vars[name] = value
+
+
+def ErrorMsg(exception):
     if hasattr(exception, 'output'):
         msg = exception.output.decode('utf-8')
     else:
@@ -127,7 +138,7 @@ def debug(*msg):
     vim.command('unsilent echom "{}"'.format(' '.join([str(m) for m in msg])))
 
 
-def VimWarningMsg(msg):
+def WarningMsg(msg):
     vim.command(
         'unsilent echohl WarningMsg | unsilent echo "{}" | echohl None '.
         format(msg.replace('"', '\\"')))
@@ -137,7 +148,7 @@ def VimEcho(msg):
     vim.command('unsilent echo "{}"'.format(msg))
 
 
-def VimUserInput(hint, default=''):
+def UserInput(hint, default=''):
     vim.command('let g:NETRRegister=input("{}: ", "{}")'.format(hint, default))
     return decode_if_bytes(vim.vars['NETRRegister'])
 
@@ -145,7 +156,7 @@ def VimUserInput(hint, default=''):
 _NETRlastWidth = None
 
 
-def VimCurWinWidth(cache=False):
+def CurWinWidth(cache=False):
     global _NETRlastWidth
     if cache:
         return _NETRlastWidth
@@ -180,7 +191,7 @@ class pbar(object):
             self.total = total
         self.cur = 0
         self.chunkSize = chunkSize
-        self.wid = VimCurWinWidth()
+        self.wid = Vim.CurWinWidth()
         self.st_save = vim.current.window.options['statusline']
 
     def __iter__(self):

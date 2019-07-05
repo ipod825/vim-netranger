@@ -7,7 +7,7 @@ import re
 from collections import defaultdict
 from sys import platform
 
-from netranger import default
+from netranger import Vim, default
 from netranger.api import HasHooker, Hookers
 from netranger.colortbl import colorhexstr2ind, colorname2ind
 from netranger.config import file_sz_display_wid
@@ -16,8 +16,6 @@ from netranger.fs import FSTarget, LocalFS, Rclone
 from netranger.rifle import Rifle
 from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, SortUI
 from netranger.util import Shell, c256
-from netranger.Vim import (VimCurWinWidth, VimErrorMsg, VimTimer, VimUserInput,
-                           VimVar, VimWarningMsg)
 
 if platform == "win32":
     from os import getenv
@@ -170,7 +168,7 @@ class EntryNode(Node):
     def __init__(self, fullpath, name, level=0, buf=None):
         self.fullpath = fullpath
         self.buf = buf
-        self.re_stat(lazy=VimVar('NETRLazyLoadStat'))
+        self.re_stat(lazy=Vim.Var('NETRLazyLoadStat'))
         highlight = self.decide_hi()
         super(EntryNode, self).__init__(fullpath, name, highlight, level=level)
         self.ori_highlight = self.highlight
@@ -302,9 +300,8 @@ class NetRangerBuf(object):
     def nodes_plus_header_footer(self, nodes):
         return [self.header_node] + nodes + [self.footer_node]
 
-    def __init__(self, controler, vim, wd, fs):
+    def __init__(self, controler, wd, fs):
         self.controler = controler
-        self.vim = vim
         self.wd = wd
         self.last_vim_pwd = self.wd
         self.fs = fs
@@ -315,8 +312,8 @@ class NetRangerBuf(object):
         self.highlight_outdated_nodes = set()
         self.nodes_order_outdated = False
 
-        if VimVar('NETRAutochdir'):
-            self.vim.command('lcd ' + wd)
+        if Vim.Var('NETRAutochdir'):
+            Vim.command('lcd ' + wd)
 
         self.header_node = HeaderNode(wd)
         self.footer_node = FooterNode()
@@ -328,18 +325,18 @@ class NetRangerBuf(object):
         # see if any content in the buffer is changed. Adding the HeaderNode
         # simply means we check the mtime of the wd everytime.
         self.expanded_nodes = set([self.header_node])
-        self.winwidth = VimCurWinWidth()
+        self.winwidth = Vim.CurWinWidth()
         self.pseudo_header_lineNo = None
         self.pseudo_footer_lineNo = None
         self.is_editing = False
         self.visual_start_line = 0
-        self.vim_buf_handel = self.vim.current.buffer
+        self.vim_buf_handel = Vim.current.buffer
         self.render()
 
     def fs_busy(self, echo=True):
         if self.num_fs_op > 0:
             if echo:
-                VimErrorMsg(
+                Vim.ErrorMsg(
                     'Previous operation that might change the view is not done'
                     ' yet. Try again later')
             return True
@@ -373,7 +370,7 @@ class NetRangerBuf(object):
 
     def set_header_content(self):
         self.header_node.name = self.abbrev_cwd(self.winwidth).strip()
-        self.vim.current.buffer[0] = self.header_node.highlight_content
+        Vim.current.buffer[0] = self.header_node.highlight_content
 
     def set_footer_content(self):
         meta = ''
@@ -383,30 +380,29 @@ class NetRangerBuf(object):
             meta = ' {} {} {} {}'.format(cur_node.acl, cur_node.user,
                                          cur_node.group, cur_node.mtime)
         self.footer_node.name = meta.strip()
-        self.vim.current.buffer[-1] = self.footer_node.highlight_content
+        Vim.current.buffer[-1] = self.footer_node.highlight_content
 
     def set_pseudo_header_content(self, clineNo):
         # recover content for the last line occupied by pseudo header
         # ignore error when buffer no longer has the last line
         if self.pseudo_header_lineNo is not None:
             try:
-                self.vim.current.buffer[
-                    self.pseudo_header_lineNo] = self.nodes[
-                        self.pseudo_header_lineNo].highlight_content
+                Vim.current.buffer[self.pseudo_header_lineNo] = self.nodes[
+                    self.pseudo_header_lineNo].highlight_content
             except IndexError:
                 pass
 
         # if first visible line is not the first line
         # we need to put header content on the first visible line
-        first_visible_line = int(self.vim.eval('line("w0")')) - 1
+        first_visible_line = int(Vim.eval('line("w0")')) - 1
         if first_visible_line > 0:
             # if current line is at the header we need to keep the current line
             # to be 2nd visible line
             if first_visible_line == clineNo:
-                self.vim.command("normal! ")
+                Vim.command("normal! ")
                 first_visible_line -= 1
             self.pseudo_header_lineNo = first_visible_line
-            self.vim.current.buffer[
+            Vim.current.buffer[
                 first_visible_line] = self.header_node.highlight_content
         else:
             self.pseudo_header_lineNo = None
@@ -416,23 +412,22 @@ class NetRangerBuf(object):
         # ignore error when buffer no longer has the last line
         if self.pseudo_footer_lineNo is not None:
             try:
-                self.vim.current.buffer[
-                    self.pseudo_footer_lineNo] = self.nodes[
-                        self.pseudo_footer_lineNo].highlight_content
+                Vim.current.buffer[self.pseudo_footer_lineNo] = self.nodes[
+                    self.pseudo_footer_lineNo].highlight_content
             except IndexError:
                 pass
 
         # if last visible line is not the last line
         # we need to put footer content on the last visible line
-        last_visible_line = int(self.vim.eval('line("w$")')) - 1
-        if last_visible_line < int(self.vim.eval("line('$')")) - 1:
+        last_visible_line = int(Vim.eval('line("w$")')) - 1
+        if last_visible_line < int(Vim.eval("line('$')")) - 1:
             # if current line is at the footer we need to keep the current line
             # to be penultimate visible line
             if last_visible_line == clineNo:
-                self.vim.command("normal! ")
+                Vim.command("normal! ")
                 last_visible_line += 1
             self.pseudo_footer_lineNo = last_visible_line
-            self.vim.current.buffer[
+            Vim.current.buffer[
                 last_visible_line] = self.footer_node.highlight_content
         else:
             self.pseudo_footer_lineNo = None
@@ -625,7 +620,7 @@ class NetRangerBuf(object):
         else:
             self.vim_buf_handel[:] = self.highlight_content
         self.vim_buf_handel.options['modifiable'] = False
-        if self.vim.current.buffer.number is self.vim_buf_handel.number:
+        if Vim.current.buffer.number is self.vim_buf_handel.number:
             self.move_vim_cursor(self.clineNo)
 
         for hooker in Hookers['render_end']:
@@ -635,7 +630,7 @@ class NetRangerBuf(object):
         if self.is_editing:
             return
 
-        winwidth = VimCurWinWidth()
+        winwidth = Vim.CurWinWidth()
         if self.winwidth != winwidth:
             self.winwidth = winwidth
             self.refresh_lines_hi(range(len(self.nodes)))
@@ -645,11 +640,11 @@ class NetRangerBuf(object):
 
         and refresh the highlight of the current line no.
         """
-        clineNo = int(self.vim.eval("line('.')")) - 1
+        clineNo = int(Vim.eval("line('.')")) - 1
 
         # do not stay on footer
         if clineNo == len(self.nodes) - 1:
-            self.vim.command('normal! k')
+            Vim.command('normal! k')
             clineNo -= 1
 
         self.set_clineno(clineNo)
@@ -665,10 +660,10 @@ class NetRangerBuf(object):
             return
 
         # Avoid rerender if this buffer is not the current vim buffer.
-        if self.vim_buf_handel.number != self.vim.current.buffer.number:
+        if self.vim_buf_handel.number != Vim.current.buffer.number:
             return
 
-        self.vim.command("setlocal modifiable")
+        Vim.command("setlocal modifiable")
         self.set_header_content()
         self.set_footer_content()
 
@@ -679,11 +674,11 @@ class NetRangerBuf(object):
 
         self.set_pseudo_header_content(self.clineNo)
         self.set_pseudo_footer_content(self.clineNo)
-        self.vim.command("setlocal nomodifiable")
+        Vim.command("setlocal nomodifiable")
 
     def move_vim_cursor(self, lineNo):
         """Will trigger on_cursormoved."""
-        self.vim.command('call cursor({},1)'.format(lineNo + 1))
+        Vim.command('call cursor({},1)'.format(lineNo + 1))
 
     def set_clineno_by_path(self, path):
         """Real work is done in on_cursormoved.
@@ -721,22 +716,22 @@ class NetRangerBuf(object):
 
     def vim_set_line(self, i, content):
         # This is a work-abound for the fact that
-        # nvim.current.buffer[i]=content
+        # nVim.current.buffer[i]=content
         # moves the cursor
-        self.vim.command('call setline({},"{}")'.format(
+        Vim.command('call setline({},"{}")'.format(
             i + 1, self.nodes[i].highlight_content))
 
     def refresh_lines_hi(self, lineNos):
-        self.vim.command('setlocal modifiable')
+        Vim.command('setlocal modifiable')
 
-        sz = min(len(self.nodes), len(self.vim.current.buffer))
+        sz = min(len(self.nodes), len(Vim.current.buffer))
         for i in lineNos:
             if i < sz:
                 self.vim_set_line(i, self.nodes[i].highlight_content)
-        self.vim.command('setlocal nomodifiable')
+        Vim.command('setlocal nomodifiable')
 
     def refresh_clineNo(self):
-        if self.clineNo == self.vim.eval("line('.')") - 1:
+        if self.clineNo == Vim.eval("line('.')") - 1:
             return
 
     def refresh_highlight(self):
@@ -762,7 +757,7 @@ class NetRangerBuf(object):
         target_dir = self.cur_node.fullpath
         if not os.path.isdir(target_dir):
             target_dir = os.path.dirname(target_dir)
-        self.vim.command('silent lcd {}'.format(target_dir))
+        Vim.command('silent lcd {}'.format(target_dir))
         self.last_vim_pwd = target_dir
 
     def toggle_expand(self):
@@ -793,8 +788,8 @@ class NetRangerBuf(object):
     def edit(self):
         self.is_editing = True
         self.render(plain=True)
-        self.vim.command('setlocal modifiable')
-        self.vim.command('setlocal wrap')
+        Vim.command('setlocal modifiable')
+        Vim.command('setlocal wrap')
 
     def save(self):
         """Rename the files according to current buffer content.
@@ -806,9 +801,9 @@ class NetRangerBuf(object):
             return False
         self.is_editing = False
 
-        vimBuf = self.vim.current.buffer
+        vimBuf = Vim.current.buffer
         if len(self.nodes) != len(vimBuf):
-            VimErrorMsg('Edit mode can not add/delete files!')
+            Vim.ErrorMsg('Edit mode can not add/delete files!')
             self.render()
             return True
 
@@ -838,8 +833,8 @@ class NetRangerBuf(object):
             self.nodes) + [self.footer_node]
         self.render()
         self.set_clineno_by_node(oriNode)
-        self.vim.command('setlocal nowrap')
-        self.vim.command('setlocal nomodifiable')
+        Vim.command('setlocal nowrap')
+        Vim.command('setlocal nomodifiable')
         return True
 
     def cut(self, nodes):
@@ -884,7 +879,7 @@ class Netranger(object):
 
     @property
     def cur_buf(self):
-        return self.bufs[self.vim.current.buffer.number]
+        return self.bufs[Vim.current.buffer.number]
 
     @property
     def cur_buf_is_remote(self):
@@ -899,7 +894,6 @@ class Netranger(object):
         return self.cur_buf.wd
 
     def __init__(self, vim):
-        self.vim = vim
         self.inited = False
         self.bufs = {}
         self.wd2bufnum = {}
@@ -917,37 +911,37 @@ class Netranger(object):
         self.init_vim_variables()
         self.init_keymaps()
 
-        Rclone.init(VimVar('NETRemoteCacheDir'), VimVar('NETRemoteRoots'))
+        Rclone.init(Vim.Var('NETRemoteCacheDir'), Vim.Var('NETRemoteRoots'))
         Shell.mkdir(default.variables['NETRRootDir'])
-        self.rifle = Rifle(self.vim, VimVar('NETRRifleFile'))
+        self.rifle = Rifle(Vim.Var('NETRRifleFile'))
 
-        ignore_pat = list(VimVar('NETRIgnore'))
+        ignore_pat = list(Vim.Var('NETRIgnore'))
         if '.*' not in ignore_pat:
             ignore_pat.append('.*')
-            self.vim.vars['NETRIgnore'] = ignore_pat
+            Vim.vars['NETRIgnore'] = ignore_pat
         self.ignore_pattern = re.compile('|'.join(
             fnmatch.translate(p) for p in ignore_pat))
 
-        self.vim.vars['NETRemoteCacheDir'] = os.path.expanduser(
-            VimVar('NETRemoteCacheDir'))
+        Vim.vars['NETRemoteCacheDir'] = os.path.expanduser(
+            Vim.Var('NETRemoteCacheDir'))
 
     def init_vim_variables(self):
         for k, v in default.variables.items():
-            if k not in self.vim.vars:
-                self.vim.vars[k] = v
+            if k not in Vim.vars:
+                Vim.vars[k] = v
         self.reset_default_colors()
 
         for k, v in default.internal_variables.items():
-            if k not in self.vim.vars:
-                self.vim.vars[k] = v
+            if k not in Vim.vars:
+                Vim.vars[k] = v
 
     def reset_default_colors(self):
-        for name, color in VimVar('NETRColors').items():
+        for name, color in Vim.Var('NETRColors').items():
             if name not in default.color:
-                VimErrorMsg('netranger: {} is not a valid NETRColors key!')
+                Vim.ErrorMsg('netranger: {} is not a valid NETRColors key!')
                 continue
             if type(color) is int and (color < 0 or color > 255):
-                VimErrorMsg('netranger: Color value should be within 0~255')
+                Vim.ErrorMsg('netranger: Color value should be within 0~255')
                 continue
             elif type(color) is str:
                 if color[0] == '#':
@@ -955,7 +949,7 @@ class Netranger(object):
                 else:
                     color = colorname2ind.get(color, None)
                 if color is None:
-                    VimErrorMsg('netranger: {} is not a valid color name!')
+                    Vim.ErrorMsg('netranger: {} is not a valid color name!')
                     continue
 
             default.color[name] = color
@@ -977,10 +971,10 @@ class Netranger(object):
         self.keymaps = {}
         self.keymap_doc = {}
         skip = []
-        for k in VimVar('NETRDefaultMapSkip'):
+        for k in Vim.Var('NETRDefaultMapSkip'):
             skip.append(k.lower())
         for fn, (keys, desc) in default.keymap.items():
-            user_keys = VimVar(fn, [])
+            user_keys = Vim.Var(fn, [])
             user_keys += [k for k in keys if k not in skip]
             self.keymaps[fn] = user_keys
             self.keymap_doc[fn] = (user_keys, desc)
@@ -988,24 +982,24 @@ class Netranger(object):
     def map_keys(self):
         for fn, keys in self.keymaps.items():
             for k in keys:
-                self.vim.command('nnoremap <nowait> <silent> <buffer> {} '
-                                 ':exe ":call _NETRInvokeMap({})"<CR>'.format(
-                                     k, "'" + fn + "'"))
+                Vim.command('nnoremap <nowait> <silent> <buffer> {} '
+                            ':exe ":call _NETRInvokeMap({})"<CR>'.format(
+                                k, "'" + fn + "'"))
 
         for k in self.keymaps['NETRTogglePick']:
-            self.vim.command('vnoremap <nowait> <silent> <buffer> {} '
-                             '<Esc>:exe ":call _NETRInvokeMap({})"<CR>'.format(
-                                 k, "'NETRTogglePickVisual'"))
+            Vim.command('vnoremap <nowait> <silent> <buffer> {} '
+                        '<Esc>:exe ":call _NETRInvokeMap({})"<CR>'.format(
+                            k, "'NETRTogglePickVisual'"))
 
     def unmap_keys(self):
         for fn, keys in self.keymaps.items():
             if fn == 'NETRSave':
                 continue
             for k in keys:
-                self.vim.command("nunmap <silent> <buffer> {}".format(k))
+                Vim.command("nunmap <silent> <buffer> {}".format(k))
 
         for k in self.keymaps['NETRTogglePick']:
-            self.vim.command('vunmap <silent> <buffer> {}'.format(k))
+            Vim.command('vunmap <silent> <buffer> {}'.format(k))
 
     def register_keymap(self, keys_fns):
         mapped_keys = []
@@ -1020,7 +1014,7 @@ class Netranger(object):
             name = fn.__name__
             for key in keys:
                 if key in mapped_keys:
-                    VimErrorMsg(
+                    Vim.ErrorMsg(
                         "netranger: Fail to bind key {} to {} because it has "
                         "been mapped to other function.".format(key, name))
                     continue
@@ -1054,13 +1048,13 @@ class Netranger(object):
                 # If not enough arguments are passed, ignore the pending
                 # onuituit, e.g. quit the bookmark go ui without pressing
                 # key to specify where to go.
-                if len(VimVar('NETRRegister')) == self.onuiquit_num_args:
-                    self.onuiquit(*VimVar('NETRRegister'))
+                if len(Vim.Var('NETRRegister')) == self.onuiquit_num_args:
+                    self.onuiquit(*Vim.Var('NETRRegister'))
                 self.onuiquit = None
-                self.vim.vars['NETRRegister'] = []
+                Vim.vars['NETRRegister'] = []
                 self.onuiquit_num_args = 0
         else:
-            bufname = self.vim.current.buffer.name
+            bufname = Vim.current.buffer.name
             if len(bufname) > 0 and bufname[-1] == '~':
                 bufname = os.path.expanduser('~')
             if not os.path.isdir(bufname):
@@ -1089,30 +1083,30 @@ class Netranger(object):
         cur_buf.refresh_highlight()
 
         # ensure pwd is correct
-        if VimVar('NETRAutochdir'):
-            self.vim.command('lcd ' + cur_buf.last_vim_pwd)
+        if Vim.Var('NETRAutochdir'):
+            Vim.command('lcd ' + cur_buf.last_vim_pwd)
 
     def show_existing_buf(self, bufname):
-        ori_bufnum = self.vim.current.buffer.number
+        ori_bufnum = Vim.current.buffer.number
         existed_bufnum = self.wd2bufnum[bufname]
-        self.vim.command('{}b'.format(existed_bufnum))
+        Vim.command('{}b'.format(existed_bufnum))
         self.set_buf_option()
         buf = self.bufs[existed_bufnum]
         self.refresh_curbuf()
         if ori_bufnum not in self.bufs:
             # wipe out the [No Name] temporary buffer
-            self.vim.command('bwipeout {}'.format(ori_bufnum))
+            Vim.command('bwipeout {}'.format(ori_bufnum))
         buf.move_vim_cursor(buf.clineNo)
 
     def gen_new_buf(self, bufname):
-        bufnum = self.vim.current.buffer.number
-        if (bufname.startswith(VimVar('NETRemoteCacheDir'))):
-            self.bufs[bufnum] = NetRangerBuf(self, self.vim,
-                                             os.path.abspath(bufname), Rclone)
+        bufnum = Vim.current.buffer.number
+        if (bufname.startswith(Vim.Var('NETRemoteCacheDir'))):
+            self.bufs[bufnum] = NetRangerBuf(self, os.path.abspath(bufname),
+                                             Rclone)
         else:
-            self.bufs[bufnum] = NetRangerBuf(self, self.vim,
-                                             os.path.abspath(bufname), LocalFS)
-        self.vim.command('silent file N:{}'.format(bufname))
+            self.bufs[bufnum] = NetRangerBuf(self, os.path.abspath(bufname),
+                                             LocalFS)
+        Vim.command('silent file N:{}'.format(bufname))
 
         self.map_keys()
         self.wd2bufnum[bufname] = bufnum
@@ -1128,7 +1122,7 @@ class Netranger(object):
 
         bufnum = self.wd2bufnum[wd]
         try:
-            buf = self.vim.buffers[bufnum]
+            buf = Vim.buffers[bufnum]
             return buf.valid
         except KeyError:
             del self.wd2bufnum[wd]
@@ -1136,21 +1130,21 @@ class Netranger(object):
             return False
 
     def set_buf_option(self):
-        self.vim.command('setlocal buftype=nofile')
-        self.vim.command('setlocal filetype=netranger')
-        self.vim.command('setlocal encoding=utf-8')
-        self.vim.command('setlocal noswapfile')
-        self.vim.command('setlocal nowrap')
-        self.vim.command('setlocal foldmethod=manual')
-        self.vim.command('setlocal foldcolumn=0')
-        self.vim.command('setlocal nofoldenable')
-        self.vim.command('setlocal nobuflisted')
-        self.vim.command('setlocal nospell')
-        self.vim.command('setlocal bufhidden=hide')
-        self.vim.command('setlocal conceallevel=3')
-        self.vim.command('set concealcursor=nvic')
-        self.vim.command('setlocal nocursorline')
-        self.vim.command('setlocal nolist')
+        Vim.command('setlocal buftype=nofile')
+        Vim.command('setlocal filetype=netranger')
+        Vim.command('setlocal encoding=utf-8')
+        Vim.command('setlocal noswapfile')
+        Vim.command('setlocal nowrap')
+        Vim.command('setlocal foldmethod=manual')
+        Vim.command('setlocal foldcolumn=0')
+        Vim.command('setlocal nofoldenable')
+        Vim.command('setlocal nobuflisted')
+        Vim.command('setlocal nospell')
+        Vim.command('setlocal bufhidden=hide')
+        Vim.command('setlocal conceallevel=3')
+        Vim.command('set concealcursor=nvic')
+        Vim.command('setlocal nocursorline')
+        Vim.command('setlocal nolist')
 
     def on_cursormoved(self, bufnum):
         """refresh buffer highlight when cursor is moved.
@@ -1159,8 +1153,8 @@ class Netranger(object):
         """
         if bufnum in self.bufs and not self.bufs[bufnum].is_editing:
             self.bufs[bufnum].on_cursormoved()
-            VimTimer(VimVar('NETRRedrawDelay'), '_NETROnCursorMovedPost',
-                     self.on_cursormoved_post, bufnum)
+            Vim.Timer(Vim.Var('NETRRedrawDelay'), '_NETROnCursorMovedPost',
+                      self.on_cursormoved_post, bufnum)
 
     def on_cursormoved_post(self, bufnum):
         """Refresh header and footer content.
@@ -1203,22 +1197,22 @@ class Netranger(object):
             if cur_node.is_DIR:
                 open_cmd = 'edit'
             else:
-                open_cmd = VimVar('NETROpenCmd')
+                open_cmd = Vim.Var('NETROpenCmd')
 
         fullpath = cur_node.fullpath
         if cur_node.is_DIR:
             if cur_node.size == '?' or cur_node.size == '':
-                VimErrorMsg('Permission Denied: {}'.format(cur_node.name))
+                Vim.ErrorMsg('Permission Denied: {}'.format(cur_node.name))
                 return
             if use_rifle and rifle_cmd is not None:
                 Shell.run_async(rifle_cmd.format('"{}"'.format(fullpath)))
             else:
-                self.vim.command('silent {} {}'.format(open_cmd, fullpath))
+                Vim.command('silent {} {}'.format(open_cmd, fullpath))
                 # Manually call on_bufenLer as old vim version might not
                 # trigger BufEnter with the above command. It does not cause
                 # too much overhead calling on_bufenter two times because most
                 # of things are cached
-                self.on_bufenter(self.vim.eval("winnr()"))
+                self.on_bufenter(Vim.eval("winnr()"))
         else:
             if self.cur_buf_is_remote:
                 Rclone.ensure_downloaded(fullpath)
@@ -1230,11 +1224,11 @@ class Netranger(object):
                 Shell.run_async(rifle_cmd.format('"{}"'.format(fullpath)))
             else:
                 try:
-                    self.vim.command('{} {}'.format(open_cmd, fullpath))
+                    Vim.command('{} {}'.format(open_cmd, fullpath))
                 except Exception as e:
                     err_msg = str(e)
                     if 'E325' not in err_msg:
-                        VimErrorMsg(err_msg)
+                        Vim.ErrorMsg(err_msg)
 
     def NETRefresh(self):
         cur_buf = self.cur_buf
@@ -1245,37 +1239,37 @@ class Netranger(object):
 
     def NETRTabBgOpen(self):
         self.NETROpen('tabedit', use_rifle=False)
-        self.vim.command('tabprevious')
+        Vim.command('tabprevious')
 
     def NETRBufOpen(self):
         self.NETROpen('edit', use_rifle=False)
 
     def NETRBufVSplitOpen(self):
-        self.NETROpen(VimVar('NETRSplitOrientation') + ' vsplit',
+        self.NETROpen(Vim.Var('NETRSplitOrientation') + ' vsplit',
                       use_rifle=False)
 
     def NETRBufHSplitOpen(self):
-        self.NETROpen(VimVar('NETRSplitOrientation') + ' split',
+        self.NETROpen(Vim.Var('NETRSplitOrientation') + ' split',
                       use_rifle=False)
 
     def NETRBufPanelOpen(self):
         if self.cur_node.is_DIR:
             return
 
-        if len(self.vim.current.tabpage.windows) == 1:
-            self.NETROpen(VimVar('NETRSplitOrientation') + ' vsplit',
+        if len(Vim.current.tabpage.windows) == 1:
+            self.NETROpen(Vim.Var('NETRSplitOrientation') + ' vsplit',
                           use_rifle=False)
-            newsize = VimCurWinWidth() * VimVar('NETRPanelSize')
-            self.vim.command('vertical resize {}'.format(newsize))
+            newsize = Vim.CurWinWidth() * Vim.Var('NETRPanelSize')
+            Vim.command('vertical resize {}'.format(newsize))
         else:
             fpath = self.cur_node.fullpath
-            self.vim.command('wincmd l')
-            self.vim.command('edit {}'.format(fpath))
+            Vim.command('wincmd l')
+            Vim.command('edit {}'.format(fpath))
 
     def NETRAskOpen(self):
         fullpath = self.cur_node.fullpath
         if self.askUI is None:
-            self.askUI = AskUI(self.vim, self)
+            self.askUI = AskUI(self)
         self.askUI.ask(self.rifle.list_available_cmd(fullpath), fullpath)
 
     def NETRParentDir(self):
@@ -1283,9 +1277,9 @@ class Netranger(object):
         cur_buf = self.cur_buf
         cwd = cur_buf.wd
         pdir = LocalFS.parent_dir(cwd)
-        self.vim.command('silent edit {}'.format(pdir))
+        Vim.command('silent edit {}'.format(pdir))
         # Manually call on_bufenter, see comments in NETROpen
-        self.on_bufenter(self.vim.eval("winnr()"))
+        self.on_bufenter(Vim.eval("winnr()"))
         cur_buf = self.cur_buf
         cur_buf.set_clineno_by_path(cwd)
         # Manually call on_cursormoved as synchronous on_bufenter block
@@ -1295,7 +1289,7 @@ class Netranger(object):
 
     def NETRVimCD(self):
         self.cur_buf.VimCD()
-        VimWarningMsg('Set pwd to {}'.format(self.vim.eval('getcwd()')))
+        Vim.WarningMsg('Set pwd to {}'.format(Vim.eval('getcwd()')))
 
     def NETRToggleExpand(self):
         self.cur_buf.toggle_expand()
@@ -1304,17 +1298,17 @@ class Netranger(object):
         if self.cur_buf.fs_busy():
             return
         if self.newUI is None:
-            self.newUI = NewUI(self.vim)
+            self.newUI = NewUI()
         self.newUI.show()
         self.pend_onuiquit(self.new_onuiiquit, numArgs=1)
 
     def new_onuiiquit(self, opt):
         cur_buf = self.cur_buf
         if opt == 'd':
-            name = VimUserInput('New directory name')
+            name = Vim.UserInput('New directory name')
             cur_buf.fs.mkdir(os.path.join(cur_buf.last_vim_pwd, name))
         elif opt == 'f':
-            name = VimUserInput('New file name')
+            name = Vim.UserInput('New file name')
             cur_buf.fs.touch(os.path.join(cur_buf.last_vim_pwd, name))
         self.cur_buf.refresh_nodes()
 
@@ -1332,12 +1326,12 @@ class Netranger(object):
         """Change ignore pattern and mark all existing netranger buffers to be
         content_outdated so that their content will be updated when entered
         again."""
-        ignore_pat = VimVar('NETRIgnore')
+        ignore_pat = Vim.Var('NETRIgnore')
         if '.*' in ignore_pat:
             ignore_pat.remove('.*')
         else:
             ignore_pat.append('.*')
-        self.vim.vars['NETRIgnore'] = ignore_pat
+        Vim.vars['NETRIgnore'] = ignore_pat
 
         # When ignore_pat is empty, the compiled pattern matches everything.
         # However, what we want is to ignore nothing in such case. Hence we add
@@ -1357,7 +1351,7 @@ class Netranger(object):
 
     def init_bookmark_ui(self):
         if self.bookmarkUI is None:
-            self.bookmarkUI = BookMarkUI(self.vim, self)
+            self.bookmarkUI = BookMarkUI(self)
 
     def NETRBookmarkSet(self):
         self.init_bookmark_ui()
@@ -1371,7 +1365,7 @@ class Netranger(object):
         # The following ls ensure that the directory exists on some remote file
         # system
         Shell.ls(fullpath)
-        self.vim.command('silent edit {}'.format(fullpath))
+        Vim.command('silent edit {}'.format(fullpath))
         # Manually perform part of on_bufenter as synchronous
         # on_bufenter block (nested) on_bufenter event handler
         if self.buf_existed(fullpath):
@@ -1387,7 +1381,7 @@ class Netranger(object):
         if self.cur_buf.fs_busy():
             return
         if self.sortUI is None:
-            self.sortUI = SortUI(self.vim)
+            self.sortUI = SortUI()
         self.sortUI.show()
         self.pend_onuiquit(self.sort_onuiiquit, numArgs=1)
 
@@ -1400,7 +1394,7 @@ class Netranger(object):
 
     def NETRHelp(self):
         if self.helpUI is None:
-            self.helpUI = HelpUI(self.vim, self.keymap_doc)
+            self.helpUI = HelpUI(self.keymap_doc)
         self.helpUI.show()
 
     def reset_pick_cut_copy(self):
@@ -1446,7 +1440,7 @@ class Netranger(object):
         for buf in bufs:
             buf.dec_num_fs_op()
 
-        if self.vim.current.buffer.number in self.bufs:
+        if Vim.current.buffer.number in self.bufs:
             cur_buf = self.cur_buf
             if not cur_buf.fs_busy(echo=False):
                 cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
@@ -1475,9 +1469,9 @@ class Netranger(object):
         cur_buf = self.cur_buf
         if cur_buf.fs_busy():
             return
-        self.vim.command('normal! gv')
-        beg = int(self.vim.eval('line("\'<")')) - 1
-        end = int(self.vim.eval('line("\'>")'))
+        Vim.command('normal! gv')
+        beg = int(Vim.eval('line("\'<")')) - 1
+        end = int(Vim.eval('line("\'>")'))
         for i in range(beg, end):
             node = cur_buf.nodes[i]
             res = node.toggle_pick()
@@ -1486,7 +1480,7 @@ class Netranger(object):
             else:
                 self.picked_nodes[cur_buf].remove(node)
         cur_buf.refresh_lines_hi([i for i in range(beg, end)])
-        self.vim.command('normal! V')
+        Vim.command('normal! V')
 
     def NETRCut(self):
         """Move picked_nodes to cut_nodes.
@@ -1533,7 +1527,7 @@ class Netranger(object):
         cur_buf.refresh_cur_line_hi()
 
     def _NETRPaste_cut_nodes(self, busy_bufs):
-        cwd = self.vim.eval('getcwd()')
+        cwd = Vim.eval('getcwd()')
         fsfilter = FSTarget(cwd)
 
         alreday_moved = set()
@@ -1565,7 +1559,7 @@ class Netranger(object):
                         on_exit=lambda: self.dec_num_fs_op(busy_bufs))
 
     def _NETRPaste_copied_nodes(self, busy_bufs):
-        cwd = self.vim.eval('getcwd()')
+        cwd = Vim.eval('getcwd()')
         fsfilter = FSTarget(cwd)
 
         for buf, nodes in self.copied_nodes.items():
@@ -1592,7 +1586,7 @@ class Netranger(object):
         cut_busy_bufs = list(self.cut_nodes.keys()) + [cur_buf]
         copy_busy_bufs = [cur_buf]
 
-        VimWarningMsg('Paste to {}'.format(self.vim.eval('getcwd()')))
+        Vim.WarningMsg('Paste to {}'.format(Vim.eval('getcwd()')))
         self._NETRPaste_copied_nodes(copy_busy_bufs)
         self._NETRPaste_cut_nodes(cut_busy_bufs)
 
@@ -1638,11 +1632,11 @@ class Netranger(object):
         try:
             cur_buf = self.cur_buf
         except KeyError:
-            VimErrorMsg('Not a netranger buffer')
+            Vim.ErrorMsg('Not a netranger buffer')
             return
 
         if not self.cur_buf_is_remote:
-            VimErrorMsg('Not a remote directory')
+            Vim.ErrorMsg('Not a remote directory')
         else:
             Rclone.sync(cur_buf.wd, Rclone.SyncDirection.DOWN)
         cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
@@ -1653,20 +1647,20 @@ class Netranger(object):
         try:
             cur_buf = self.cur_buf
         except KeyError:
-            VimErrorMsg('Not a netranger buffer')
+            Vim.ErrorMsg('Not a netranger buffer')
             return
 
         if not self.cur_buf_is_remote:
-            VimErrorMsg('Not a remote directory')
+            Vim.ErrorMsg('Not a remote directory')
         else:
             Rclone.sync(cur_buf.wd, Rclone.SyncDirection.UP)
 
     def NETRemoteList(self):
-        Rclone.valid_or_install(self.vim)
+        Rclone.valid_or_install()
 
         if Rclone.has_remote:
-            self.vim.command('tabe ' + VimVar('NETRemoteCacheDir'))
+            Vim.command('tabe ' + Vim.Var('NETRemoteCacheDir'))
         else:
-            VimErrorMsg(
+            Vim.ErrorMsg(
                 "There's no remote now. Run 'rclone config' in a terminal to "
                 "setup remotes")

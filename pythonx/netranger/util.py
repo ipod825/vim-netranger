@@ -2,7 +2,7 @@ import os
 import shutil
 import subprocess
 
-from netranger.Vim import VimAsyncRun, VimErrorMsg
+from netranger import Vim
 
 
 class Shell():
@@ -22,7 +22,7 @@ class Shell():
             return subprocess.check_output(
                 cmd, shell=True, stderr=subprocess.STDOUT).decode('utf-8')
         except subprocess.CalledProcessError as e:
-            VimErrorMsg(e)
+            Vim.ErrorMsg(e)
 
     @classmethod
     def run_async(cls, cmd, on_stdout=None, on_exit=None):
@@ -31,12 +31,12 @@ class Shell():
             ind = err_msg.rfind('FSServerException: ')
             if ind > 0:
                 err_msg = err_msg[ind + 19:]
-            VimErrorMsg(err_msg)
+            Vim.ErrorMsg(err_msg)
 
-        VimAsyncRun(cmd,
-                    on_stdout=on_stdout,
-                    on_exit=on_exit,
-                    on_stderr=print_error)
+        Vim.AsyncRun(cmd,
+                     on_stdout=on_stdout,
+                     on_exit=on_exit,
+                     on_stderr=print_error)
 
     @classmethod
     def touch(cls, name):

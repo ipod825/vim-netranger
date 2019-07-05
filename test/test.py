@@ -445,6 +445,11 @@ def test_bookmark():
     assert_content('dir')
 
 
+def test_help():
+    nvim.input('?')
+    nvim.command('quit')
+
+
 def test_NETRToggleShowHidden():
     nvim.input('zh')
     assert_content('.a', ind=2, hi='file')
@@ -726,16 +731,20 @@ if __name__ == '__main__':
             do_test(fn_remote=test_NETRPaste_by_copy_remote2local)
             do_test(fn_remote=test_NETRPaste_by_copy_remote2remote)
 
+        def do_test_UI():
+            do_test(test_bookmark)
+            do_test(test_help)
+
         do_test_navigation()
         do_test(test_NETREdit)
         do_test(test_NETRNew)
         do_test_delete()
         do_test_pickCopyCutPaste()
-        do_test(test_bookmark)
         do_test(test_NETRToggleShowHidden)
         do_test(test_size_display)
         do_test(test_sort)
         do_test(test_opt_Autochdir)
+        do_test_UI()
 
         do_test_delete_remote()
         do_test_pickCopyCutPaste_remote()

@@ -1,11 +1,10 @@
 from __future__ import absolute_import
 
 import os
-import re
 
+from netranger import Vim
 from netranger.config import config_dir
 from netranger.util import Shell
-from netranger.Vim import VimErrorMsg
 
 
 class Rule(object):
@@ -32,8 +31,7 @@ class has(Rule):
 
 
 class Rifle(object):
-    def __init__(self, vim, path):
-        self.vim = vim
+    def __init__(self, path):
         self.rules = []
 
         if not os.path.isfile(path):
@@ -52,7 +50,7 @@ class Rifle(object):
                     continue
                 sp = line.split('=')
                 if len(sp) != 2:
-                    VimErrorMsg(
+                    Vim.ErrorMsg(
                         'invalid rule: rifle.conf line {}. There should be one'
                         ' and only one "=" for each line'.format(i + 1))
                     continue

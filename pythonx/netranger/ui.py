@@ -3,22 +3,21 @@ from __future__ import absolute_import
 import os
 import string
 
-from netranger.Vim import VimVar, VimWarningMsg
+from netranger import Vim
 
 
 class UI(object):
     @property
     def position(self):
-        return VimVar('NETRSplitOrientation')
+        return Vim.Var('NETRSplitOrientation')
 
-    def __init__(self, vim):
+    def __init__(self):
         self.bufs = {}
-        self.vim = vim
 
     def map_key_reg(self, key, regval):
-        self.vim.command("nnoremap <nowait> <silent> <buffer> {} "
-                         ":let g:NETRRegister=['{}'] <cr> :quit <cr>".format(
-                             key, regval))
+        Vim.command("nnoremap <nowait> <silent> <buffer> {} "
+                    ":let g:NETRRegister=['{}'] <cr> :quit <cr>".format(
+                        key, regval))
 
     def buf_valid(self, name='default'):
         return name in self.bufs and self.bufs[name].valid
@@ -28,13 +27,12 @@ class UI(object):
             del self.bufs[name]
 
     def show(self, name='default'):
-        self.vim.command('{} {}sb'.format(self.position,
-                                          self.bufs[name].number))
+        Vim.command('{} {}sb'.format(self.position, self.bufs[name].number))
 
     def create_buf(self, content, mappings=None, name='default', map_cr=False):
-        self.vim.command('{} new'.format(self.position))
+        Vim.command('{} new'.format(self.position))
         self.set_buf_common_option()
-        new_buf = self.vim.current.buffer
+        new_buf = Vim.current.buffer
         self.bufs[name] = new_buf
 
         if mappings is not None:
@@ -44,9 +42,9 @@ class UI(object):
         if map_cr:
             assert mappings is not None
             ui_internal_vim_dict_name = 'g:_{}Map'.format(type(self).__name__)
-            self.vim.command('let {}={}'.format(ui_internal_vim_dict_name,
-                                                dict(mappings)))
-            self.vim.command(
+            Vim.command('let {}={}'.format(ui_internal_vim_dict_name,
+                                           dict(mappings)))
+            Vim.command(
                 "nnoremap <nowait> <silent> <buffer> <Cr> "
                 ":let g:NETRRegister=[{}[getline('.')[0]]] <cr> :quit <cr>".
                 format(ui_internal_vim_dict_name))
@@ -54,23 +52,23 @@ class UI(object):
         new_buf.options['modifiable'] = True
         new_buf[:] = content
         new_buf.options['modifiable'] = False
-        self.vim.command('quit')
+        Vim.command('quit')
 
     def set_buf_common_option(self, modifiable=False):
-        self.vim.command('setlocal noswapfile')
-        self.vim.command('setlocal foldmethod=manual')
-        self.vim.command('setlocal foldcolumn=0')
-        self.vim.command('setlocal nofoldenable')
-        self.vim.command('setlocal nobuflisted')
-        self.vim.command('setlocal nospell')
-        self.vim.command('setlocal buftype=nofile')
-        self.vim.command('setlocal bufhidden=hide')
-        self.vim.command('setlocal nomodifiable')
+        Vim.command('setlocal noswapfile')
+        Vim.command('setlocal foldmethod=manual')
+        Vim.command('setlocal foldcolumn=0')
+        Vim.command('setlocal nofoldenable')
+        Vim.command('setlocal nobuflisted')
+        Vim.command('setlocal nospell')
+        Vim.command('setlocal buftype=nofile')
+        Vim.command('setlocal bufhidden=hide')
+        Vim.command('setlocal nomodifiable')
 
 
 class HelpUI(UI):
-    def __init__(self, vim, keymap_doc):
-        UI.__init__(self, vim)
+    def __init__(self, keymap_doc):
+        UI.__init__(self)
 
         self.create_buf(content=[
             '{:<25} {:<10} {}'.format(fn, ','.join(keys), desc)
@@ -79,8 +77,8 @@ class HelpUI(UI):
 
 
 class AskUI(UI):
-    def __init__(self, vim, netranger):
-        UI.__init__(self, vim)
+    def __init__(self, netranger):
+        UI.__init__(self)
         self.netranger = netranger
         self.options = None
         self.fullpath = None
@@ -94,7 +92,7 @@ class AskUI(UI):
     def ask(self, content, fullpath):
         self.show()
         if len(content) > 24:
-            VimWarningMsg('Ask only supports up to 24 commands.')
+            Vim.WarningMsg('Ask only supports up to 24 commands.')
             content = content[:24]
 
         ind = 97
@@ -156,8 +154,8 @@ class SortUI(UI):
     def get_sort_fn(cls):
         return SortUI.sort_fns[SortUI.sort_fn_ch]
 
-    def __init__(self, vim):
-        UI.__init__(self, vim)
+    def __init__(self):
+        UI.__init__(self)
         sort_opts = ['atime', 'ctime', 'default', 'extension', 'mtime', 'size']
         content = ['{}  {}'.format(s[0], s) for s in sort_opts]
         content.insert(
@@ -170,16 +168,16 @@ class SortUI(UI):
 
 
 class NewUI(UI):
-    def __init__(self, vim):
-        UI.__init__(self, vim)
+    def __init__(self):
+        UI.__init__(self)
         content = ['d.directory', 'f.file']
         mappings = [('d', 'd'), ('f', 'f')]
         self.create_buf(content=content, mappings=mappings, map_cr=True)
 
 
 class BookMarkUI(UI):
-    def __init__(self, vim, netranger):
-        UI.__init__(self, vim)
+    def __init__(self, netranger):
+        UI.__init__(self)
         self.valid_mark = string.ascii_lowercase + string.ascii_uppercase
         self.netranger = netranger
         self.mark_dict = {}
@@ -189,16 +187,16 @@ class BookMarkUI(UI):
         # If bookmark file is initially empty. The first time
         # 'm' (set) mapping is trigger, it won't quit the buffer
         # on user input..
-        if not os.path.isfile(VimVar('NETRBookmarkFile')):
-            with open(VimVar('NETRBookmarkFile'), 'w') as f:
+        if not os.path.isfile(Vim.Var('NETRBookmarkFile')):
+            with open(Vim.Var('NETRBookmarkFile'), 'w') as f:
                 f.write('~:{}'.format(os.path.expanduser('~')))
 
         self.load_bookmarks()
 
     def load_bookmarks(self):
         self.mark_dict = {}
-        if os.path.isfile(VimVar('NETRBookmarkFile')):
-            with open(VimVar('NETRBookmarkFile'), 'r') as f:
+        if os.path.isfile(Vim.Var('NETRBookmarkFile')):
+            with open(Vim.Var('NETRBookmarkFile'), 'r') as f:
                 for line in f:
                     kp = line.split(':')
                     if (len(kp) == 2):
@@ -220,7 +218,7 @@ class BookMarkUI(UI):
         if mark == '':
             return
         if mark not in self.valid_mark:
-            self.vim.command('echo "Only a-zA-Z are valid mark!!"')
+            Vim.command('echo "Only a-zA-Z are valid mark!!"')
             return
         set_buf = self.bufs['set']
         set_buf.options['modifiable'] = True
@@ -240,7 +238,7 @@ class BookMarkUI(UI):
         set_buf.options['modifiable'] = False
         self.mark_dict[mark] = self.path_to_mark
         self.del_buf('go')
-        with open(VimVar('NETRBookmarkFile'), 'w') as f:
+        with open(Vim.Var('NETRBookmarkFile'), 'w') as f:
             for k, p in self.mark_dict.items():
                 f.write('{}:{}\n'.format(k, p))
 
@@ -257,9 +255,8 @@ class BookMarkUI(UI):
         self.netranger.pend_onuiquit(self.netranger.bookmarkgo_onuiquit, 1)
 
     def edit(self):
-        self.vim.command('belowright split {}'.format(
-            VimVar('NETRBookmarkFile')))
-        self.vim.command('setlocal bufhidden=wipe')
+        Vim.command('belowright split {}'.format(Vim.Var('NETRBookmarkFile')))
+        Vim.command('setlocal bufhidden=wipe')
         self.del_buf('set')
         self.del_buf('go')
         self.netranger.pend_onuiquit(self.load_bookmarks)

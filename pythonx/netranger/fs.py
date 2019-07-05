@@ -6,10 +6,10 @@ import re
 import shutil
 import tempfile
 
+from netranger import Vim
 from netranger.config import file_sz_display_wid
 from netranger.enum import Enum
 from netranger.util import Shell
-from netranger.Vim import VimUserInput, VimVar
 
 FType = Enum('FileType', 'SOCK, LNK, REG, BLK, DIR, CHR, FIFO')
 
@@ -23,7 +23,7 @@ class FSTarget(object):
         """
         self.remote_targets = []
         self.local_targets = []
-        self.remote_root = VimVar('NETRemoteCacheDir')
+        self.remote_root = Vim.Var('NETRemoteCacheDir')
         self.is_remote = self.is_remote_path(target_path)
 
     def is_remote_path(self, path):
@@ -346,14 +346,14 @@ class Rclone(LocalFS):
         Shell.run('rclone sync "{}" "{}"'.format(src, dst))
 
     @classmethod
-    def valid_or_install(self, vim):
+    def valid_or_install(self):
         import platform
         import zipfile
 
         if Shell.isinPATH('rclone'):
             return True
         else:
-            rclone_dir = VimUserInput(
+            rclone_dir = Vim.UserInput(
                 'Rclone not in PATH. Install it at (modify/enter)',
                 os.path.expanduser('~/rclone'))
             Shell.mkdir(rclone_dir)
@@ -380,7 +380,7 @@ class Rclone(LocalFS):
             zip_ref.close()
             os.remove(zip_fname)
 
-            shellrc = VimUserInput(
+            shellrc = Vim.UserInput(
                 'Update PATH in (leave blank to set manually later)',
                 Shell.shellrc())
             if len(shellrc) > 0:
