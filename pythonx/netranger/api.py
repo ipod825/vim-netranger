@@ -1,3 +1,6 @@
+from netranger.fs import FSTarget
+
+
 class NETRApi(object):
     Hookers = {
         'node_highlight_content_l': [],
@@ -34,9 +37,57 @@ class NETRApi(object):
     def next_lesseq_level_ind(self, begInd):
         return self.ranger.cur_buf.next_lesseq_level_ind(begInd)
 
-    @property
+    @classmethod
     def cur_node(self):
         return self.ranger.cur_node
+
+    @classmethod
+    def cur_node_name(self):
+        return self.ranger.cur_node.name
+
+    @classmethod
+    def cur_node_path(self):
+        return self.ranger.cur_node.fullpath
+
+    @classmethod
+    def cp(self, src, dst):
+        cur_buf = self.ranger.cur_buf
+        FSTarget(dst).append(src).cp(
+            dst,
+            on_begin=lambda: self.ranger.inc_num_fs_op([cur_buf]),
+            on_exit=lambda: self.ranger.dec_num_fs_op([cur_buf]))
+
+    @classmethod
+    def mv(self, src, dst):
+        cur_buf = self.ranger.cur_buf
+        FSTarget(dst).append(src).mv(
+            dst,
+            on_begin=lambda: self.ranger.inc_num_fs_op([cur_buf]),
+            on_exit=lambda: self.ranger.dec_num_fs_op([cur_buf]))
+
+    @classmethod
+    def rm(self, src):
+        cur_buf = self.ranger.cur_buf
+        FSTarget().append(src).rm(
+            False,
+            on_begin=lambda: self.ranger.inc_num_fs_op([cur_buf]),
+            on_exit=lambda: self.ranger.dec_num_fs_op([cur_buf]))
+
+    @classmethod
+    def cpas(self, src, dst):
+        cur_buf = self.ranger.cur_buf
+        FSTarget(dst).append(src).cpas(
+            dst,
+            on_begin=lambda: self.ranger.inc_num_fs_op([cur_buf]),
+            on_exit=lambda: self.ranger.dec_num_fs_op([cur_buf]))
+
+    @classmethod
+    def mvas(self, src, dst):
+        cur_buf = self.ranger.cur_buf
+        FSTarget(dst).append(src).mvas(
+            dst,
+            on_begin=lambda: self.ranger.inc_num_fs_op([cur_buf]),
+            on_exit=lambda: self.ranger.dec_num_fs_op([cur_buf]))
 
     @classmethod
     def render(self, bufNum=None):

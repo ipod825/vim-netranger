@@ -650,6 +650,132 @@ def test_NETRPaste_by_copy_remote2remote():
     assert_fs_cache('dir2', ['subdir', 'a'])
 
 
+def test_api_cur_node_name():
+    assert nvim.call('netranger#api#cur_node_name') == 'dir'
+
+
+def test_api_cur_node_path():
+    assert nvim.call('netranger#api#cur_node_path') == os.path.abspath('dir')
+
+
+def test_api_cp():
+    nvim.input('za')
+    nvim.call('netranger#api#cp', 'dir/subdir', './')
+    nvim.call('netranger#api#cp', 'dir/a', './')
+    wait_for_fs_free()
+    assert_content('subdir', ind=5, hi='dir')
+    assert_content('a', ind=6, hi='file')
+    assert_fs('', ['dir', 'dir2', 'subdir', 'a'])
+
+
+def test_api_cp_remote():
+    nvim.input('za')
+    vimcwd = nvim.call('getcwd')
+    nvim.call('netranger#api#cp', f'{vimcwd}/dir/subdir', vimcwd)
+    nvim.call('netranger#api#cp', f'{vimcwd}/dir/a', vimcwd)
+    wait_for_fs_free()
+    assert_content('subdir', ind=5, hi='dir')
+    assert_content('a', ind=6, hi='file')
+    assert_fs_cache('', ['dir', 'dir2', 'subdir', 'a'])
+    assert_fs_remote('', ['dir', 'dir2', 'subdir', 'a'])
+
+
+def test_api_cpas_remote():
+    nvim.input('jza')
+    vimcwd = nvim.call('getcwd')
+    nvim.call('netranger#api#cpas', f'{vimcwd}/dir/subdir',
+              f'{vimcwd}/dir2/subdir')
+    nvim.call('netranger#api#cpas', f'{vimcwd}/dir/a', f'{vimcwd}/dir2/a')
+    wait_for_fs_free()
+    assert_content('subdir', ind=2, hi='dir', level=1)
+    assert_content('a', ind=3, hi='file', level=1)
+    assert_fs_cache('dir2', ['subdir', 'a'])
+    assert_fs_remote('dir2', ['subdir', 'a'])
+
+
+def test_api_cpas():
+    nvim.input('jza')
+    nvim.call('netranger#api#cpas', 'dir/subdir', 'dir2/subdir')
+    nvim.call('netranger#api#cpas', 'dir/a', 'dir2/a')
+    wait_for_fs_free()
+    assert_content('subdir', ind=2, hi='dir', level=1)
+    assert_content('a', ind=3, hi='file', level=1)
+    assert_fs('dir2', ['subdir', 'a'])
+
+
+def test_api_mv():
+    nvim.input('za')
+    nvim.call('netranger#api#mv', 'dir/subdir', './')
+    nvim.call('netranger#api#mv', 'dir/a', './')
+    wait_for_fs_free()
+    assert_content('subdir', ind=3, hi='dir')
+    assert_content('a', ind=4, hi='file')
+    assert_fs('', ['dir', 'dir2', 'subdir', 'a'])
+    assert_fs('dir', ['subdir2'])
+
+
+def test_api_mv_remote():
+    nvim.input('za')
+    vimcwd = nvim.call('getcwd')
+    nvim.call('netranger#api#mv', f'{vimcwd}/dir/subdir', vimcwd)
+    nvim.call('netranger#api#mv', f'{vimcwd}/dir/a', vimcwd)
+    wait_for_fs_free()
+    assert_content('subdir', ind=3, hi='dir')
+    assert_content('a', ind=4, hi='file')
+    assert_fs_cache('', ['dir', 'dir2', 'subdir', 'a'])
+    assert_fs_cache('dir', ['subdir2'])
+    assert_fs_remote('', ['dir', 'dir2', 'subdir', 'a'])
+    assert_fs_remote('dir', ['subdir2'])
+
+
+def test_api_mvas():
+    nvim.input('jza')
+    nvim.call('netranger#api#mvas', 'dir/subdir', 'dir2/subdir')
+    nvim.call('netranger#api#mvas', 'dir/a', 'dir2/a')
+    wait_for_fs_free()
+    assert_content('subdir', ind=2, hi='dir', level=1)
+    assert_content('a', ind=3, hi='file', level=1)
+    assert_fs('dir', ['subdir2'])
+    assert_fs('dir2', ['subdir', 'a'])
+
+
+def test_api_mvas_remote():
+    nvim.input('jza')
+    vimcwd = nvim.call('getcwd')
+    nvim.call('netranger#api#mvas', f'{vimcwd}/dir/subdir',
+              f'{vimcwd}/dir2/subdir')
+    nvim.call('netranger#api#mvas', f'{vimcwd}/dir/a', f'{vimcwd}/dir2/a')
+    wait_for_fs_free()
+    assert_content('subdir', ind=2, hi='dir', level=1)
+    assert_content('a', ind=3, hi='file', level=1)
+    assert_fs_cache('dir', ['subdir2'])
+    assert_fs_cache('dir2', ['subdir', 'a'])
+    assert_fs_remote('dir', ['subdir2'])
+    assert_fs_remote('dir2', ['subdir', 'a'])
+
+
+def test_api_rm():
+    nvim.input('za')
+    nvim.call('netranger#api#rm', 'dir/subdir')
+    nvim.call('netranger#api#rm', 'dir/a')
+    wait_for_fs_free()
+    assert_content('subdir2', ind=1, hi='dir', level=1)
+    assert_content('dir2', ind=2, hi='dir')
+    assert_fs('dir', ['subdir2'])
+
+
+def test_api_rm_remote():
+    nvim.input('za')
+    vimcwd = nvim.call('getcwd')
+    nvim.call('netranger#api#rm', f'{vimcwd}/dir/subdir')
+    nvim.call('netranger#api#rm', f'{vimcwd}/dir/a')
+    wait_for_fs_free()
+    assert_content('subdir2', ind=1, hi='dir', level=1)
+    assert_content('dir2', ind=2, hi='dir')
+    assert_fs_cache('dir', ['subdir2'])
+    assert_fs_remote('dir', ['subdir2'])
+
+
 def parse_arg(argv):
     parser = argparse.ArgumentParser(description='')
     parser.add_argument(
@@ -735,6 +861,23 @@ if __name__ == '__main__':
             do_test(test_bookmark)
             do_test(test_help)
 
+        def do_test_api():
+            do_test(test_api_cur_node_name)
+            do_test(test_api_cur_node_path)
+
+            do_test(test_api_cp)
+            do_test(test_api_cpas)
+            do_test(test_api_mv)
+            do_test(test_api_mvas)
+            do_test(test_api_rm)
+
+            do_test(fn_remote=test_api_cp_remote)
+            do_test(fn_remote=test_api_cpas_remote)
+            do_test(fn_remote=test_api_mv_remote)
+            do_test(fn_remote=test_api_mvas_remote)
+            do_test(fn_remote=test_api_rm_remote)
+
+        do_test_api()
         do_test_navigation()
         do_test(test_NETREdit)
         do_test(test_NETRNew)

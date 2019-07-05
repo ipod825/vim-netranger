@@ -22,6 +22,7 @@ def cp(args, err_msg):
     rdst = args['rdst']
     dst = args['dst']
     need_local_cp = dst != rdst
+
     for rsrc in args['rsrc']:
         p = subprocess.Popen('rclone copyto --tpslimit=10 "{}" "{}"'.format(
             rsrc, os.path.join(rdst, os.path.basename(rsrc))),
@@ -58,6 +59,38 @@ def rm(args, err_msg):
             err_msg.append(fs_server.rm(src))
 
 
+def cpas(args, err_msg):
+    process = []
+    rdst = args['rdst']
+    dst = args['dst']
+    need_local_cp = dst != rdst
+    for src, rsrc in zip(args['src'], args['rsrc']):
+        if os.path.isdir(src):
+            cmd = 'copy'
+        else:
+            cmd = 'copyto'
+
+        p = subprocess.Popen('rclone {} --tpslimit=10 "{}" "{}"'.format(
+            cmd, rsrc, rdst),
+                             shell=True,
+                             stdout=PIPE,
+                             stderr=PIPE)
+        process.append(p)
+
+    for src, p in zip(args['src'], process):
+        p.wait()
+        err = p.stderr.read().decode('utf8')
+        if err:
+            err_msg.append(err)
+        elif need_local_cp:
+            err_msg.append(fs_server.cpas(src, dst))
+
+
+def mvas(args, err_msg):
+    cpas(args, err_msg)
+    rm(args, err_msg)
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1]
     arg_file = sys.argv[2]
@@ -67,8 +100,12 @@ if __name__ == "__main__":
     err_msg = []
     if cmd == 'mv':
         mv(args, err_msg)
+    elif cmd == 'mvas':
+        mvas(args, err_msg)
     elif cmd == 'cp':
         cp(args, err_msg)
+    elif cmd == 'cpas':
+        cpas(args, err_msg)
     elif cmd == 'rm':
         rm(args, err_msg)
 

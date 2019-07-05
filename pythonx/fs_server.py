@@ -26,6 +26,17 @@ def cp(src, dst):
     return ''
 
 
+def cpas(src, dst):
+    try:
+        if os.path.isdir(src):
+            shutil.copytree(src, dst)
+        else:
+            shutil.copy(src, dst)
+    except Exception as e:
+        return str(e)
+    return ''
+
+
 def rm(src):
     try:
         if os.path.isdir(src):
