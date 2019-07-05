@@ -4,7 +4,7 @@ import os
 
 from netranger import Vim
 from netranger.config import config_dir
-from netranger.util import Shell
+from netranger.shell import Shell
 
 
 class Rule(object):

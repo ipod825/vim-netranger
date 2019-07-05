@@ -10,7 +10,7 @@ from netranger import default
 from netranger.colortbl import colorname2ind
 from netranger.config import (test_dir, test_local_dir, test_remote_cache_dir,
                               test_remote_dir, test_remote_name)
-from tutil import Shell
+from tshell import Shell
 
 
 def color_str(hi_key):

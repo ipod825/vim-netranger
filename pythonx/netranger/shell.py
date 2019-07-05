@@ -43,23 +43,29 @@ class Shell():
         open(name, 'a').close()
 
     @classmethod
-    def rm(cls, name):
-        if os.path.isdir(name):
-            shutil.rmtree(name)
-        else:
-            os.remove(name)
+    def rm(cls, src):
+        try:
+            if os.path.isdir(src):
+                shutil.rmtree(src)
+            else:
+                os.remove(src)
+        except Exception as e:
+            return str(e)
+
+    @classmethod
+    def cp(cls, src, dst):
+        try:
+            if os.path.isdir(src):
+                shutil.copytree(src, os.path.join(dst, os.path.basename(src)))
+            else:
+                shutil.copy(src, dst)
+        except Exception as e:
+            return str(e)
 
     @classmethod
     def shellrc(cls):
         return os.path.expanduser('~/.{}rc'.format(
             os.path.basename(os.environ['SHELL'])))
-
-    @classmethod
-    def cp(cls, src, dst):
-        if os.path.isdir(src):
-            shutil.copytree(src, os.path.join(dst, os.path.basename(src)))
-        else:
-            shutil.copy(src, dst)
 
     @classmethod
     def mkdir(cls, name):
@@ -87,10 +93,3 @@ class Shell():
         hstream = urllib.urlopen(url)
         with open(dst, 'wb') as f:
             f.write(hstream.read())
-
-
-def c256(msg, c, background):
-    if background:
-        return '[38;5;{};7m{}[0m'.format(c, msg)
-    else:
-        return '[38;5;{}m{}[0m'.format(c, msg)

@@ -15,13 +15,20 @@ from netranger.enum import Enum
 from netranger.fs import FSTarget, LocalFS, Rclone
 from netranger.rifle import Rifle
 from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, SortUI
-from netranger.util import Shell, c256
+from netranger.shell import Shell
 
 if platform == "win32":
     from os import getenv
 else:
     import pwd
     import grp
+
+
+def c256(msg, c, background):
+    if background:
+        return '[38;5;{};7m{}[0m'.format(c, msg)
+    else:
+        return '[38;5;{}m{}[0m'.format(c, msg)
 
 
 class Node(object):

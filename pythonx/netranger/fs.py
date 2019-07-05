@@ -9,7 +9,7 @@ import tempfile
 from netranger import Vim
 from netranger.config import file_sz_display_wid
 from netranger.enum import Enum
-from netranger.util import Shell
+from netranger.shell import Shell
 
 FType = Enum('FileType', 'SOCK, LNK, REG, BLK, DIR, CHR, FIFO')
 
@@ -226,15 +226,21 @@ class Rclone(LocalFS):
         self.remote_remap = remote_remap
         Shell.mkdir(root_dir)
 
+    @classmethod
+    def init_on_demand(self):
+        """
+        This is called when in valid_or_install when the user really need 
+        remote functionallity.
+        """
         remotes = set([
             line for line in Shell.run('rclone listremotes').split(':\n')
             if line
         ])
-        local_remotes = set(super(Rclone, self).ls(root_dir))
+        local_remotes = set(super(Rclone, self).ls(self.root_dir))
         for remote in remotes.difference(local_remotes):
-            Shell.mkdir(os.path.join(root_dir, remote))
+            Shell.mkdir(os.path.join(self.root_dir, remote))
         for remote in local_remotes.difference(remotes):
-            Shell.rm(os.path.join(root_dir, remote))
+            Shell.rm(os.path.join(self.root_dir, remote))
 
         self.has_remote = len(remotes) > 0
         self.ls_time_stamp = {}
@@ -351,6 +357,7 @@ class Rclone(LocalFS):
         import zipfile
 
         if Shell.isinPATH('rclone'):
+            Rclone.init_on_demand()
             return True
         else:
             rclone_dir = Vim.UserInput(
@@ -387,3 +394,5 @@ class Rclone(LocalFS):
                 with open(shellrc, 'a') as f:
                     f.write('PATH={}:$PATH\n'.format(rclone_dir))
             os.environ['PATH'] += ':' + rclone_dir
+
+            Rclone.init_on_demand()
