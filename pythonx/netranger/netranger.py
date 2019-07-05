@@ -12,7 +12,7 @@ from netranger.api import HasHooker, Hookers
 from netranger.colortbl import colorhexstr2ind, colorname2ind
 from netranger.config import file_sz_display_wid
 from netranger.enum import Enum
-from netranger.fs import FS, FSAutoFilter, Rclone
+from netranger.fs import FSTarget, LocalFS, Rclone
 from netranger.rifle import Rifle
 from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, SortUI
 from netranger.util import Shell, c256
@@ -190,11 +190,11 @@ class EntryNode(Node):
 
         if self.stat:
             try:
-                self.size = FS.size_str(self.fullpath, self.stat)
+                self.size = LocalFS.size_str(self.fullpath, self.stat)
             except PermissionError:
                 self.size = '?'
 
-            self.acl = FS.acl_str(self.stat)
+            self.acl = LocalFS.acl_str(self.stat)
             try:
                 if platform == "win32":
                     self.user = getenv("USERNAME")
@@ -887,6 +887,10 @@ class Netranger(object):
         return self.bufs[self.vim.current.buffer.number]
 
     @property
+    def cur_buf_is_remote(self):
+        return self.cur_buf.fs is Rclone
+
+    @property
     def cur_node(self):
         return self.cur_buf.cur_node
 
@@ -909,8 +913,6 @@ class Netranger(object):
         self.onuiquit = None
         self.newUI = None
         self.onuiquit_num_args = 0
-        self.fs = FS
-        self.rclone = Rclone
 
         self.init_vim_variables()
         self.init_keymaps()
@@ -1106,11 +1108,10 @@ class Netranger(object):
         bufnum = self.vim.current.buffer.number
         if (bufname.startswith(VimVar('NETRemoteCacheDir'))):
             self.bufs[bufnum] = NetRangerBuf(self, self.vim,
-                                             os.path.abspath(bufname),
-                                             self.rclone)
+                                             os.path.abspath(bufname), Rclone)
         else:
             self.bufs[bufnum] = NetRangerBuf(self, self.vim,
-                                             os.path.abspath(bufname), self.fs)
+                                             os.path.abspath(bufname), LocalFS)
         self.vim.command('silent file N:{}'.format(bufname))
 
         self.map_keys()
@@ -1219,8 +1220,8 @@ class Netranger(object):
                 # of things are cached
                 self.on_bufenter(self.vim.eval("winnr()"))
         else:
-            if self.rclone is not None and self.is_remote_path(fullpath):
-                self.rclone.ensure_downloaded(fullpath)
+            if self.cur_buf_is_remote:
+                Rclone.ensure_downloaded(fullpath)
 
             if rifle_cmd is None:
                 rifle_cmd = self.rifle.decide_open_cmd(fullpath)
@@ -1281,7 +1282,7 @@ class Netranger(object):
         """Real work is done in on_bufenter."""
         cur_buf = self.cur_buf
         cwd = cur_buf.wd
-        pdir = self.fs.parent_dir(cwd)
+        pdir = LocalFS.parent_dir(cwd)
         self.vim.command('silent edit {}'.format(pdir))
         # Manually call on_bufenter, see comments in NETROpen
         self.on_bufenter(self.vim.eval("winnr()"))
@@ -1533,7 +1534,7 @@ class Netranger(object):
 
     def _NETRPaste_cut_nodes(self, busy_bufs):
         cwd = self.vim.eval('getcwd()')
-        fsfilter = FSAutoFilter(cwd)
+        fsfilter = FSTarget(cwd)
 
         alreday_moved = set()
         for buf, nodes in self.cut_nodes.items():
@@ -1565,7 +1566,7 @@ class Netranger(object):
 
     def _NETRPaste_copied_nodes(self, busy_bufs):
         cwd = self.vim.eval('getcwd()')
-        fsfilter = FSAutoFilter(cwd)
+        fsfilter = FSTarget(cwd)
 
         for buf, nodes in self.copied_nodes.items():
             buf.reset_hi(nodes)
@@ -1596,7 +1597,7 @@ class Netranger(object):
         self._NETRPaste_cut_nodes(cut_busy_bufs)
 
     def NETRDelete(self, force=False):
-        fsfilter = FSAutoFilter('')
+        fsfilter = FSTarget('')
 
         for buf, nodes in self.picked_nodes.items():
             buf.content_outdated = True
@@ -1615,7 +1616,7 @@ class Netranger(object):
         cur_buf = self.cur_buf
         if cur_buf.fs_busy():
             return
-        fsfilter = FSAutoFilter('')
+        fsfilter = FSTarget('')
 
         cur_buf.content_outdated = True
         fsfilter.append(self.cur_node.fullpath)
@@ -1631,9 +1632,6 @@ class Netranger(object):
     def NETRForceDeleteSingle(self):
         self.NETRDeleteSingle(force=True)
 
-    def is_remote_path(self, path):
-        return path.startswith(VimVar('NETRemoteCacheDir'))
-
     def NETRemotePull(self):
         """Sync local so that the local content of the current directory will
         be the same as the remote content."""
@@ -1643,7 +1641,7 @@ class Netranger(object):
             VimErrorMsg('Not a netranger buffer')
             return
 
-        if not self.is_remote_path(cur_buf.wd):
+        if not self.cur_buf_is_remote:
             VimErrorMsg('Not a remote directory')
         else:
             Rclone.sync(cur_buf.wd, Rclone.SyncDirection.DOWN)
@@ -1658,7 +1656,7 @@ class Netranger(object):
             VimErrorMsg('Not a netranger buffer')
             return
 
-        if not self.is_remote_path(cur_buf.wd):
+        if not self.cur_buf_is_remote:
             VimErrorMsg('Not a remote directory')
         else:
             Rclone.sync(cur_buf.wd, Rclone.SyncDirection.UP)

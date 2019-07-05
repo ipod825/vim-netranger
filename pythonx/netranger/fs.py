@@ -14,8 +14,13 @@ from netranger.Vim import VimUserInput, VimVar
 FType = Enum('FileType', 'SOCK, LNK, REG, BLK, DIR, CHR, FIFO')
 
 
-class FSAutoFilter(object):
+class FSTarget(object):
     def __init__(self, target_path=''):
+        """ This is a help class for separating local files and remote files
+        for mv, cp, rm commands. Though the logic in this class can be done
+        in the caller side, it makes the caller has higher branch number and
+        hard-to-read code.
+        """
         self.remote_targets = []
         self.local_targets = []
         self.remote_root = VimVar('NETRemoteCacheDir')
@@ -39,7 +44,7 @@ class FSAutoFilter(object):
     def mv(self, target_dir, on_begin, on_exit):
         if self.local_targets:
             on_begin()
-            FS.mv(self.local_targets, target_dir, on_exit=on_exit)
+            LocalFS.mv(self.local_targets, target_dir, on_exit=on_exit)
         if self.remote_targets:
             on_begin()
             Rclone.mv(self.remote_targets, target_dir, on_exit=on_exit)
@@ -47,7 +52,7 @@ class FSAutoFilter(object):
     def cp(self, target_dir, on_begin, on_exit):
         if self.local_targets:
             on_begin()
-            FS.cp(self.local_targets, target_dir, on_exit=on_exit)
+            LocalFS.cp(self.local_targets, target_dir, on_exit=on_exit)
         if self.remote_targets:
             on_begin()
             Rclone.cp(self.remote_targets, target_dir, on_exit=on_exit)
@@ -55,17 +60,17 @@ class FSAutoFilter(object):
     def rm(self, force, on_begin, on_exit):
         if self.local_targets:
             on_begin()
-            FS.rm(self.local_targets, force, on_exit=on_exit)
+            LocalFS.rm(self.local_targets, force, on_exit=on_exit)
         if self.remote_targets:
             on_begin()
             Rclone.rm(self.remote_targets, force, on_exit=on_exit)
 
 
-class FS(object):
+class LocalFS(object):
     # Putting fs_server.py in the pythonx directory fail to import shutil
     # so put it in the upper directory
-    FScmds = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          '../fs_server.py')
+    LocalFScmds = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               '../fs_server.py')
 
     acl_tbl = {
         '7': ['r', 'w', 'x'],
@@ -132,10 +137,11 @@ class FS(object):
         src = ' '.join(['"{}"'.format(s) for s in src_arr])
         if dst:
             dst = '"{}"'.format(dst)
-            cmd = 'python {} {} {} {}'.format(FS.FScmds, cmd, src, dst)
+            cmd = 'python {} {} {} {}'.format(LocalFS.LocalFScmds, cmd, src,
+                                              dst)
             Shell.run_async(cmd, on_exit=on_exit)
         else:
-            cmd = 'python {} {} {}'.format(FS.FScmds, cmd, src)
+            cmd = 'python {} {} {}'.format(LocalFS.LocalFScmds, cmd, src)
             Shell.run_async(cmd, on_exit=on_exit)
 
     @classmethod
@@ -164,7 +170,7 @@ class FS(object):
         return os.stat(fname).st_mtime
 
     @classmethod
-    def size_str(cls, path, statinfo):
+    def size_str(self, path, statinfo):
         if os.path.isdir(path):
             return str(len(os.listdir(path)))
 
@@ -178,24 +184,25 @@ class FS(object):
         return '?' * file_sz_display_wid
 
     @classmethod
-    def acl_str(cls, statinfo):
+    def acl_str(self, statinfo):
         statinfo = oct(statinfo.st_mode)
         acl = statinfo[-4:]
-        rwx = FS.acl_tbl[acl[1]] + FS.acl_tbl[acl[2]] + FS.acl_tbl[acl[3]]
-        sst = FS.uid_tbl[acl[0]]
+        rwx = LocalFS.acl_tbl[acl[1]] + LocalFS.acl_tbl[
+            acl[2]] + LocalFS.acl_tbl[acl[3]]
+        sst = LocalFS.uid_tbl[acl[0]]
         i = 2
         for b in sst:
             if b != '-':
                 rwx[i] = b
             i += 3
 
-        rwx.insert(0, FS.ft_tbl[statinfo[-6:-4]])
+        rwx.insert(0, LocalFS.ft_tbl[statinfo[-6:-4]])
         return ''.join(rwx)
 
 
-class Rclone(FS):
-    FScmds = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          '../rclone_server.py')
+class Rclone(LocalFS):
+    LocalFScmds = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               '../rclone_server.py')
     SyncDirection = Enum('SyncDirection', 'DOWN, UP')
 
     @classmethod
@@ -231,6 +238,10 @@ class Rclone(FS):
 
         self.has_remote = len(remotes) > 0
         self.ls_time_stamp = {}
+
+    @classmethod
+    def is_remote_path(self, path):
+        return path.startswith(self.root_dir)
 
     @classmethod
     def rpath(self, lpath):
@@ -288,7 +299,8 @@ class Rclone(FS):
         fname = tempfile.mkstemp()[1]
         with open(fname, 'ab') as f:
             pickle.dump(arguments, f)
-        Shell.run_async('python {} {} {}'.format(Rclone.FScmds, cmd, fname),
+        Shell.run_async('python {} {} {}'.format(Rclone.LocalFScmds, cmd,
+                                                 fname),
                         on_exit=on_exit)
 
     @classmethod
@@ -334,13 +346,7 @@ class Rclone(FS):
         Shell.run('rclone sync "{}" "{}"'.format(src, dst))
 
     @classmethod
-    def parent_dir(self, cwd):
-        if len(cwd) == self.rplen - 1:
-            return cwd
-        return os.path.abspath(os.path.join(cwd, os.pardir))
-
-    @classmethod
-    def valid_or_install(cls, vim):
+    def valid_or_install(self, vim):
         import platform
         import zipfile
 
