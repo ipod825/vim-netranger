@@ -34,10 +34,6 @@ augroup NETRANGER
     autocmd CursorMoved * exec s:pyx 'ranger.on_cursormoved('.expand("<abuf>").')'
 augroup END
 
-func! _NETRInvokeMap(fn)
-    exec s:pyx 'ranger.invoke_map("'.a:fn.'")'
-endfunc
-
 func! _NETROnCursorMovedPost(bufnum, timerid)
     exec s:pyx 'ranger.on_cursormoved_post('.a:bufnum.')'
 endfunc
@@ -46,6 +42,8 @@ command! NETRemoteList exec s:pyx 'ranger.NETRemoteList()'
 command! NETRemotePull exec s:pyx 'ranger.NETRemotePull()'
 command! NETRemotePush exec s:pyx 'ranger.NETRemotePush()'
 command! -nargs=1 -complete=file NETRTabdrop exec s:pyx 'netranger.Vim.tabdrop("'.fnamemodify("<args>", ":p").'")'
+
+silent doautocmd USER NETRInit
 
 
 let &cpo = s:save_cpo

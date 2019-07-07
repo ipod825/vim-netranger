@@ -1,3 +1,4 @@
+from netranger import Vim
 from netranger.fs import FSTarget
 
 
@@ -19,8 +20,12 @@ class NETRApi(object):
         self.Hookers[hooker.__name__].append(hooker)
 
     @classmethod
-    def RegisterKeyMaps(self, fn_keys):
-        self.ranger.register_keymap(fn_keys)
+    def map(self, key, fn, check=False):
+        self.ranger.map(key, fn, check=check)
+
+    @classmethod
+    def mapvimfn(self, key, fn):
+        self.map(key, lambda: Vim.eval('function("{}")()'.format(fn)))
 
     @classmethod
     def HasHooker(self, *hooker_names):

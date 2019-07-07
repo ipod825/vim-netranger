@@ -41,3 +41,9 @@ function! netranger#api#mvas(src, dst)
     " dst: full path of the target name, behaves differently from cp only when dst is in $HOME/.netranger/remote (i.e. a remote target)
     return py3eval('NETRApi.mvas("'.a:src.'","'.a:dst.'")')
 endfunction
+
+function! netranger#api#mapvimfn(key, fn)
+    " key: key to be mapped, can be vim's special key, e.g. <esc>
+    " fn: the name of a vim's user defined function
+    return py3eval('NETRApi.mapvimfn("'.a:key.'","'.a:fn.'")')
+endfunction

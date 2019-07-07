@@ -127,6 +127,22 @@ let g:NETRBookmarkSet = ["'"]
 let g:NETRBookmarkGo = ["m"]
 ```
 
+### Advanced Key mappings:
+To achieve operations not provided by netranger, for e.g. duplicate a file under cursor or to remap j to 2j, users can add mapping on NETRInit autocmd:
+```vim
+function! DuplicateNode()
+    call netranger#api#cp(netranger#api#cur_node_path(), netranger#api#cur_node_path().'DUP')
+endfunction
+
+function! NETRInit()
+    call netranger#api#mapvimfn('yp', "DuplicateNode")
+    autocmd Filetype netranger nnoremap <buffer> j 2j
+endfunction
+
+autocmd USER NETRInit call NETRInit()
+```
+For more information about available api, see [Vim Api](#vim-api).
+
 ### Variables
 | Variable      | Description                                               | Default               |
 | :------------ | :--------------                                           | :----------------     |
@@ -165,22 +181,26 @@ alias palette='for i in {0..255}; do echo -e "\e[38;05;${i}m${i}"; done | column
 ```
 
 
-### Writing plugin for vim-netranger
-vim-netranger will expose some api so that users can write (python) code to customize the appearance of vim-netranger. An example plugin is [netranger-diricon](https://github.com/ipod825/netranger-diricon), which shows a small icon indicating whether a directory is expanded or not. A more sophisticated plugin is [netranger-git](https://github.com/ipod825/netranger-git). Generally, in your `plugin/YOURPLUGIN.vim` file, you'll have the following boilplate code:
+### Python Api
+vim-netranger expose both vim and python api. Vim api enable users to customize mapping for simple operations in their vimrc. Python api enable advanced users to write python-based vim plugin to bring even fancier functionalities to vim-netranger. An example plugin is [netranger-diricon](https://github.com/ipod825/netranger-diricon), which shows a small icon indicating whether a directory is expanded or not. A more sophisticated plugin is [netranger-git](https://github.com/ipod825/netranger-git). Generally, in your `plugin/YOURPLUGIN.vim` file, you'll have the following boilplate code:
 ```vim
 let s:pyx = 'python3 '
-exec s:pyx 'from netranger.api import RegisterHooker'
-exec s:pyx 'from netranger.api import NETRApi'
 exec s:pyx 'from netrangerPlugin.netrangerPlugin import NETRPlugin'
+exec s:pyx 'from netranger.api import NETRApi'
 exec s:pyx 'netrPlugin = NETRPlugin(NETRApi)'
-exec s:pyx 'RegisterHooker(netrPlugin.node_highlight_content_l)'
+exec s:pyx 'NETRApi.RegisterHooker(netrPlugin.node_highlight_content_l)'
 ```
-In your `pythonx/netrangerPlugin/netrangerPlugin.py` (you should change netrangerPlugin to a different name), you should implemnt a `NETRPlugin` class (again, change it to proper name), whose constructor has the following signature:
+In your `pythonx/netrangerPlugin/netrangerPlugin.py` (you should change netrangerPlugin to a different name), you should implement a `NETRPlugin` class (again, change it to proper name), whose constructor has the following signature:
 ```py
 def __init__(self, api):
     pass
 ```
-The api argument passed to you give you access to netranger internal. See `api.py` in vim-netranger repo for newest api.  Your can then register some hookers to control the behavior of vim-netrange. Hookers function name must be a valid vim-netranger hooker name.
+The api argument passed to you give you access to netranger internal. See [api.py](https://github.com/ipod825/vim-netranger/blob/master/pythonx/netranger/api.py) in vim-netranger repo for newest api.  Your can then register some hookers to control the behavior of vim-netranger. Hookers' function name must be a valid vim-netranger hooker name.
+
+### Vim Api
+See [api.vim](https://github.com/ipod825/vim-netranger/blob/master/autoload/netranger/api.vim) for newest vim api.
+
+
 
 
 ## Known Issues

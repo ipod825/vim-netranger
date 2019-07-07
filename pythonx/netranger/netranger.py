@@ -668,7 +668,8 @@ class NetRangerBuf(object):
             return
 
         # Avoid rerender if this buffer is not the current vim buffer.
-        if self.vim_buf_handel.number != Vim.current.buffer.number:
+        if self.vim_buf_handel.number != Vim.current.buffer.number\
+                or self.is_editing:
             return
 
         Vim.command("setlocal modifiable")
@@ -976,63 +977,61 @@ class Netranger(object):
 
         Override or skip some default mappings on user demand.
         """
-        self.keymaps = {}
         self.keymap_doc = {}
+        self.key2fn = {}
+        self.visual_key2fn = {}
         skip = []
         for k in Vim.Var('NETRDefaultMapSkip'):
             skip.append(k.lower())
         for fn, (keys, desc) in default.keymap.items():
             user_keys = Vim.Var(fn, [])
             user_keys += [k for k in keys if k not in skip]
-            self.keymaps[fn] = user_keys
-            self.keymap_doc[fn] = (user_keys, desc)
+            self.keymap_doc[fn] = (keys, desc)
+            for key in user_keys:
+                self.key2fn[key] = getattr(self, fn)
+
+        skip = []
+        for k in Vim.Var('NETRDefaultVisualMapSkip'):
+            skip.append(k.lower())
+        for fn, (keys, desc) in default.visual_keymap.items():
+            user_keys = Vim.Var(fn, [])
+            user_keys += [k for k in keys if k not in skip]
+            self.keymap_doc[fn] = (keys, desc)
+            for key in user_keys:
+                self.visual_key2fn[key] = getattr(self, fn)
 
     def map_keys(self):
-        for fn, keys in self.keymaps.items():
-            for k in keys:
-                Vim.command('nnoremap <nowait> <silent> <buffer> {} '
-                            ':exe ":call _NETRInvokeMap({})"<CR>'.format(
-                                k, "'" + fn + "'"))
+        def literal(key):
+            if key[0] == '<':
+                escape_key = '<lt>' + key[1:]
+            else:
+                escape_key = key
+            return escape_key
 
-        for k in self.keymaps['NETRTogglePick']:
-            Vim.command('vnoremap <nowait> <silent> <buffer> {} '
-                        '<Esc>:exe ":call _NETRInvokeMap({})"<CR>'.format(
-                            k, "'NETRTogglePickVisual'"))
+        for key in self.key2fn:
+            Vim.command("nnoremap <nowait> <silent> <buffer> {} "
+                        ':py3 ranger.key2fn[\"{}\"]()<cr>'.format(
+                            key, literal(key)))
+        for key in self.visual_key2fn:
+            Vim.command("vnoremap <nowait> <silent> <buffer> {} "
+                        ':py3 ranger.visual_key2fn[\"{}\"]()<cr>'.format(
+                            key, literal(key)))
 
     def unmap_keys(self):
-        for fn, keys in self.keymaps.items():
-            if fn == 'NETRSave':
+        for key, fn in self.key2fn.items():
+            if fn.__name__ == 'NETRSave':
                 continue
-            for k in keys:
-                Vim.command("nunmap <silent> <buffer> {}".format(k))
+            Vim.command("nunmap <silent> <buffer> {}".format(key))
 
-        for k in self.keymaps['NETRTogglePick']:
-            Vim.command('vunmap <silent> <buffer> {}'.format(k))
+        for key, fn in self.visual_key2fn.items():
+            Vim.command("vunmap <silent> <buffer> {}".format(key))
 
-    def register_keymap(self, keys_fns):
-        mapped_keys = []
-        for keys in self.keymaps.values():
-            mapped_keys += keys
-        mapped_keys = set(mapped_keys)
-
-        for keys, fn in keys_fns:
-            if type(keys) is str:
-                keys = [keys]
-            real_keys = []
-            name = fn.__name__
-            for key in keys:
-                if key in mapped_keys:
-                    Vim.ErrorMsg(
-                        "netranger: Fail to bind key {} to {} because it has "
-                        "been mapped to other function.".format(key, name))
-                    continue
-                real_keys.append(key)
-            self.keymaps[name] = real_keys
-            assert not hasattr(
-                self, name
-            ), "Plugin of vim-netranger should not register a keymap with a "
-            "function name already defined by vim-netranger."
-            setattr(self, name, fn)
+    def map(self, key, fn, check=False):
+        if check and key in self.key2fn:
+            Vim.ErrorMsg("netranger: Fail to bind key {} to {} because it has "
+                         "been mapped to other {}.".format(
+                             key, fn.__name__, self.key2fn[key].__name__))
+        self.key2fn[key] = fn
 
     def on_winenter(self, bufnum):
         # deal with window width changed

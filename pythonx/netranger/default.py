@@ -50,6 +50,11 @@ keymap = {
      "Force refresh netranger buffer to be the same as the file system"),
 }
 
+visual_keymap = {
+    'NETRTogglePickVisual':
+    (['v'], "Pick the visually selected entries for further copy/cut")
+}
+
 color = {
     'cwd': 'yellow',
     'footer': 'darkgreen',
@@ -68,6 +73,7 @@ variables = {
     'NETROpenCmd': 'NETRTabdrop',
     'NETRAutochdir': True,
     'NETRDefaultMapSkip': [],
+    'NETRDefaultVisualMapSkip': [],
     'NETRRootDir': root_dir,
     'NETRBookmarkFile': root_dir + 'bookmark',
     'NETRRifleFile': root_dir + 'rifle.conf',
