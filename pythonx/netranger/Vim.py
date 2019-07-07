@@ -144,7 +144,7 @@ def WarningMsg(msg):
         format(msg.replace('"', '\\"')))
 
 
-def VimEcho(msg):
+def Echo(msg):
     vim.command('unsilent echo "{}"'.format(msg))
 
 
