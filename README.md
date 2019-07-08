@@ -131,11 +131,11 @@ let g:NETRBookmarkGo = ["m"]
 To achieve operations not provided by netranger, for e.g. duplicate a file under cursor or to remap j to 2j, users can add mapping on NETRInit autocmd:
 ```vim
 function! DuplicateNode()
-    call netranger#api#cp(netranger#api#cur_node_path(), netranger#api#cur_node_path().'DUP')
+    call netranger#cp(netranger#cur_node_path(), netranger#cur_node_path().'DUP')
 endfunction
 
 function! NETRInit()
-    call netranger#api#mapvimfn('yp', "DuplicateNode")
+    call netranger#mapvimfn('yp', "DuplicateNode")
     autocmd Filetype netranger nnoremap <buffer> j 2j
 endfunction
 

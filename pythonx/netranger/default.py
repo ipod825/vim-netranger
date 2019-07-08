@@ -28,7 +28,7 @@ keymap = {
                  "Leave edit mode to save changes made in edit mode"),
     'NETRTogglePick': (['v'], "Pick the current entry for further copy/cut"),
     'NETRCut': (['x', 'd'], "Cut all picked entries"),
-    'NETRCopy': (['y'], "Copy the current entry."),
+    'NETRCopy': (['y'], "Copy all picked entries."),
     'NETRCutSingle': (['dd'], "Cut the current entry."),
     'NETRCopySingle': (['yy'], "Copy the current entry."),
     'NETRPaste': (['p'], "Paste all cut/copied entries"),
