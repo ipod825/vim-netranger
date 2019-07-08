@@ -1217,7 +1217,7 @@ class Netranger(object):
 
         fullpath = cur_node.fullpath
         if cur_node.is_DIR:
-            if cur_node.size == '?' or cur_node.size == '':
+            if not os.access(cur_node.fullpath, os.X_OK):
                 Vim.ErrorMsg('Permission Denied: {}'.format(cur_node.name))
                 return
             if use_rifle and rifle_cmd is not None:
@@ -1301,7 +1301,7 @@ class Netranger(object):
         # Manually call on_cursormoved as synchronous on_bufenter block
         # on_cursormoved event handler, which should trigger by the previous
         # line.
-        cur_buf.on_cursormoved()
+        self.on_cursormoved(Vim.current.buffer.number)
 
     def NETRVimCD(self):
         self.cur_buf.VimCD()
