@@ -54,7 +54,7 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 2. Press `h` to jump to the parent directory.
 3. Press `e` to open current file/directory in the current window.
 4. Press `ev` to open current file/directory in a vertical split buffer.
-5. Press `eo` to open current file/directory in a horizontal split buffer.
+5. Press `es` to open current file/directory in a horizontal split buffer.
 6. Press `ep` to open current file/directory in a vertical split buffer in [panel mode](#panel-mode) (in resemblance to NERDTreeToggle command).
 7. Press `t` to open current file/directory in a new tab.
 8. Press `T` to open current file/directory in a new tab while staying in the current window.

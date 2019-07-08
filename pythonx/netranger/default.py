@@ -13,7 +13,7 @@ keymap = {
                       'Same as NETRTabOpen but stay in the current tab.'),
     'NETRBufOpen': (['e'], 'Open file in current window.'),
     'NETRBufVSplitOpen': (['ev'], 'Open file in new vertical split buffer.'),
-    'NETRBufHSplitOpen': (['eo'], 'Open file in new horizontal split buffer.'),
+    'NETRBufHSplitOpen': (['es'], 'Open file in new horizontal split buffer.'),
     'NETRBufPanelOpen':
     (['ep'], 'Open file in new vertical split buffer (panel mode).'),
     'NETRAskOpen': (['a'], 'Open file with rifle. Ask for command'),
