@@ -31,7 +31,7 @@ augroup NETRANGER
     autocmd!
     autocmd BufEnter * exec s:pyx 'ranger.on_bufenter('.expand("<abuf>").')'
     autocmd WinEnter * exec s:pyx 'ranger.on_winenter('.expand("<abuf>").')'
-    autocmd CursorMoved * exec s:pyx 'ranger.on_cursormoved('.expand("<abuf>").')'
+    autocmd Filetype netranger autocmd CursorMoved <buffer> exec s:pyx 'ranger.on_cursormoved('.expand("<abuf>").')'
 augroup END
 
 func! _NETROnCursorMovedPost(bufnum, timerid)

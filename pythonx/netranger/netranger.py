@@ -7,8 +7,6 @@ import re
 from collections import defaultdict
 from sys import platform
 
-from netranger.thirdparty.wcwidth.wcwidth import wcswidth
-
 from netranger import Vim, default
 from netranger.api import NETRApi
 from netranger.colortbl import colorhexstr2ind, colorname2ind
@@ -17,6 +15,7 @@ from netranger.enum import Enum
 from netranger.fs import FSTarget, LocalFS, Rclone
 from netranger.rifle import Rifle
 from netranger.shell import Shell
+from netranger.thirdparty.wcwidth.wcwidth import wcswidth
 from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, SortUI
 
 if platform == "win32":
@@ -1167,7 +1166,8 @@ class Netranger(object):
 
         @param bufnum: current buffer number
         """
-        if bufnum in self.bufs and not self.bufs[bufnum].is_editing:
+        # if bufnum in self.bufs and not self.bufs[bufnum].is_editing:
+        if not self.bufs[bufnum].is_editing:
             self.bufs[bufnum].on_cursormoved()
             Vim.Timer(Vim.Var('NETRRedrawDelay'), '_NETROnCursorMovedPost',
                       self.on_cursormoved_post, bufnum)
