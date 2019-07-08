@@ -7,6 +7,8 @@ import re
 from collections import defaultdict
 from sys import platform
 
+from wcwidth import wcswidth
+
 from netranger import Vim, default
 from netranger.api import NETRApi
 from netranger.colortbl import colorhexstr2ind, colorname2ind
@@ -16,9 +18,6 @@ from netranger.fs import FSTarget, LocalFS, Rclone
 from netranger.rifle import Rifle
 from netranger.shell import Shell
 from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, SortUI
-
-# from wcwidth import wcswidth
-
 
 if platform == "win32":
     from os import getenv
@@ -147,16 +146,14 @@ class EntryNode(Node):
             left_extra_len = 0
             for hooker in NETRApi.Hookers['node_highlight_content_l']:
                 l_s, l_h = hooker(self)
-                # left_extra_len += wcswidth(l_s)
-                left_extra_len += len(l_s)
+                left_extra_len += wcswidth(l_s)
                 left_extra += c256(l_s, l_h, False)
 
             right_extra = ''
             right_extra_len = 0
             for hooker in NETRApi.Hookers['node_highlight_content_r']:
                 r_s, r_h = hooker(self)
-                # right_extra_len += wcswidth(r_s)
-                right_extra_len += len(r_s)
+                right_extra_len += wcswidth(r_s)
                 right_extra += c256(r_s, r_h, False)
 
             # Calling c and concatenation multiple times is rather expensive.
