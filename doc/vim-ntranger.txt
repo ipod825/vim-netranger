@@ -270,10 +270,10 @@ FUNCTIONS                                *vim-netranger-functions*
 
 
 netranger#cur_node_name()
-		The result is a string, which is the basename of the current node.
+        The result is a string, which is the basename of the current node.
 
 netranger#cur_node_path()
-		The result is a string, which is the full path of the current node.
+        The result is a string, which is the full path of the current node.
 
 netranger#render()
         Redraw the highlight of all nodes in the current buffer.
@@ -309,7 +309,6 @@ Customization                                  *vim-netranger-customization*
 -------------------------------------------------------------------------------
 MAPPING                                 *vim-netranger-customization-mapping*
 
-### Key mappings:
 Change the default mappings by assigning a list to each mapping in your `vimrc`.
 Assign a list to |g:NETRDefaultMapSkip| to ignore default mappings. For example,
 if you want to switch the mappings for |NETRBookmarkSet|, |NETRBookmarkGo|,
@@ -337,14 +336,6 @@ See |vim-netranger-functions| for more information.
 -------------------------------------------------------------------------------
 OPTION                                  *vim-netranger-customization-option*
 
-
-						*'updatetime'* *'ut'*
-'updatetime' 'ut'	number	(default 4000)
-			global
-	If this many milliseconds nothing is typed the swap file will be
-	written to disk (see |crash-recovery|).  Also used for the
-	|CursorHold| autocommand event.
-
                                         *g:NETRIgnore*
 g:NETRIgnore            list (default [])
     File patterns (bash wild card) to ignore (not displaying)
@@ -371,7 +362,7 @@ g:NETRemoteRoots        dictionary (default {})
     directory instead of the root directory for a rclone sftp remote. For
     example: >
         let g:NETRemoteRoots = {'myftp': '/home/MYUSERNAME'}
-
+<
                                         *g:NETRAutochdir*
 g:NETRAutochdir         boolean (default on)
     Whether to change vim's pwd when entering a new directory. Not compatible
@@ -434,9 +425,10 @@ For example: >
     let g:NETRColors = {'pick': 'maroon', 'cut': 95, 'dir': '#5f5faf'}
 
 To view the color in terminal, add the following snippet to your shell rn and
-run palette to see directly how the colors look in your terminal:
+run palette to see directly how the colors look in your terminal: >
 
-alias palette='for i in {0..255}; do echo -e "\e[38;05;${i}m${i}"; done | column -c 180 -s "  "; echo -e "\e[m"'
+    alias palette='for i in {0..255}; do\
+    echo -e "\e[38;05;${i}m${i}"; done | column -c 180 -s "  "; echo -e "\e[m"'
 
 -------------------------------------------------------------------------------
 API                                     *vim-netranger-api*
