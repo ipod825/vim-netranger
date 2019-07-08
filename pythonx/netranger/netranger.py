@@ -317,6 +317,7 @@ class NetRangerBuf(object):
         self.fs = fs
         self.num_fs_op = 0
         self.pending_on_cursormoved_post = 0
+        self.last_on_curosormoved_lineNo = -1
 
         self.content_outdated = False
         self.highlight_outdated_nodes = set()
@@ -669,6 +670,13 @@ class NetRangerBuf(object):
         if self.pending_on_cursormoved_post > 0:
             return
 
+        # The line self.vim_set_line... below triggers on_cursormoved event,
+        # which in term triggers on_cursormoved_post. This test is to avoid
+        # such call loop.
+        if self.clineNo == self.last_on_curosormoved_lineNo:
+            return
+        self.last_on_curosormoved_lineNo = self.clineNo
+
         # Avoid rerender if this buffer is not the current vim buffer.
         if self.vim_buf_handel.number != Vim.current.buffer.number\
                 or self.is_editing:
@@ -729,8 +737,7 @@ class NetRangerBuf(object):
         # This is a work-abound for the fact that
         # nVim.current.buffer[i]=content
         # moves the cursor
-        Vim.command('call setline({},"{}")'.format(
-            i + 1, self.nodes[i].highlight_content))
+        Vim.command('call setline({},"{}")'.format(i + 1, content))
 
     def refresh_lines_hi(self, lineNos):
         Vim.command('setlocal modifiable')

@@ -42,6 +42,11 @@ else:
         pyfn(*args)
 
 
+def log(*msg):
+    with open('/tmp/netrlog', 'a') as f:
+        f.write(' '.join([str(m) for m in msg]) + '\n')
+
+
 def decode_if_bytes(obj, mode=True):
     """Decode obj if it is bytes."""
     if mode is True:
