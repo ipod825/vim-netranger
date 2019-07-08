@@ -40,7 +40,7 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 
 ### Remote storage
 ```vim
-;help vim-netranger-rclone
+:help vim-netranger-rclone
 ```
 
 
