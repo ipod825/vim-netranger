@@ -1,0 +1,470 @@
+*vim-netranger.txt* A ranger-like system/cloud storage explorer for Vim.
+
+ __      _______ __  __   _   _      _
+ \ \    / /_   _|  \/  | | \ | |    | |
+  \ \  / /  | | | \  / | |  \| | ___| |_ _ __ __ _ _ __   __ _  ___ _ __
+   \ \/ /   | | | |\/| | | . ` |/ _ \ __| '__/ _` | '_ \ / _` |/ _ \ '__|
+    \  /   _| |_| |  | | | |\  |  __/ |_| | | (_| | | | | (_| |  __/ |
+     \/   |_____|_|  |_| |_| \_|\___|\__|_|  \__,_|_| |_|\__, |\___|_|
+                                                          __/ |
+                                                         |___/
+
+CONTENTS                                *vim-netranger-help-contents*
+
+Introduction   |vim-netranger-introduction|
+Compatibility |vim-netranger-compatibility|
+Usage          |vim-netranger-usage|
+  Open buffer    |vim-netranger-open-buffers|
+  Key mappings   |vim-netranger-key-mappings|
+  User interface |vim-netranger-user-interface|
+  Edit mode      |vim-netranger-edit-mode|
+  Panel mode     |vim-netranger-panel-mode|
+  Rifle          |vim-netranger-rifle|
+  Rclone         |vim-netranger-rclone|
+  Commands       |vim-netranger-commands|
+  Functions      |vim-netranger-functions|
+Customization  |vim-netranger-customization|
+  Mapping        |vim-netranger-customization-mapping|
+  Option         |vim-netranger-customization-option|
+  Colors         |vim-netrange-colors|
+  Api            |vim-netranger-api|
+About         |vim-netranger-about|
+
+===============================================================================
+Introduction                                   *vim-netranger*
+
+Vim-netranger is a ranger-like system/cloud storage explorer for Vim/Neovim.
+It brings together the good-looking UI in ranger, native key-binding and
+editing power from vim and the ability to manipulate cloud files from rclone.
+
+===============================================================================
+Compatibility                                  *vim-netranger-compatibility*
+
+By default, vim-netranger disables vim's default directory browser netrw.
+Other file explorer plugins such as nerdtree might not be compatible with
+vim-netranger.  You must disable them to make vim-netranger work.
+
+
+===============================================================================
+USAGE                                   *vim-netranger-usage*
+
+-------------------------------------------------------------------------------
+OPEN BUFFERS                            *vim-netranger-open-buffers*
+
+To edit a directory, you can:
+1. vim a directory
+2. Inside vim, use edit commands (e.g. vsplit, tabedit) to edit a directory.
+3. Each vim-netranger buffer, like vim's buffer, is a view of the underlying
+   directory. Hence, you can open multiple buffers for the same directory.
+   Content of each buffer gets updated when the directory is modified
+   elsewhere.
+
+-------------------------------------------------------------------------------
+KEY MAPPINGS                            *vim-netranger-key-mappings*
+
+Vim-netranger provides default mappings, most of which follow vim and ranger's
+convention.
+
+                                        *NETROpen* *g:NETROpen*
+l,<right>  Change directory/open file under cursor. If the file can be open by
+           an application specified by rifle. It defaults to open the file by
+           rifle. Otherwise, it defaults to open the file by |g:NETROpenCmd|,
+           which defaults to |NETRTabdrop|
+           See |vim-netranger-rifle|
+
+                                        *NETRParentDir* *g:NETRParentDir*
+h,<left>   Change to parent directory.
+
+                                        *NETRTabOpen* *g:NETRTabOpen*
+t          Open file in new tab. Skip for directory.
+
+                                        *NETRTabBgOpen* *g:NETRTabBgOpen*
+T          Same as NETRTabOpen but stay in the current tab.
+
+                                        *NETRBufOpen* *g:NETRBufOpen*
+e          Open file in current window.
+
+                                        *NETRBufVSplitOpen* *g:NETRBufVSplitOpen*
+ev         Open file in new vertical split buffer.
+
+                                        *NETRBufHSplitOpen* *g:NETRBufHSplitOpen*
+es         Open file in new horizontal split buffer.
+
+                                        *NETRBufPanelOpen* *g:NETRBufPanelOpen*
+ep         Open file in new vertical split buffer.
+           See |vim-netranger-panel-mode|.
+
+                                        *NETRAskOpen* *g:NETRAskOpen*
+a          Open file with rifle. Ask for command
+           See |vim-netranger-rifle|.
+
+                                        *NETRToggleExpand* *g:NETRToggleExpand*
+za         Toggle expand current directory under cursor. See |za|.
+
+                                        *NETRVimCD* *g:NETRVimCD*
+<cr>       Changing vim's pwd to the directory of the entry under cursor
+
+                                        *NETRNew* *g:NETRNew*
+o          Create new directory/file, pending for ui selection.
+           See |vim-netranger-user-interface|
+
+                                        *NETREdit* *g:NETREdit*
+i          Enter edit mode to rename file/directory names.
+           See |vim-netranger-edit-mode|.
+
+                                        *NETRSave* *g:NETRSave*
+<esc>      Leave edit mode to save changes made in edit mode
+           See |vim-netranger-edit-mode|.
+
+                                        *NETRTogglePick* *g:NETRTogglePick*
+v          Pick the current entry for further copy/cut.
+
+                                        *NETRTogglePickVisual* *g:NETRTogglePickVisual*
+v          visual map. Pick the visually selected entries for further copy/cut.
+
+                                        *NETRCut* *g:NETRCut*
+x,d        Cut all picked entries.
+
+                                        *NETRCopy* *g:NETRCopy*
+y          Copy all picked entries.
+
+                                        *NETRCutSingle* *g:NETRCutSingle*
+dd         Cut the current entry.
+
+                                        *NETRCopySingle* *g:NETRCopySingle*
+yy         Copy the current entry.
+
+                                        *NETRPaste* *g:NETRPaste*
+p          Paste all cut/copied entries
+
+                                        *NETRCancelPickCutCopy* *g:NETRCancelPickCutCopy*
+u          Cancel all selection/cut/copy
+
+                                        *NETRDelete* *g:NETRDelete*
+D          Delete all picked entries.
+
+                                        *NETRDeleteSingle* *g:NETRDeleteSingle*
+DD         Delete the current entry.
+
+                                        *NETRForceDelete* *g:NETRForceDelete*
+X          Force delete all picked entries.
+
+                                        *NETRForceDeleteSingle* *g:NETRForceDeleteSingle*
+XX         Force delete the current entry.
+
+                                        *NETRToggleShowHidden* *g:NETRToggleShowHidden*
+zh         Toggle Show hidden files.
+
+                                        *NETRBookmarkSet* *g:NETRBookmarkSet*
+m          Jump to bookmark, pending for ui selection.
+           See |vim-netranger-user-interface|.
+
+                                        *NETRBookmarkGo* *g:NETRBookmarkGo*
+'          Bookmark current directory, pending for ui selection
+           See |vim-netranger-user-interface|.
+
+                                        *NETRBookmarkEdit* *g:NETRBookmarkEdit*
+em         Open bookmark file to edit.
+
+                                        *NETRSort* *g:NETRSort*
+S          Sort contnet in current directory, pending for ui selection
+           See |vim-netranger-user-interface|.
+
+                                        *NETRHelp* *g:NETRHelp*
+?          Show current mappings.
+
+                                        *NETRefresh* *g:NETRefresh*
+r          Force refresh netranger buffer to be the same as the file system.
+           This is only needed when your file system is not really a local
+           file system such that vim-netranger fails to detect change on file
+           system.
+
+-------------------------------------------------------------------------------
+USER INTERFACE                          *vim-netranger-user-interface*
+
+Vim-netranger avoids unnatrural and hard to rembmer mappings by adding a user
+interface. Some mappings like |NETRSort| shows up a buffer listing options for
+user to select. You can press a single characer to select the action to
+perform. Alternatively, you can move you cursor to an action and press enter
+(<cr>) to perform the action. If you close the buffer without pressing any
+keys, no action will be triggered.
+
+-------------------------------------------------------------------------------
+EDIT MODE                               *vim-netranger-edit-mode*
+
+On |NETREdit| mapping, the current buffer enters edit mode. You can  modify any
+file/directory name in this mode just like editing a regular file in vim. Note
+that in edit mode, you can't delete file by deleting lines and neither can you
+add files. To save changes in edit mode, press |NETRSave| mapping.
+
+-------------------------------------------------------------------------------
+PANEL MODE                              *vim-netranger-panel-mode*
+
+nerdtree enables users to have a single panel on the left side that always open
+files on the right side when pressing enter. vim-netranger provides a similar
+functionality. In a vim-netranger buffer, press `ep` to open the file under
+cursor on the right. The size of the right panel can be customized by
+|g:NETRPanelSize|, which is the ratio between the actual size of the right
+panel to half of the screen width (e.g. setting it to 1 you'll get a equal
+split.)
+
+-------------------------------------------------------------------------------
+RIFLE                                   *vim-netranger-rifle*
+
+Rifle is a config file ranger used to open files with external program.
+Vim-netranger implements it with similar config syntax.  If you don't have a
+rifle.config file in |g:NETRRootDir|, vim-netranger will copy a default one to
+that directory. You can simply modify the default `rifle.config` to serve your
+need. The first match (if any) in rifle.config is always adopted on |NETROpen|.
+To select alternative program or vim, use |NETRAskOpen| mapping.
+
+-------------------------------------------------------------------------------
+RCLONE                                  *vim-netranger-rclone*
+
+To view remote (cloud) files, you need to have rclone (https://rclone.org)
+ installed (vim-netranger install it on first |NETRemoteList| command)
+ and configured (run rclone config in terminal).
+
+Vim-netranger caches each rclone remote in |g:NETRemoteCacheDir|. The
+|NETRemoteList| command opens this directory for you to browse the remotes.
+Each remote is represented as a subdirectory under |g:NETRemoteCacheDir|. You
+can navigate to any remote directory just as local directories. Files are
+downloaded on demand to save bandwidth.
+
+Every time you enter a remote directory, vim-netranger does two things at the
+background. If a file/directory exists at remote, but not at local,
+vim-netranger put a placeholder (by touch/mkdir) at local side. On the other
+hand, if a file/directory exists at local but not at remote, vim-netranger
+uploads the file/directory automatically. For the case that both remote and
+local contains the same file, vim-netranger does not do anything automatically.
+Instead, you need to run |NETRemotePush| or |NETRemotePull| to overwrite either
+the remote or local manually.
+
+By default, rclone list content of each remote in the root directory of the
+remote. To map some directory as the root in the cacheed directory, see
+|g:NETRemoteRoots|.
+
+-------------------------------------------------------------------------------
+COMMANDS                                *vim-netranger-commands*
+
+                                        *NETRemoteList*
+:NETRemoteList      Open |g:NETRemoteCacheDir|. If rclone is not installed,
+                    install it first.
+
+                                        *NETRemotePull*
+:NETRemotePull      Sync the current (cached) directory recursively with the
+                    corresponding remote directory. Overwriting the local files
+                    if file contents differ.
+
+                                        *NETRemotePush*
+:NETRemotePush      Sync the current (cached) directory recursively with the
+                    corresponding remote directory. Overwriting the remote
+                    files if file contents differ.
+
+                                        *NETRTabdrop*
+:NETRTabdrop [args] Opens the arguments in a new vim tab, if it is already
+                    opened in another tab, jump to that tab.
+
+-------------------------------------------------------------------------------
+FUNCTIONS                                *vim-netranger-functions*
+
+
+netranger#cur_node_name()
+		The result is a string, which is the basename of the current node.
+
+netranger#cur_node_path()
+		The result is a string, which is the full path of the current node.
+
+netranger#render()
+        Redraw the highlight of all nodes in the current buffer.
+
+netranger#cp({src}, {dst})
+        Copy path {src} to the directory path {dst}.
+
+netranger#mv(src, dst)
+        Move path {src} to the directory path {dst}.
+
+netranger#rm(src)
+        Remove path {src}
+
+netranger#cpas(src, dst)
+        Copy path {src} as the path {dst}. Behaves only differently from
+        |netranger#cp|  when {dst} is in under |NETRemoteCacheDir| (i.e. a remote
+        target).
+
+netranger#mvas(src, dst)
+        Move path {src} as the path {dst}. Behaves only differently from
+        |netranger#mv|  when {dst} is in under |NETRemoteCacheDir| (i.e. a remote
+        target).
+
+netranger#mapvimfn(key, fn)
+        Add a mapping {key} to perform a vim (or user definied) function with
+        name {fn} in a vim-netranger buffer. This function only takes effect
+        called on NETRInit autocmd. See |vim-netranger-customization-mapping|
+        for an example.
+
+===============================================================================
+Customization                                  *vim-netranger-customization*
+
+-------------------------------------------------------------------------------
+MAPPING                                 *vim-netranger-customization-mapping*
+
+### Key mappings:
+Change the default mappings by assigning a list to each mapping in your `vimrc`.
+Assign a list to |g:NETRDefaultMapSkip| to ignore default mappings. For example,
+if you want to switch the mappings for |NETRBookmarkSet|, |NETRBookmarkGo|,
+you need to put the following in your vimrc: >
+    let g:NETRDefaultMapSkip = ['m',"'"]
+    let g:NETRBookmarkSet = ["'"]
+    let g:NETRBookmarkGo = ["m"]
+
+To achieve operations not provided by vim-netranger, for e.g. duplicate a file
+under cursor or to remap j to 2j, users can add mapping on NETRInit autocmd: >
+    function! DuplicateNode()
+        call netranger#cp(netranger#cur_node_path(),\
+        netranger#cur_node_path().'DUP')
+    endfunction
+
+    function! NETRInit()
+        call netranger#mapvimfn('yp', "DuplicateNode")
+        autocmd Filetype netranger nnoremap <buffer> j 2j
+    endfunction
+
+    autocmd USER NETRInit call NETRInit()
+
+See |vim-netranger-functions| for more information.
+
+-------------------------------------------------------------------------------
+OPTION                                  *vim-netranger-customization-option*
+
+
+						*'updatetime'* *'ut'*
+'updatetime' 'ut'	number	(default 4000)
+			global
+	If this many milliseconds nothing is typed the swap file will be
+	written to disk (see |crash-recovery|).  Also used for the
+	|CursorHold| autocommand event.
+
+                                        *g:NETRIgnore*
+g:NETRIgnore            list (default [])
+    File patterns (bash wild card) to ignore (not displaying)
+
+                                        *g:NETRRootDir*
+g:NETRRootDir           string (default "$HOME/.netranger/")
+    Directory for storing remote cache and bookmark file
+
+                                        *g:NETRRifleFile*
+g:NETRRifleFile         string (default "$HOME/.netranger/rifle.conf")
+    Path to the rifle setting file. See |vim-netranger-rifle|.
+
+                                        *g:NETRBookmarkFile*
+g:NETRBookmarkFile      string (default "$HOME/.netranger/bookmark")
+    Path to the bookmark file.
+
+                                        *g:NETRemoteCacheDir*
+g:NETRemoteCacheDir     string (default "$HOME/.netranger/remote")
+    Path to the remote cache directory. See |vim-netranger-rclone| for more
+    information.
+
+g:NETRemoteRoots        dictionary (default {})
+    Mapping from remote to a directory name. This enables one to open the home
+    directory instead of the root directory for a rclone sftp remote. For
+    example: >
+        let g:NETRemoteRoots = {'myftp': '/home/MYUSERNAME'}
+
+                                        *g:NETRAutochdir*
+g:NETRAutochdir         boolean (default on)
+    Whether to change vim's pwd when entering a new directory. Not compatible
+    with vim's `autochdir`. See |netrw-incompatible|.
+
+                                        *g:NETROpenCmd*
+g:NETROpenCmd           string (default "NETROpen")
+    Vim command to open files on |NETROpen| (when rifle is not available).
+
+                                        *g:NETRDefaultMapSkip*
+g:NETRDefaultMapSkip    list (default [])
+    Mapping keys to skip for default mapping.
+    See |vim-netranger-customization-mapping| for more information.
+
+g:NETRDefaultVisualMapSkip  list(default [])
+    Visual keys to skip for default mapping (this currently include only 'v'
+    for |NETRTogglePickVisual|). See |vim-netranger-customization-mapping| for
+    information.
+
+                                        *g:NETRSplitOrientation*
+g:NETRSplitOrientation  string (default "belowright")
+    Split orientation when a split buffer is created
+
+                                        *g:NETRColors*
+g:NETRColors            dict (default {})
+    Colors for nodes in vim-netranger buffer. See |vim-netranger-colors|.
+
+                                        *g:NETRPanelSize*
+g:NETRPanelSize         number (default 1.5)
+    Controls the size of split in |vim-netranger-panel-mode|.
+
+                                        *g:NETRNETRLazyLoadStat*
+g:NETRNETRLazyLoadStat  boolean (default off)
+    Whether to load stat information lazily for each node. Set this to true if
+    you find loading a vim-netranger buffer is very slow (due to loading stat
+    information). Usually this is not necessary unless your file system is not
+    an actual local file system (where each stat call involves an rpc).
+
+-------------------------------------------------------------------------------
+COLORS                                  *vim-netranger-colors*
+
+Node colors in a vim-netrange buffer can be customized by setting |g:NETRColors|
+to a dictionary. Possible keys of |g:NETRColors| are:
+'cwd':        the first line
+'footer':     the last line
+'pick':       node color after triggering |NETRTogglePick|
+'copy':       node color after triggering |NETRCopySingle|
+'cut':        node color after triggering |NETRDeleteSingle|
+'exe':        executable file node color
+'dir':        directory node color
+'link':       link node color
+'brokenlink': link node color
+'file':       file node color
+
+Possible values of |g:NETRColors| can be either string or integer between 0~255.
+For gui (e.g. gvim, oni, VimR), the value should be of the form #rrggbb
+corresponding to the 256 colors, for more information, please refer to
+https://jonasjacek.github.io/colors/.
+For example: >
+    let g:NETRColors = {'pick': 'maroon', 'cut': 95, 'dir': '#5f5faf'}
+
+To view the color in terminal, add the following snippet to your shell rn and
+run palette to see directly how the colors look in your terminal:
+
+alias palette='for i in {0..255}; do echo -e "\e[38;05;${i}m${i}"; done | column -c 180 -s "  "; echo -e "\e[m"'
+
+-------------------------------------------------------------------------------
+API                                     *vim-netranger-api*
+
+vim-netranger expose both vim and python api. Vim api are just vim functions
+that enable users to customize mapping for simple operations in their vimrc
+(see |vim-netranger-functions|). Python api enable advanced users to write
+python-based vim plugin to bring even fancier functionalities to
+vim-netranger. An example plugin is netranger-diricon
+(https://github.com/ipod825/netranger-diricon), which shows a small icon
+indicating whether a directory is expanded or not. A more sophisticated plugin
+is netranger-git (https://github.com/ipod825/netranger-git). Generally, in
+your plugin/YOURPLUGIN.vim file, you'll have the following boilplate code: >
+    let s:pyx = 'python3 '
+    exec s:pyx 'from netrangerPlugin.netrangerPlugin import NETRPlugin'
+    exec s:pyx 'from netranger.api import NETRApi'
+    exec s:pyx 'netrPlugin = NETRPlugin(NETRApi)'
+    exec s:pyx 'NETRApi.RegisterHooker(netrPlugin.node_highlight_content_l)'
+
+In your pythonx/netrangerPlugin/netrangerPlugin.py (you should change
+netrangerPlugin to a different name), you should implement a NETRPlugin class
+(again, change it to proper name), whose constructor has the following
+signature: >
+    def __init__(self, api):
+        pass
+
+The api argument passed to you give you access to netranger internal. Your can
+then register some hookers to control the behavior of vim-netranger.
+
+
+vim:tw=78:et:ft=help:norl:

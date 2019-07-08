@@ -36,6 +36,10 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 
 ## Usage
 
+```vim
+:help vim-netranger-usage
+```
+
 ### Opening a `vim-netranger` buffer
 1. vim a directory
 2. Inside vim, use edit commands (e.g. `vsplit`, `edit`, `tabedit`) to edit a directory. Just like `netrw`.
@@ -118,96 +122,31 @@ __Note__ Due to a bug (see known issue), remote operations haven't been fully te
 
 
 ## Customization
-### Key mappings:
-1. In any `vim-netranger`, pressing `?` shows a list of mapping. You can change these default mapping by assigning a list to each variable in your `vimrc`.
-2. Assign a list to `g:NETRDefaultMapSkip` to ignore default mappings. For example, if you want to switch the mappings for `g:NETRBookmarkSet`, `g:NETRBookmarkGo`, you'll put the following in your `.vimrc`:
 ```vim
-let g:NETRDefaultMapSkip = ['m',"'"]
-let g:NETRBookmarkSet = ["'"]
-let g:NETRBookmarkGo = ["m"]
+:help vim-netranger-customization-mapping
+:help vim-netranger-customization-option
 ```
 
 ### Advanced Key mappings:
-To achieve operations not provided by netranger, for e.g. duplicate a file under cursor or to remap j to 2j, users can add mapping on NETRInit autocmd:
 ```vim
-function! DuplicateNode()
-    call netranger#cp(netranger#cur_node_path(), netranger#cur_node_path().'DUP')
-endfunction
-
-function! NETRInit()
-    call netranger#mapvimfn('yp', "DuplicateNode")
-    autocmd Filetype netranger nnoremap <buffer> j 2j
-endfunction
-
-autocmd USER NETRInit call NETRInit()
+:help vim-netranger-functions
 ```
-For more information about available api, see [Vim Api](#vim-api).
-
-### Variables
-| Variable      | Description                                               | Default               |
-| :------------ | :--------------                                           | :----------------     |
-| g:NETRIgnore  | File patterns (bash wild card) to ignore (not displaying) | []                    |
-| g:NETRRootDir | Directory for storing remote cache and bookmark file      | ['$HOME/.netranger/'] |
-| g:NETRAutochdir | Whether to change vim's pwd when enter a new directory. Not compatible with vim's `autochdir`. | `v:true` |
-| g:NETRRifleFile| Path to the rifle setting file. | ['$HOME/.netranger/rifle.conf']|
-| g:NETRBookmarkFile| Path to the bookmark file. | ['$HOME/.netranger/bookmark']|
-| g:NETROpenCmd | Vim command to open files from netranger buffer           | 'NETRTabdrop'             |
-| g:NETRSplitOrientation | Split orientation when a split buffer is created | 'belowright'          |
-| g:NETRColors  | Colors for nodes in vim-netranger buffer. See below.      | {}                    |
-| g:NETRPanelSize| Controls the size of split in [panel mode](#panel-mode). | 1.5                   |
-| g:NETRNETRLazyLoadStat| Whether to load stat information lazily for each node. Set this to true if you find loading a vim-netranger buffer is very slow (due to loading stat information).  | v:false                   |
 
 ### Colors
-1. Set `g:NETRColors` to a dictionary to overwrite the default colors. Possible keys are:
-```
-'cwd': the first line
-'footer': the last line
-'pick': node color after pressing `v`
-'copy': node color after pressing `yy`
-'cut': node color after pressing `dd`
-'exe': executable file node color
-'dir': directory node color
-'link': link node color
-'brokenlink': link node color
-'file': file node color
-```
-2. Values can be either string or integer between 0~255. For gui (e.g. gvim, oni, VimR), the value should be of the form `#rrggbb` corresponding to the 256 colors, for more information, please refer to [this page](https://jonasjacek.github.io/colors/). For example, in your `.vimrc`:
-```
-let g:NETRColors = {'pick': 'maroon', 'cut': 95, 'dir': '#5f5faf'}
-```
-3. Or you could add the following to your shell rc and run `palette` to see directly how the colors look in your terminal:
-```sh
-alias palette='for i in {0..255}; do echo -e "\e[38;05;${i}m${i}"; done | column -c 180 -s "  "; echo -e "\e[m"'
+```vim
+:help vim-netrange-colors
 ```
 
 
 ### Python Api
-vim-netranger expose both vim and python api. Vim api enable users to customize mapping for simple operations in their vimrc. Python api enable advanced users to write python-based vim plugin to bring even fancier functionalities to vim-netranger. An example plugin is [netranger-diricon](https://github.com/ipod825/netranger-diricon), which shows a small icon indicating whether a directory is expanded or not. A more sophisticated plugin is [netranger-git](https://github.com/ipod825/netranger-git). Generally, in your `plugin/YOURPLUGIN.vim` file, you'll have the following boilplate code:
 ```vim
-let s:pyx = 'python3 '
-exec s:pyx 'from netrangerPlugin.netrangerPlugin import NETRPlugin'
-exec s:pyx 'from netranger.api import NETRApi'
-exec s:pyx 'netrPlugin = NETRPlugin(NETRApi)'
-exec s:pyx 'NETRApi.RegisterHooker(netrPlugin.node_highlight_content_l)'
+:help vim-netranger-api
 ```
-In your `pythonx/netrangerPlugin/netrangerPlugin.py` (you should change netrangerPlugin to a different name), you should implement a `NETRPlugin` class (again, change it to proper name), whose constructor has the following signature:
-```py
-def __init__(self, api):
-    pass
-```
-The api argument passed to you give you access to netranger internal. See [api.py](https://github.com/ipod825/vim-netranger/blob/master/pythonx/netranger/api.py) in vim-netranger repo for newest api.  Your can then register some hookers to control the behavior of vim-netranger. Hookers' function name must be a valid vim-netranger hooker name.
-
-### Vim Api
-See [api.vim](https://github.com/ipod825/vim-netranger/blob/master/autoload/netranger/api.vim) for newest vim api.
-
-
-
 
 ## Known Issues
 1. In neovim, when opening two vim buffers for the same directory, there is a delay for moving cursor up and down. This seems to be an nvim api [issue](https://github.com/neovim/neovim/issues/7756)
 2. When remote directory is empty, it will not be copied to remote. It is an rclone [bug] (https://github.com/ncw/rclone/issues/1837), which is expected to be fixed in next release.
 3. In some cases when `listchars` is set, `vim-netranger` buffer does not display correctly. For possible solutions, see the comment in this [issue](https://github.com/ipod825/vim-netranger/issues/14).
-
 
 
 
