@@ -30,7 +30,7 @@ exec s:pyx "NETRApi.init(ranger)"
 augroup NETRANGER
     autocmd!
     autocmd BufEnter * exec s:pyx 'ranger.on_bufenter('.expand("<abuf>").')'
-    autocmd WinEnter * exec s:pyx 'ranger.on_winenter('.expand("<abuf>").')'
+    autocmd Filetype netranger autocmd WinEnter * exec s:pyx 'ranger.on_winenter('.expand("<abuf>").')'
     autocmd Filetype netranger autocmd CursorMoved <buffer> exec s:pyx 'ranger.on_cursormoved('.expand("<abuf>").')'
 augroup END
 
