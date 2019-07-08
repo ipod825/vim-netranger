@@ -7,7 +7,7 @@ import re
 from collections import defaultdict
 from sys import platform
 
-from wcwidth import wcswidth
+from netranger.thirdparty.wcwidth.wcwidth import wcswidth
 
 from netranger import Vim, default
 from netranger.api import NETRApi

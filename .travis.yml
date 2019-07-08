@@ -12,7 +12,6 @@ install:
     - curl -o $BIN/nvim -L https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
     - chmod u+x $BIN/nvim
     - pip install pynvim
-    - pip install wcswidth  # not sure why travis failed to import wcswidth
     - curl -o $BIN/rclone.zip https://downloads.rclone.org/v1.48.0/rclone-v1.48.0-linux-amd64.zip
     - pushd $BIN
     - unzip rclone.zip
