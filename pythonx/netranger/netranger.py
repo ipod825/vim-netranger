@@ -792,9 +792,13 @@ class NetRangerBuf(object):
             endInd = self.next_lesseq_level_ind(self.clineNo)
             self.nodes = self.nodes[:self.clineNo + 1] + self.nodes[endInd:]
         else:
+            try:
+                newNodes = self.create_nodes(self.cur_node.fullpath,
+                                             cur_node.level + 1)
+            except PermissionError:
+                Vim.ErrorMsg('Permission Denied: {}'.format(cur_node.name))
+                return
             self.expanded_nodes.add(cur_node)
-            newNodes = self.create_nodes(self.cur_node.fullpath,
-                                         cur_node.level + 1)
             if len(newNodes) > 0:
                 self.nodes = self.nodes[:self.clineNo +
                                         1] + newNodes + self.nodes[

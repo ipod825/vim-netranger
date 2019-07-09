@@ -119,10 +119,13 @@ class AskUI(UI):
 
 
 def size(path):
-    if os.path.isdir(path):
-        return str(len(os.listdir(path))).rjust(18)
-    else:
-        return str(os.stat(path).st_size).rjust(18)
+    try:
+        if os.path.isdir(path):
+            return str(len(os.listdir(path))).rjust(18)
+        else:
+            return str(os.stat(path).st_size).rjust(18)
+    except PermissionError:
+        return -1
 
 
 def ext_name(path):
