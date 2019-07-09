@@ -484,7 +484,7 @@ class NetRangerBuf(object):
         """
         for node in self.expanded_nodes:
             if os.access(node.fullpath, os.R_OK):
-                ori_mtime = node.stat.st_mtime
+                ori_mtime = node.stat.st_mtime if node.stat else -1
                 node.re_stat()
                 new_mtime = node.stat.st_mtime
                 if new_mtime > ori_mtime:
