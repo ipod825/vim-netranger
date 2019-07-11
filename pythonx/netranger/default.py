@@ -48,7 +48,6 @@ keymap = {
     'NETRefresh':
     (['r'],
      "Force refresh netranger buffer to be the same as the file system"),
-    'NETRTogglePreview': (["P"], "Open preview window"),
 }
 
 visual_keymap = {
