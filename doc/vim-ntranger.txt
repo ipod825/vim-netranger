@@ -156,11 +156,11 @@ XX         Force delete the current entry.
 zh         Toggle Show hidden files.
 
                                         *NETRBookmarkSet* *g:NETRBookmarkSet*
-m          Jump to bookmark, pending for ui selection.
+m          Bookmark current directory, pending for ui selection.
            See |vim-netranger-user-interface|.
 
                                         *NETRBookmarkGo* *g:NETRBookmarkGo*
-'          Bookmark current directory, pending for ui selection
+'          Jump to bookmark, pending for ui selection.
            See |vim-netranger-user-interface|.
 
                                         *NETRBookmarkEdit* *g:NETRBookmarkEdit*
@@ -357,6 +357,8 @@ g:NETRemoteCacheDir     string (default "$HOME/.netranger/remote")
     Path to the remote cache directory. See |vim-netranger-rclone| for more
     information.
 
+
+                                        *g:NETRemoteRoots*
 g:NETRemoteRoots        dictionary (default {})
     Mapping from remote to a directory name. This enables one to open the home
     directory instead of the root directory for a rclone sftp remote. For
@@ -377,6 +379,7 @@ g:NETRDefaultMapSkip    list (default [])
     Mapping keys to skip for default mapping.
     See |vim-netranger-customization-mapping| for more information.
 
+                                        *g:NETRDefaultVisualMapSkip*
 g:NETRDefaultVisualMapSkip  list(default [])
     Visual keys to skip for default mapping (this currently include only 'v'
     for |NETRTogglePickVisual|). See |vim-netranger-customization-mapping| for

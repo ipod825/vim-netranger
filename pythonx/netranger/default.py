@@ -38,9 +38,9 @@ keymap = {
     'NETRForceDelete': (['X'], "Force delete all picked entries"),
     'NETRForceDeleteSingle': (['XX'], "Force delete the current entry."),
     'NETRToggleShowHidden': (['zh'], "(Toggle) Show hidden files"),
-    'NETRBookmarkSet': (['m'], "Jump to bookmark, pending for ui selection"),
-    'NETRBookmarkGo': (["'"],
-                       "Bookmark current directory, pending for ui selection"),
+    'NETRBookmarkSet':
+    (['m'], "Bookmark current directory, pending for ui selection"),
+    'NETRBookmarkGo': (["'"], "Jump to bookmark, pending for ui selection"),
     'NETRBookmarkEdit': (["em"], "Open bookmark file to edit"),
     'NETRSort':
     (['S'], 'Sort contnet in current directory, pending for ui selection'),
@@ -48,6 +48,7 @@ keymap = {
     'NETRefresh':
     (['r'],
      "Force refresh netranger buffer to be the same as the file system"),
+    'NETRTogglePreview': (["P"], "Open preview window"),
 }
 
 visual_keymap = {
