@@ -31,6 +31,18 @@ function! netranger#vimAsyncCallBack(job_id, data, event)
    endif
 endfunction
 
+function! netranger#AsyncDisplayCallBack(job_id, exit_code, event, ori_win_nr, cmd_win_nr)
+  call assert_true(a:event == "exit", "nvimAsyncDisplayCallBack should only handle exit")
+  call win_gotoid(a:cmd_win_nr)
+  if a:exit_code==0
+      bwipeout!
+  else
+    call win_gotoid(a:ori_win_nr)
+  endif
+  exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","[]")'
+endfunction
+
+
 
 """""""" APIs """"""""
 

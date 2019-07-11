@@ -458,14 +458,20 @@ def test_NETRToggleShowHidden():
 
 
 def test_size_display():
-    width = nvim.current.window.width
-
     def cLine_ends_with(s):
         # line[-4:] = [0m
         return nvim.current.line[:-4].endswith(s)
 
     assert cLine_ends_with('3'), 'size display dir fail: {}'.format(
         'a' + nvim.current.line[-1] + 'a')
+
+    # This vsplit is a rather ad-hoc work around in case of the screen is too
+    # wide such that the following echo command failed because of too long
+    # file name
+    nvim.command('vsplit')
+
+    width = nvim.current.window.width
+
     Shell.run('echo {} > {}'.format('a' * 1035, 'a' * width + '.pdf'))
     Shell.run('echo {} > {}'.format('b' * 1024, 'b' * width))
 
@@ -478,6 +484,9 @@ def test_size_display():
     assert cLine_ends_with(
         'b~    1 K'), 'size display abbreviation fail: b~ {}'.format(
             nvim.current.line[-10:])
+
+    # close the vsplit
+    nvim.command('quit')
 
 
 def test_sort():
