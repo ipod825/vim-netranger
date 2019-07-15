@@ -320,8 +320,8 @@ you need to put the following in your vimrc: >
 To achieve operations not provided by vim-netranger, for e.g. duplicate a file
 under cursor or to remap j to 2j, users can add mapping on NETRInit autocmd: >
     function! DuplicateNode()
-        call netranger#cp(netranger#cur_node_path(),\
-        netranger#cur_node_path().'DUP')
+        call netranger#cp(netranger#cur_node_path(),
+        \ netranger#cur_node_path().'DUP')
     endfunction
 
     function! NETRInit()
