@@ -1112,6 +1112,11 @@ class Netranger(object):
         self.set_buf_option()
         buf = self.bufs[existed_bufnum]
         self.refresh_curbuf()
+
+        # Check window width in case the window was closed in a different
+        # width
+        buf.refresh_hi_if_winwidth_changed()
+
         if ori_bufnum not in self.bufs:
             # wipe out the [No Name] temporary buffer
             Vim.command('bwipeout {}'.format(ori_bufnum))
