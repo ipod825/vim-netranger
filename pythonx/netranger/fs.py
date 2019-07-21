@@ -291,7 +291,7 @@ class Rclone(LocalFS):
         if not cheap_remote_ls and len(dirname) > len(self.root_dir):
             local_files = set([
                 name
-                for name in Shell.run('ls -p {}'.format(dirname)).split('\n')
+                for name in Shell.run('ls -p "{}"'.format(dirname)).split('\n')
                 if len(name) > 0
             ])
             remote_files = set([
@@ -305,7 +305,7 @@ class Rclone(LocalFS):
                     Shell.touch(os.path.join(dirname, name))
 
             for name in local_files.difference(remote_files):
-                Shell.run('rclone copyto --tpslimit=10 "{}" "{}"'.format(
+                Shell.run_async('rclone copyto --tpslimit=10 "{}" "{}"'.format(
                     os.path.join(dirname, name),
                     os.path.join(self.rpath(dirname), name)))
         return super(Rclone, self).ls(dirname)
