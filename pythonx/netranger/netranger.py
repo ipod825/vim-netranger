@@ -16,7 +16,7 @@ from netranger.fs import FSTarget, LocalFS, Rclone
 from netranger.rifle import Rifle
 from netranger.shell import Shell
 from netranger.thirdparty.wcwidth.wcwidth import wcswidth
-from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, SortUI
+from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, PreviewUI, SortUI
 
 if platform == "win32":
     from os import getenv
@@ -925,6 +925,7 @@ class Netranger(object):
         self.askUI = None
         self.onuiquit = None
         self.newUI = None
+        self.previewUI = None
         self.onuiquit_num_args = 0
 
         self.init_vim_variables()
@@ -1189,6 +1190,8 @@ class Netranger(object):
         on_cursormoved_post.
         """
         self.bufs[bufnum].on_cursormoved_post()
+        if self.previewUI and Vim.current.buffer.number in self.bufs:
+            self.previewUI.set_content(self.cur_node.fullpath)
 
     def pend_onuiquit(self, fn, numArgs=0):
         """Called by UIs to perform actions after reentering netranger buffer.
@@ -1294,6 +1297,11 @@ class Netranger(object):
         if self.askUI is None:
             self.askUI = AskUI(self)
         self.askUI.ask(self.rifle.list_available_cmd(fullpath), fullpath)
+
+    def NETRTogglePreview(self):
+        if self.previewUI is None:
+            self.previewUI = PreviewUI()
+        self.previewUI.close_or_show(self.cur_node.fullpath)
 
     def NETRParentDir(self):
         """Real work is done in on_bufenter."""

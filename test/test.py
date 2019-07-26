@@ -457,6 +457,19 @@ def test_NETRToggleShowHidden():
     assert_num_content_line(2)
 
 
+def test_NETRTogglePreview():
+    nvim.input('P')
+    assert (len(nvim.current.tabpage.windows) == 2)
+    nvim.input('tP')
+    assert (len(nvim.current.tabpage.windows) == 2)
+    nvim.input('P')
+    assert (len(nvim.current.tabpage.windows) == 1)
+    nvim.command('quit')
+    assert (len(nvim.current.tabpage.windows) == 2)
+    nvim.input('P')
+    assert (len(nvim.current.tabpage.windows) == 1)
+
+
 def test_size_display():
     def cLine_ends_with(s):
         # line[-4:] = [0m
@@ -887,6 +900,7 @@ if __name__ == '__main__':
             do_test(fn_remote=test_api_rm_remote)
 
         do_test_api()
+        do_test(test_NETRTogglePreview)
         do_test_navigation()
         do_test(test_NETREdit)
         do_test(test_NETRNew)

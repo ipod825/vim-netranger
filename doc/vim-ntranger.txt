@@ -179,6 +179,10 @@ r          Force refresh netranger buffer to be the same as the file system.
            file system such that vim-netranger fails to detect change on file
            system.
 
+                                        *NETRTogglePreview* *g:NETRTogglePreview*
+P          Toggle show preview window, which is a window showing the content of
+           the file under cursor.
+
 -------------------------------------------------------------------------------
 USER INTERFACE                          *vim-netranger-user-interface*
 

@@ -4,6 +4,7 @@ import os
 import string
 
 from netranger import Vim
+from netranger.shell import Shell
 
 
 class UI(object):
@@ -64,6 +65,46 @@ class UI(object):
         Vim.command('setlocal buftype=nofile')
         Vim.command('setlocal bufhidden=hide')
         Vim.command('setlocal nomodifiable')
+
+
+class PreviewUI(UI):
+    def __init__(self):
+        UI.__init__(self)
+        self.create_buf(content=[])
+        self.buf = self.bufs['default']
+
+    def close_or_show(self, file_path):
+        # close
+        for window in Vim.current.tabpage.windows:
+            if window.buffer.number == self.buf.number:
+                Vim.command('call win_gotoid(win_getid({}))'.format(
+                    window.number))
+                Vim.command('quit')
+                return
+        # show
+        Vim.command('vertical botright {}sb'.format(self.buf.number))
+        self.set_content(file_path)
+        Vim.command('wincmd h')
+
+    def set_content(self, path):
+        # do nothing if preview window is not visible in the current tab
+        if not any([
+                w.buffer.number == self.buf.number
+                for w in Vim.current.tabpage.windows
+        ]):
+            return
+
+        self.buf.options['modifiable'] = True
+        if os.path.isdir(path):
+            self.buf[:] = Shell.ls(path)
+        else:
+            try:
+                with open(path, 'r') as f:
+                    self.buf[:] = [l.strip() for l in f.readlines()]
+            except Exception:
+                self.buf[:] = Shell.run('file {}'.format(path)).split('\n')
+
+        self.buf.options['modifiable'] = False
 
 
 class HelpUI(UI):
