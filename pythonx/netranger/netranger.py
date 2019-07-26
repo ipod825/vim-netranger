@@ -810,7 +810,6 @@ class NetRangerBuf(object):
         self.is_editing = True
         self.render(plain=True)
         Vim.command('setlocal modifiable')
-        Vim.command('setlocal wrap')
 
     def save(self):
         """Rename the files according to current buffer content.
@@ -854,7 +853,6 @@ class NetRangerBuf(object):
             self.nodes) + [self.footer_node]
         self.render()
         self.set_clineno_by_node(oriNode)
-        Vim.command('setlocal nowrap')
         Vim.command('setlocal nomodifiable')
         return True
 
