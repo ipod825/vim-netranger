@@ -179,10 +179,6 @@ r          Force refresh netranger buffer to be the same as the file system.
            file system such that vim-netranger fails to detect change on file
            system.
 
-                                        *NETRTogglePreview* *g:NETRTogglePreview*
-P          Toggle show preview window, which is a window showing the content of
-           the file under cursor.
-
 -------------------------------------------------------------------------------
 USER INTERFACE                          *vim-netranger-user-interface*
 
@@ -431,7 +427,7 @@ https://jonasjacek.github.io/colors/.
 For example: >
     let g:NETRColors = {'pick': 'maroon', 'cut': 95, 'dir': '#5f5faf'}
 
-To view the color in terminal, add the following snippet to your shell rn and
+To view the color in terminal, add the following snippet to your shell rc and
 run palette to see directly how the colors look in your terminal: >
 
     alias palette='for i in {0..255}; do\
