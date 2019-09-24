@@ -25,14 +25,15 @@ python3 NETRApi.init(ranger)
 augroup NETRANGER
     autocmd!
     autocmd BufEnter * exec s:pyx 'ranger.on_bufenter('.expand("<abuf>").')'
-    autocmd Filetype netranger autocmd WinEnter * exec s:pyx 'ranger.on_winenter('.expand("<abuf>").')'
+    autocmd Filetype netranger autocmd WinEnter <buffer> exec s:pyx 'ranger.on_winenter('.expand("<abuf>").')'
     autocmd Filetype netranger autocmd CursorMoved <buffer> exec s:pyx 'ranger.on_cursormoved('.expand("<abuf>").')'
 
     " See https://github.com/mg979/vim-visual-multi/issues/73
     if py3eval('ranger.key2fn.get("<esc>", lambda x: x).__name__=="NETRSave"')
-        autocmd Filetype netranger autocmd USER visual_multi_exit :nnoremap <nowait> <silent> <buffer> <esc> :py3 ranger.key2fn["<lt>esc>"]()<cr>
+        autocmd USER visual_multi_exit if &ft=="netranger" | nnoremap <nowait> <silent> <buffer> <esc> :py3 ranger.key2fn["<lt>esc>"]()<cr> | fi
     endif
 augroup END
+
 
 func! _NETROnCursorMovedPost(bufnum, timerid)
     exec s:pyx 'ranger.on_cursormoved_post('.a:bufnum.')'
