@@ -1,6 +1,7 @@
 import os
 import shutil
 import sys
+from pathlib import Path
 
 
 class FSServerException(Exception):
@@ -39,7 +40,7 @@ def cpas(src, dst):
 
 def rm(src):
     try:
-        if os.path.isdir(src):
+        if os.path.isdir(src) and not Path(src).is_symlink():
             shutil.rmtree(src)
         else:
             os.remove(src)
