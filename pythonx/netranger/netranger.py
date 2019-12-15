@@ -783,34 +783,67 @@ class NetRangerBuf(object):
         Vim.command('silent cd {}'.format(target_dir))
         self.last_vim_pwd = target_dir
 
-    def toggle_expand(self):
+    def expand_rec(self,cur_nodeId=None):
+        if cur_nodeId==None:
+            cur_nodeId=self.clineNo
+        cur_node = self.nodes[cur_nodeId]
+        if not cur_node.is_DIR:
+            return
+        if not (cur_node.expanded):
+            print("expanding " + cur_node.abbrev_name(20) ) 
+            self.toggle_expand(cur_nodeId,True)
+            cur_node.cursor_off()
+            # deal with content changed, e.g., file operation outside
+            self.refresh_nodes()
+            # deal with highlight changed, e.g., pick, copy hi dismiss because of
+            # paste
+            self.refresh_highlight()
+
+        endInd = self.next_lesseq_level_ind(cur_nodeId)
+        if cur_nodeId+1> endInd:
+            return 
+        newNodes=[self.nodes[n] for n in range(cur_nodeId+1, endInd) if self.nodes[n].level==cur_node.level+1 ]
+        for n in newNodes:
+            for k in range(cur_nodeId+1,len(self.nodes)):
+                if self.nodes[k].fullpath==n.fullpath:
+                    self.expand_rec(k)
+                    break
+        #self.render()
+
+
+
+
+    def toggle_expand(self,node_number = None,render=True):
         """Create subnodes for the target directory.
 
         Also record the mtime of the target directory so that we can
         refresh the buffer content (refresh_nodes) if the subdirectory
         is changed.
         """
-        cur_node = self.cur_node
+        if node_number==None:
+           node_number = self.clineNo  
+        cur_node = self.nodes[node_number]
         if not cur_node.is_DIR:
             return
         if cur_node.expanded:
             self.expanded_nodes.remove(cur_node)
-            endInd = self.next_lesseq_level_ind(self.clineNo)
-            self.nodes = self.nodes[:self.clineNo + 1] + self.nodes[endInd:]
+            endInd = self.next_lesseq_level_ind(node_number)
+            self.nodes = self.nodes[:node_number + 1] + self.nodes[endInd:]
         else:
             try:
-                newNodes = self.create_nodes(self.cur_node.fullpath,
+                newNodes = self.create_nodes(cur_node.fullpath,
                                              cur_node.level + 1)
             except PermissionError:
                 Vim.ErrorMsg('Permission Denied: {}'.format(cur_node.name))
                 return
             self.expanded_nodes.add(cur_node)
             if len(newNodes) > 0:
-                self.nodes = self.nodes[:self.clineNo +
+                self.nodes = self.nodes[:node_number +
                                         1] + newNodes + self.nodes[
                                             self.clineNo + 1:]
         cur_node.expanded = not cur_node.expanded
-        self.render()
+        if render:
+            self.render()
 
     def edit(self):
         self.is_editing = True
