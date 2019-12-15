@@ -185,11 +185,17 @@ class EntryNode(Node):
     def re_stat(self, lazy=False):
         self.linkto = None
         if os.path.islink(self.fullpath):
-            self.linkto = os.readlink(self.fullpath)
-
+            try:
+                self.linkto = os.readlink(self.fullpath)
+            except PermissionError:  # added eyal
+                self.stat = None
+            except FileNotFoundError:
+                self.stat = None
         if not lazy:
             try:
                 self.stat = os.stat(self.fullpath)
+            except PermissionError:  # added eyal
+                self.stat = None
             except FileNotFoundError:
                 self.stat = None
         else:
