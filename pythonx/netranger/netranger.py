@@ -780,7 +780,7 @@ class NetRangerBuf(object):
         target_dir = self.cur_node.fullpath
         if not os.path.isdir(target_dir):
             target_dir = os.path.dirname(target_dir)
-        Vim.command('silent lcd {}'.format(target_dir))
+        Vim.command('silent cd {}'.format(target_dir))
         self.last_vim_pwd = target_dir
 
     def toggle_expand(self):
