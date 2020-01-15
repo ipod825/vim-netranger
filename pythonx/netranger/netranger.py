@@ -108,7 +108,6 @@ class HeaderNode(Node):
 
 class EntryNode(Node):
     """Content node."""
-
     def abbrev_name(self, width):
         if self.linkto is not None:
             name = self.name + ' -> ' + self.linkto
@@ -273,7 +272,6 @@ class EntryNode(Node):
 
 class DirNode(EntryNode):
     """Content node for directory."""
-
     def __init__(self, *args, **kwargs):
         self.expanded = False
         super(DirNode, self).__init__(*args, **kwargs)
@@ -289,7 +287,6 @@ class NetRangerBuf(object):
     Each netranger buffer corresponds to a directory and keeps a list of
     file/directory nodes and display them in a vim buffer.
     """
-
     @property
     def highlight_content(self):
         return [n.highlight_content for n in self.nodes]
@@ -884,8 +881,8 @@ class NetRangerBuf(object):
     def next_lesseq_level_ind(self, begInd, nodes=None):
         if nodes is None:
             nodes = self.nodes
-        return self.find_next_ind(
-            nodes, begInd, lambda beg, new: new.level <= beg.level)
+        return self.find_next_ind(nodes, begInd,
+                                  lambda beg, new: new.level <= beg.level)
 
 
 class Netranger(object):
@@ -895,7 +892,6 @@ class Netranger(object):
     1. on_bufenter: create / update netr buffers
     2. invoke_map: invoke one of NETR* function on user key press
     """
-
     @property
     def cur_buf(self):
         return self.bufs[Vim.current.buffer.number]
