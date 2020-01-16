@@ -1,4 +1,5 @@
 import os
+import pickle
 import shutil
 import sys
 from pathlib import Path
@@ -38,7 +39,7 @@ def cpas(src, dst):
     return ''
 
 
-def rm(src):
+def rm(src, dst=None):
     try:
         if os.path.isdir(src) and not Path(src).is_symlink():
             shutil.rmtree(src)
@@ -51,18 +52,16 @@ def rm(src):
 
 if __name__ == "__main__":
     cmd = sys.argv[1]
+    arg_file = sys.argv[2]
+    with open(arg_file, 'rb') as f:
+        args = pickle.load(f)
+
     err_msg = []
-    if cmd == 'mv':
-        dst = sys.argv[-1]
-        for src in sys.argv[2:-1]:
-            err_msg.append(mv(src, dst))
-    elif cmd == 'cp':
-        dst = sys.argv[-1]
-        for src in sys.argv[2:-1]:
-            err_msg.append(cp(src, dst))
-    elif cmd == 'rm':
-        for src in sys.argv[2:]:
-            err_msg.append(rm(src))
+    fn = locals()[cmd]
+    dst = args.get('dst', '')
+    for src in args['src']:
+        err_msg.append(fn(src, dst))
+
     err_msg = '\n'.join([e for e in err_msg if e])
     if err_msg:
         raise FSServerException(err_msg)

@@ -1,6 +1,5 @@
 import os
 import pickle
-import shutil
 import subprocess
 import sys
 from subprocess import PIPE
@@ -98,16 +97,8 @@ if __name__ == "__main__":
         args = pickle.load(f)
 
     err_msg = []
-    if cmd == 'mv':
-        mv(args, err_msg)
-    elif cmd == 'mvas':
-        mvas(args, err_msg)
-    elif cmd == 'cp':
-        cp(args, err_msg)
-    elif cmd == 'cpas':
-        cpas(args, err_msg)
-    elif cmd == 'rm':
-        rm(args, err_msg)
+    fn = locals()[cmd]
+    fn(args, err_msg)
 
     err_msg = '\n'.join([e for e in err_msg if e])
     if err_msg:

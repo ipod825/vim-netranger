@@ -91,8 +91,8 @@ class FSTarget(object):
 class LocalFS(object):
     # Putting fs_server.py in the pythonx directory fail to import shutil
     # so put it in the upper directory
-    ServerCmds = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                              '../fs_server.py')
+    ServerCmd = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             '../fs_server.py')
 
     acl_tbl = {
         '7': ['r', 'w', 'x'],
@@ -155,29 +155,25 @@ class LocalFS(object):
         shutil.move(src, dst)
 
     @classmethod
-    def exec_fs_server_cmd(self, cmd, src_arr, dst=None, on_exit=None):
-        src = ' '.join(['"{}"'.format(s) for s in src_arr])
-        if dst:
-            dst = '"{}"'.format(dst)
-            cmd = 'python {} {} {} {}'.format(LocalFS.ServerCmds, cmd, src,
-                                              dst)
-            Shell.run_async(cmd, on_exit=on_exit)
-        else:
-            cmd = 'python {} {} {}'.format(LocalFS.ServerCmds, cmd, src)
-            Shell.run_async(cmd, on_exit=on_exit)
+    def exec_server_cmd(self, cmd, on_exit, arguments):
+        fname = tempfile.mkstemp()[1]
+        with open(fname, 'ab') as f:
+            pickle.dump(arguments, f)
+        Shell.run_async('python {} {} {}'.format(self.ServerCmd, cmd, fname),
+                        on_exit=on_exit)
 
     @classmethod
     def mv(self, src_arr, dst, on_exit=None):
-        self.exec_fs_server_cmd('mv', src_arr, dst, on_exit)
+        self.exec_server_cmd('mv', on_exit, {'src': src_arr, 'dst': dst})
 
     @classmethod
     def cp(self, src_arr, dst, on_exit):
-        self.exec_fs_server_cmd('cp', src_arr, dst, on_exit)
+        self.exec_server_cmd('cp', on_exit, {'src': src_arr, 'dst': dst})
 
     @classmethod
     def rm(self, src_arr, force=False, on_exit=None):
         # TODO force?
-        self.exec_fs_server_cmd('rm', src_arr, on_exit=on_exit)
+        self.exec_server_cmd('rm', on_exit, {'src': src_arr})
 
     @classmethod
     def touch(self, name):
@@ -223,8 +219,8 @@ class LocalFS(object):
 
 
 class Rclone(LocalFS):
-    ServerCmds = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                              '../rclone_server.py')
+    ServerCmd = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             '../rclone_server.py')
     SyncDirection = Enum('SyncDirection', 'DOWN, UP')
 
     @classmethod
@@ -323,17 +319,8 @@ class Rclone(LocalFS):
         super(Rclone, self).rename(src, dst)
 
     @classmethod
-    def exec_rclone_server_cmd(self, cmd, on_exit, arguments):
-        fname = tempfile.mkstemp()[1]
-        with open(fname, 'ab') as f:
-            pickle.dump(arguments, f)
-        Shell.run_async('python {} {} {}'.format(Rclone.ServerCmds, cmd,
-                                                 fname),
-                        on_exit=on_exit)
-
-    @classmethod
     def mv(self, src_arr, dst, on_exit):
-        self.exec_rclone_server_cmd(
+        self.exec_server_cmd(
             'mv', on_exit, {
                 'rsrc': [self.rpath(s) for s in src_arr],
                 'src': src_arr,
@@ -343,7 +330,7 @@ class Rclone(LocalFS):
 
     @classmethod
     def cp(self, src_arr, dst, on_exit):
-        self.exec_rclone_server_cmd(
+        self.exec_server_cmd(
             'cp', on_exit, {
                 'rsrc': [self.rpath(s) for s in src_arr],
                 'src': src_arr,
@@ -353,7 +340,7 @@ class Rclone(LocalFS):
 
     @classmethod
     def cpas(self, src_arr, dst, on_exit):
-        self.exec_rclone_server_cmd(
+        self.exec_server_cmd(
             'cpas', on_exit, {
                 'rsrc': [self.rpath(s) for s in src_arr],
                 'src': src_arr,
@@ -363,7 +350,7 @@ class Rclone(LocalFS):
 
     @classmethod
     def mvas(self, src_arr, dst, on_exit):
-        self.exec_rclone_server_cmd(
+        self.exec_server_cmd(
             'mvas', on_exit, {
                 'rsrc': [self.rpath(s) for s in src_arr],
                 'src': src_arr,
@@ -373,7 +360,7 @@ class Rclone(LocalFS):
 
     @classmethod
     def rm(self, src_arr, force=False, on_exit=None):
-        self.exec_rclone_server_cmd('rm', on_exit, {
+        self.exec_server_cmd('rm', on_exit, {
             'rsrc': [self.rpath(s) for s in src_arr],
             'src': src_arr
         })
