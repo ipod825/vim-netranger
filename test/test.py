@@ -241,6 +241,21 @@ def test_NETRToggleExpand():
     assert_content('dir2', ind=1, hi='dir')
 
 
+def test_NETRToggleExpandRec():
+    nvim.input('zA')
+    assert_content('dir', ind=0, hi='dir', hi_fg=True)
+    assert_content('subdir', level=1, ind=1, hi='dir')
+    assert_content('subsubdir', level=2, ind=2, hi='dir')
+    assert_content('placeholder', level=3, ind=3, hi='file')
+    assert_content('subdir2', level=1, ind=4, hi='dir')
+    assert_content('placeholder', level=2, ind=5, hi='file')
+    assert_content('a', level=1, ind=6, hi='file')
+    assert_content('dir2', level=0, ind=7, hi='dir')
+    nvim.input('zA')
+    assert_content('dir', ind=0, hi='dir', hi_fg=True)
+    assert_content('dir2', ind=1, hi='dir')
+
+
 def test_NETRVimCD():
     nvim.input('<Cr>')
     assert os.path.basename(
@@ -838,6 +853,7 @@ if __name__ == '__main__':
             do_test(test_on_bufenter_content_stay_the_same)
             do_test(test_on_bufenter_fs_change)
             do_test(test_NETRToggleExpand)
+            do_test(test_NETRToggleExpandRec)
             do_test(test_NETRVimCD)
 
         def do_test_delete():

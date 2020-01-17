@@ -774,7 +774,7 @@ class NetRangerBuf(object):
         Vim.command('silent lcd {}'.format(target_dir))
         self.last_vim_pwd = target_dir
 
-    def toggle_expand(self):
+    def toggle_expand(self, rec=False):
         """Create subnodes for the target directory.
 
         Also record the mtime of the target directory so that we can
@@ -785,22 +785,41 @@ class NetRangerBuf(object):
         if not cur_node.is_DIR:
             return
         if cur_node.expanded:
-            self.expanded_nodes.remove(cur_node)
             endInd = self.next_lesseq_level_ind(self.clineNo)
-            self.nodes = self.nodes[:self.clineNo + 1] + self.nodes[endInd:]
+            for i in range(self.clineNo, endInd):
+                if self.nodes[i].is_DIR and self.nodes[i].expanded:
+                    self.expanded_nodes.remove(self.nodes[i])
+            del self.nodes[self.clineNo + 1:endInd]
+            cur_node.expanded = False
         else:
             try:
-                newNodes = self.create_nodes(self.cur_node.fullpath,
-                                             cur_node.level + 1)
+                new_nodes = self.create_nodes(self.cur_node.fullpath,
+                                              cur_node.level + 1)
+                cur_node.expanded = True
+                self.expanded_nodes.add(cur_node)
             except PermissionError:
-                Vim.ErrorMsg('Permission Denied: {}'.format(cur_node.name))
+                Vim.ErrorMsg('Permission Denied. Not Expanding: {}'.format(
+                    cur_node.name))
                 return
-            self.expanded_nodes.add(cur_node)
-            if len(newNodes) > 0:
-                self.nodes = self.nodes[:self.clineNo +
-                                        1] + newNodes + self.nodes[
-                                            self.clineNo + 1:]
-        cur_node.expanded = not cur_node.expanded
+
+            if rec:
+                ind = 0
+                while ind < len(new_nodes):
+                    iter_node = new_nodes[ind]
+                    if iter_node.is_DIR:
+                        try:
+                            new_nodes[ind + 1:ind + 1] = self.create_nodes(
+                                iter_node.fullpath, iter_node.level + 1)
+                            iter_node.expanded = True
+                            self.expanded_nodes.add(iter_node)
+                        except PermissionError:
+                            Vim.ErrorMsg(
+                                'Permission Denied. Not Expanding: {}'.format(
+                                    iter_node.name))
+                    ind += 1
+
+            if len(new_nodes) > 0:
+                self.nodes[self.clineNo + 1:self.clineNo + 1] = new_nodes
         self.render()
 
     def edit(self):
@@ -1320,6 +1339,9 @@ class Netranger(object):
 
     def NETRToggleExpand(self):
         self.cur_buf.toggle_expand()
+
+    def NETRToggleExpandRec(self):
+        self.cur_buf.toggle_expand(rec=True)
 
     def NETRNew(self):
         if self.cur_buf.fs_busy():

@@ -19,6 +19,8 @@ keymap = {
     'NETRAskOpen': (['a'], 'Open file with rifle. Ask for command'),
     'NETRToggleExpand': (['za'],
                          "Toggle expand current directory under cursor"),
+    'NETRToggleExpandRec':
+    (['zA'], "Recursively toggle expand current directory under cursor"),
     'NETRVimCD':
     (['<cr>'],
      "Changing vim's pwd to the directory of the entry under cursor"),
