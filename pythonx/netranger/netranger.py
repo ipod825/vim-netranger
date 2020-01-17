@@ -328,8 +328,8 @@ class NetRangerBuf(object):
 
         self.clineNo = 1
         self.nodes[self.clineNo].cursor_on()
-        # In refresh_buf we need to check the mtime of all expanded nodes to
-        # see if any content in the buffer is changed. Adding the HeaderNode
+        # In refresh_nodes we need to check the mtime of all expanded nodes to
+        # see if any content in the buffer is changed. Adding the header_node
         # simply means we check the mtime of the wd everytime.
         self.expanded_nodes = set([self.header_node])
         self.winwidth = Vim.CurWinWidth()

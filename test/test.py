@@ -218,15 +218,15 @@ def test_on_bufenter_fs_change():
     Shell.mkdir('dir3')
     nvim.command('split new')
     nvim.command('quit')
-    nvim.input('za')
+    nvim.input('zA')
     assert_content('dir', ind=0, hi='dir', hi_fg=True)
-    assert_content('b', ind=4, level=1, hi='file')
-    assert_content('dir3', ind=6, hi='dir')
-    assert_num_content_line(7)
+    assert_content('b', ind=7, level=1, hi='file')
+    assert_content('dir3', ind=9, hi='dir')
+    assert_num_content_line(10)
 
-    Shell.rm('dir3')
+    Shell.rm('dir/subdir2/placeholder')
     nvim.input('lh')
-    assert_num_content_line(6)
+    assert_num_content_line(9)
 
 
 def test_NETRToggleExpand():
