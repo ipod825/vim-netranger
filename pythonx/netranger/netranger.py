@@ -1705,11 +1705,4 @@ class Netranger(object):
             Rclone.sync(cur_buf.wd, Rclone.SyncDirection.UP)
 
     def NETRemoteList(self):
-        Rclone.valid_or_install()
-
-        if Rclone.has_remote:
-            Vim.command('tabe ' + Vim.Var('NETRemoteCacheDir'))
-        else:
-            Vim.ErrorMsg(
-                "There's no remote now. Run 'rclone config' in a terminal to "
-                "setup remotes")
+        Rclone.list_remotes_in_vim_buffer()

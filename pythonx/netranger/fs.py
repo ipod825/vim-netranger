@@ -245,25 +245,6 @@ class Rclone(LocalFS):
         Shell.mkdir(root_dir)
 
     @classmethod
-    def init_on_demand(self):
-        """
-        This is called when in valid_or_install when the user really need
-        remote functionallity.
-        """
-        remotes = set([
-            line for line in Shell.run('rclone listremotes').split(':\n')
-            if line
-        ])
-        local_remotes = set(super(Rclone, self).ls(self.root_dir))
-        for remote in remotes.difference(local_remotes):
-            Shell.mkdir(os.path.join(self.root_dir, remote))
-        for remote in local_remotes.difference(remotes):
-            Shell.rm(os.path.join(self.root_dir, remote))
-
-        self.has_remote = len(remotes) > 0
-        self.ls_time_stamp = {}
-
-    @classmethod
     def is_remote_path(self, path):
         return path.startswith(self.root_dir)
 
@@ -381,47 +362,63 @@ class Rclone(LocalFS):
         Shell.run('rclone sync "{}" "{}"'.format(src, dst))
 
     @classmethod
-    def valid_or_install(self):
+    def list_remotes_in_vim_buffer(self):
+        if not Shell.isinPATH('rclone'):
+            self.install_rclone()
+
+        remotes = set([
+            line for line in Shell.run('rclone listremotes').split(':\n')
+            if line
+        ])
+        local_remotes = set(super(Rclone, self).ls(self.root_dir))
+        for remote in remotes.difference(local_remotes):
+            Shell.mkdir(os.path.join(self.root_dir, remote))
+        for remote in local_remotes.difference(remotes):
+            Shell.rm(os.path.join(self.root_dir, remote))
+
+        if len(remotes) > 0:
+            Vim.command(f'NETRTabdrop {self.root_dir}')
+        else:
+            Vim.ErrorMsg(
+                "There's no remote now. Run 'rclone config' in a terminal to "
+                "setup remotes")
+
+    @classmethod
+    def install_rclone(self):
         import platform
         import zipfile
 
-        if Shell.isinPATH('rclone'):
-            Rclone.init_on_demand()
-            return True
+        rclone_dir = Vim.UserInput(
+            'Rclone not in PATH. Install it at (modify/enter)',
+            os.path.expanduser('~/rclone'))
+        Shell.mkdir(rclone_dir)
+
+        system = platform.system().lower()
+        processor = 'amd64'
+        if '386' in platform.processor():
+            processor = '386'
         else:
-            rclone_dir = Vim.UserInput(
-                'Rclone not in PATH. Install it at (modify/enter)',
-                os.path.expanduser('~/rclone'))
-            Shell.mkdir(rclone_dir)
+            # Should support arm??
+            pass
 
-            system = platform.system().lower()
-            processor = 'amd64'
-            if '386' in platform.processor():
-                processor = '386'
-            else:
-                # Should support arm??
-                pass
+        url = 'https://downloads.rclone.org/rclone-current-{}-{}.zip'\
+            .format(system, processor)
+        zip_fname = os.path.join(rclone_dir, 'rclone.zip')
+        Shell.urldownload(url, zip_fname)
+        zip_ref = zipfile.ZipFile(zip_fname, 'r')
+        zip_ref.extractall(rclone_dir)
+        for entry in zip_ref.NameToInfo:
+            if entry.endswith('rclone'):
+                Shell.cp(os.path.join(rclone_dir, entry), rclone_dir)
+                Shell.chmod(os.path.join(rclone_dir, 'rclone'), 755)
 
-            url = 'https://downloads.rclone.org/rclone-current-{}-{}.zip'\
-                .format(system, processor)
-            zip_fname = os.path.join(rclone_dir, 'rclone.zip')
-            Shell.urldownload(url, zip_fname)
-            zip_ref = zipfile.ZipFile(zip_fname, 'r')
-            zip_ref.extractall(rclone_dir)
-            for entry in zip_ref.NameToInfo:
-                if entry.endswith('rclone'):
-                    Shell.cp(os.path.join(rclone_dir, entry), rclone_dir)
-                    Shell.chmod(os.path.join(rclone_dir, 'rclone'), 755)
+        zip_ref.close()
+        os.remove(zip_fname)
 
-            zip_ref.close()
-            os.remove(zip_fname)
-
-            shellrc = Vim.UserInput(
-                'Update PATH in (leave blank to set manually later)',
-                Shell.shellrc())
-            if len(shellrc) > 0:
-                with open(shellrc, 'a') as f:
-                    f.write('PATH={}:$PATH\n'.format(rclone_dir))
-            os.environ['PATH'] += ':' + rclone_dir
-
-            Rclone.init_on_demand()
+        shellrc = Vim.UserInput(
+            'Update PATH in (leave blank to set manually later)',
+            Shell.shellrc())
+        if len(shellrc) > 0:
+            with open(shellrc, 'a') as f:
+                f.write('PATH={}:$PATH\n'.format(rclone_dir))
+        os.environ['PATH'] += ':' + rclone_dir
