@@ -1,6 +1,7 @@
 import argparse
 import os
 import re
+import subprocess
 import sys
 import time
 
@@ -8,8 +9,9 @@ from neovim import attach
 
 from netranger import default
 from netranger.colortbl import colorname2ind
-from netranger.config import (test_dir, test_local_dir, test_remote_cache_dir,
-                              test_remote_dir, test_remote_name)
+from netranger.config import (rclone_rcd_port, test_dir, test_local_dir,
+                              test_remote_cache_dir, test_remote_dir,
+                              test_remote_name)
 from tshell import Shell
 
 
@@ -935,5 +937,9 @@ if __name__ == '__main__':
         # do_test(fn_remote=test_edit_remote)
         # # TODO
         # # add SORT test for broken link #issue 21
-
         nvim.close()
+
+        # Force down rclone server down
+        subprocess.check_output(
+            f'rclone rc core/quit --rc-addr=localhost:{rclone_rcd_port}',
+            shell=True)

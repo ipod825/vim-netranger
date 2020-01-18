@@ -1,13 +1,15 @@
 from __future__ import absolute_import
 
+import json
 import os
 import pickle
 import re
 import shutil
 import tempfile
+import time
 
 from netranger import Vim
-from netranger.config import file_sz_display_wid
+from netranger.config import file_sz_display_wid, rclone_rcd_port
 from netranger.enum import Enum
 from netranger.shell import Shell
 
@@ -238,6 +240,7 @@ class Rclone(LocalFS):
 
         self.root_dir = root_dir
         self.rplen = len(root_dir) + 1
+        self.rcd_started = False
         for remote, root in remote_remap.items():
             if root[-1] != '/':
                 remote_remap[remote] += '/'
@@ -362,14 +365,28 @@ class Rclone(LocalFS):
         Shell.run('rclone sync "{}" "{}"'.format(src, dst))
 
     @classmethod
+    def run_cmd(self, cmd):
+        if not self.rcd_started:
+            Vim.AsyncRun(
+                f'rclone rcd --rc-no-auth --rc-addr=localhost:{rclone_rcd_port}'
+            )
+            self.rcd_started = True
+            # Ensure the server running before executing the next command.
+            time.sleep(.1)
+        return json.loads(
+            Shell.run(
+                f'rclone rc --rc-addr=localhost:{rclone_rcd_port} {cmd}'))
+
+    @classmethod
+    def cmd_listremotes(self):
+        return self.run_cmd('config/listremotes')['remotes']
+
+    @classmethod
     def list_remotes_in_vim_buffer(self):
         if not Shell.isinPATH('rclone'):
             self.install_rclone()
 
-        remotes = set([
-            line for line in Shell.run('rclone listremotes').split(':\n')
-            if line
-        ])
+        remotes = set(self.cmd_listremotes())
         local_remotes = set(super(Rclone, self).ls(self.root_dir))
         for remote in remotes.difference(local_remotes):
             Shell.mkdir(os.path.join(self.root_dir, remote))
@@ -381,7 +398,7 @@ class Rclone(LocalFS):
         else:
             Vim.ErrorMsg(
                 "There's no remote now. Run 'rclone config' in a terminal to "
-                "setup remotes")
+                "setup remotes and restart vim again.")
 
     @classmethod
     def install_rclone(self):
