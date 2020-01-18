@@ -957,7 +957,10 @@ if __name__ == '__main__':
         # # add SORT test for broken link #issue 21
         nvim.close()
 
-        # Force down rclone server down
-        subprocess.check_output(
-            f'rclone rc core/quit --rc-addr=localhost:{rclone_rcd_port}',
-            shell=True)
+        try:
+            # Force down rclone server down
+            subprocess.check_output(
+                f'rclone rc core/quit --rc-addr=localhost:{rclone_rcd_port}',
+                shell=True)
+        except Exception:
+            pass
