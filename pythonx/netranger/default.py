@@ -8,6 +8,10 @@ keymap = {
     # NETRDefaultMapSkip feature
     'NETROpen': (['l', '<right>'], "Change directory/open file under cursor"),
     'NETRParentDir': (['h', '<left>'], "Change to parent directory"),
+    'NETRGoPrevSibling':
+    (['{'], "Move the cursor to the previous node with less or equal indent."),
+    'NETRGoNextSibling':
+    (['}'], "Move the cursor to the next node with less or equal indent."),
     'NETRTabOpen': (['t'], 'Open file in new tab. Skip for directory'),
     'NETRTabBgOpen': (['T'],
                       'Same as NETRTabOpen but stay in the current tab.'),

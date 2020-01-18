@@ -22,7 +22,7 @@ def color_str(hi_key):
     return str(hi)
 
 
-def assert_content(expected, level=0, ind=None, hi=None, hi_fg=False):
+def assert_content(expected, level=None, ind=None, hi=None, hi_fg=False):
     if ind is None:
         line = nvim.current.line
     else:
@@ -32,9 +32,10 @@ def assert_content(expected, level=0, ind=None, hi=None, hi_fg=False):
     m = re.search(r'\[38;5;([0-9]+)(;7)?m( *)([^ ]+)', line)
     assert m.group(4) == expected, 'expected:"{}", real: "{}"'.format(
         expected, m.group(4))
-    assert m.group(
-        3) == '  ' * level, "level mismatch: expected: {}, real:{}".format(
-            '"{}"'.format('  ' * level), '"{}"'.format(m.group(3)))
+    if level is not None:
+        assert m.group(
+            3) == '  ' * level, "level mismatch: expected: {}, real:{}".format(
+                '"{}"'.format('  ' * level), '"{}"'.format(m.group(3)))
 
     if hi is not None:
         expected_hi = color_str(hi)
@@ -199,6 +200,22 @@ def test_NETROpen():
 def test_NETRParent():
     nvim.input('h')
     assert_content('local', ind=0, hi='dir', hi_fg=True)
+
+
+def test_NETRGoPrevSibling():
+    # Test both NETRGoPrevSibling and NETRGoNextSibling
+    nvim.input('zA')
+    nvim.input('j')
+    nvim.input('}')
+    assert_content('subdir2', hi='dir', hi_fg=True)
+    nvim.input('}')
+    assert_content('a', hi='file', hi_fg=True)
+    nvim.input('{')
+    assert_content('subdir2', hi='dir', hi_fg=True)
+    nvim.input('{')
+    assert_content('subdir', hi='dir', hi_fg=True)
+    nvim.input('{')
+    assert_content('dir', hi='dir', hi_fg=True)
 
 
 def test_on_bufenter_cursor_stay_the_same_pos():
@@ -851,6 +868,7 @@ if __name__ == '__main__':
             do_test(test_on_cursormoved)
             do_test(test_NETROpen)
             do_test(test_NETRParent)
+            do_test(test_NETRGoPrevSibling)
             do_test(test_on_bufenter_cursor_stay_the_same_pos)
             do_test(test_on_bufenter_content_stay_the_same)
             do_test(test_on_bufenter_fs_change)

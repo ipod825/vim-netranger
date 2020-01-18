@@ -75,6 +75,12 @@ l,<right>  Change directory/open file under cursor. If the file can be open by
                                         *NETRParentDir* *g:NETRParentDir*
 h,<left>   Change to parent directory.
 
+                                        *NETRGoPrevSibling* *g:NETRGoPrevSibling*
+{          Move the cursor to the previous node with less or equal indent.
+
+                                        *NETRGoNextSibling* *g:NETRGoNextSibling*
+}          Move the cursor to the next node with less or equal indent.
+
                                         *NETRTabOpen* *g:NETRTabOpen*
 t          Open file in new tab. Skip for directory.
 

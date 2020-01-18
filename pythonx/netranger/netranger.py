@@ -654,7 +654,7 @@ class NetRangerBuf(object):
             Vim.command('normal! k')
             clineNo -= 1
 
-        self.set_clineno(clineNo)
+        self._update_clineno(clineNo)
 
         # Avoid throttling by avoiding rerender the buffer (in
         # on_cursormoved_post) for each call of on_cursormoved (e.g. when the
@@ -695,10 +695,13 @@ class NetRangerBuf(object):
         """Will trigger on_cursormoved."""
         Vim.command('call cursor({},1)'.format(lineNo + 1))
 
+    def set_clineno_by_lineno(self, lineno):
+        self.move_vim_cursor(lineno)
+
     def set_clineno_by_path(self, path):
         """Real work is done in on_cursormoved.
 
-        Eventually call set_clineno.
+        Eventually call _update_clineno.
         """
         for ind, node in enumerate(self.nodes):
             if node.fullpath == path:
@@ -708,14 +711,14 @@ class NetRangerBuf(object):
     def set_clineno_by_node(self, node, ori_clineNo=0):
         """Real work is done in on_cursormoved.
 
-        Eventually call set_clineno.
+        Eventually call _update_clineno.
         """
         if node in self.nodes:
             self.move_vim_cursor(self.nodes.index(node))
         else:
             self.move_vim_cursor(ori_clineNo)
 
-    def set_clineno(self, newLineNo):
+    def _update_clineno(self, newLineNo):
         """Turn on newLineNo and turn off self.clineNo."""
         if newLineNo == self.clineNo:
             self.nodes[newLineNo].cursor_on()
@@ -901,6 +904,21 @@ class NetRangerBuf(object):
         if nodes is None:
             nodes = self.nodes
         return self.find_next_ind(nodes, begInd,
+                                  lambda beg, new: new.level <= beg.level)
+
+    def find_prev_ind(self, nodes, ind, pred):
+        beg_node = nodes[ind]
+        ind -= 1
+        while ind > -1:
+            if pred(beg_node, nodes[ind]):
+                break
+            ind -= 1
+        return ind
+
+    def prev_lesseq_level_ind(self, begInd, nodes=None):
+        if nodes is None:
+            nodes = self.nodes
+        return self.find_prev_ind(nodes, begInd,
                                   lambda beg, new: new.level <= beg.level)
 
 
@@ -1134,7 +1152,7 @@ class Netranger(object):
         if ori_bufnum not in self.bufs:
             # wipe out the [No Name] temporary buffer
             Vim.command('bwipeout {}'.format(ori_bufnum))
-        buf.move_vim_cursor(buf.clineNo)
+        buf.set_clineno_by_lineno(buf.clineNo)
 
     def gen_new_buf(self, bufname):
         bufnum = Vim.current.buffer.number
@@ -1332,6 +1350,16 @@ class Netranger(object):
         # on_cursormoved event handler, which should trigger by the previous
         # line.
         self.on_cursormoved(Vim.current.buffer.number)
+
+    def NETRGoPrevSibling(self):
+        cur_buf = self.cur_buf
+        cur_buf.set_clineno_by_lineno(
+            cur_buf.prev_lesseq_level_ind(cur_buf.clineNo))
+
+    def NETRGoNextSibling(self):
+        cur_buf = self.cur_buf
+        cur_buf.set_clineno_by_lineno(
+            cur_buf.next_lesseq_level_ind(cur_buf.clineNo))
 
     def NETRVimCD(self):
         self.cur_buf.VimCD()
