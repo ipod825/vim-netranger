@@ -29,9 +29,10 @@ keymap = {
     (['<cr>'],
      "Changing vim's pwd to the directory of the entry under cursor"),
     'NETRNew': (['o'], 'Create new directory/file, pending for ui selection'),
-    'NETREdit': (['i'], "Enter edit mode to rename file/directory names"),
-    'NETRSave': (['<esc>'],
-                 "Leave edit mode to save changes made in edit mode"),
+    'NETREdit':
+    (['i'],
+     "Enter edit mode to rename file/directory names. Use ':w' to save changes."
+     ),
     'NETRTogglePick': (['v'], "Pick the current entry for further copy/cut"),
     'NETRCut': (['x', 'd'], "Cut all picked entries"),
     'NETRCopy': (['y'], "Copy all picked entries."),

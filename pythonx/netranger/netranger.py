@@ -828,6 +828,7 @@ class NetRangerBuf(object):
     def edit(self):
         self.is_editing = True
         self.render(plain=True)
+        Vim.command('setlocal buftype=acwrite')
         Vim.command('setlocal modifiable')
 
     def save(self):
@@ -873,6 +874,7 @@ class NetRangerBuf(object):
         self.render()
         self.set_clineno_by_node(oriNode)
         Vim.command('setlocal nomodifiable')
+        Vim.command('setlocal buftype=nofile')
         return True
 
     def cut(self, nodes):
@@ -1063,8 +1065,6 @@ class Netranger(object):
 
     def unmap_keys(self):
         for key, fn in self.key2fn.items():
-            if fn.__name__ == 'NETRSave':
-                continue
             Vim.command("nunmap <silent> <buffer> {}".format(key))
 
         for key, fn in self.visual_key2fn.items():

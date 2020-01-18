@@ -27,11 +27,7 @@ augroup NETRANGER
     autocmd BufEnter * exec s:pyx 'ranger.on_bufenter('.expand("<abuf>").')'
     autocmd Filetype netranger autocmd WinEnter <buffer> exec s:pyx 'ranger.on_winenter('.expand("<abuf>").')'
     autocmd Filetype netranger autocmd CursorMoved <buffer> exec s:pyx 'ranger.on_cursormoved('.expand("<abuf>").')'
-
-    " See https://github.com/mg979/vim-visual-multi/issues/73
-    if py3eval('ranger.key2fn.get("<esc>", lambda x: x).__name__=="NETRSave"')
-        autocmd USER visual_multi_exit if &ft=="netranger" | nnoremap <nowait> <silent> <buffer> <esc> :py3 ranger.key2fn["<lt>esc>"]()<cr> | fi
-    endif
+    autocmd Filetype netranger autocmd BufWriteCmd <buffer> exec s:pyx 'ranger.NETRSave()'
 augroup END
 
 

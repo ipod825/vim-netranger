@@ -288,7 +288,7 @@ def test_NETREdit():
     nvim.input('y<Left><Down>')
     nvim.input('x<Left><Down>')
     nvim.input('w')
-    nvim.input('')
+    nvim.input('<esc>:w<cr>')
     assert_content('dir2', ind=0, hi='dir')
     assert_content('zdir', ind=1, hi='dir')
     assert_content('xsubdir2', ind=2, level=1, hi='dir')
