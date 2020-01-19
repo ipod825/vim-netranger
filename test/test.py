@@ -504,14 +504,11 @@ def test_NETRTogglePreview():
     assert (len(nvim.current.tabpage.windows) == 1)
 
 
+def cLine_ends_with(s):
+    return nvim.current.line[:-4].endswith(s)
+
+
 def test_size_display():
-    def cLine_ends_with(s):
-        # line[-4:] = [0m
-        return nvim.current.line[:-4].endswith(s)
-
-    assert cLine_ends_with('3'), 'size display dir fail: {}'.format(
-        'a' + nvim.current.line[-1] + 'a')
-
     # This vsplit is a rather ad-hoc work around in case of the screen is too
     # wide such that the following echo command failed because of too long
     # file name
@@ -530,6 +527,31 @@ def test_size_display():
     nvim.input('j')
     assert cLine_ends_with(
         'b~    1 K'), 'size display abbreviation fail: b~ {}'.format(
+            nvim.current.line[-10:])
+
+    # close the vsplit
+    nvim.command('quit')
+
+
+def test_size_wide_char_display():
+    # This vsplit is a rather ad-hoc work around in case of the screen is too
+    # wide such that the following echo command failed because of too long
+    # file name
+    nvim.command('vsplit')
+
+    width = nvim.current.window.width
+
+    Shell.run('echo {} > {}'.format('a' * 1035, '測' * width + '.pdf'))
+    Shell.run('echo {} > {}'.format('b' * 1024, '試' * width))
+
+    nvim.command('edit .')
+    nvim.input('Gk')
+    assert cLine_ends_with(
+        '~.pdf 1.01 K'), 'size display abbreviation fail: a~.pdf {}'.format(
+            nvim.current.line[-10:])
+    nvim.input('j')
+    assert cLine_ends_with(
+        '試~    1 K'), 'size display abbreviation fail: b~ {}'.format(
             nvim.current.line[-10:])
 
     # close the vsplit
@@ -944,6 +966,7 @@ if __name__ == '__main__':
         do_test_pickCopyCutPaste()
         do_test(test_NETRToggleShowHidden)
         do_test(test_size_display)
+        do_test(test_size_wide_char_display)
         do_test(test_sort)
         do_test(test_opt_Autochdir)
         do_test_UI()

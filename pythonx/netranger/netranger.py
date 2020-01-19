@@ -15,7 +15,7 @@ from netranger.enum import Enum
 from netranger.fs import FSTarget, LocalFS, Rclone
 from netranger.rifle import Rifle
 from netranger.shell import Shell
-from netranger.thirdparty.wcwidth.wcwidth import wcswidth
+from netranger.thirdparty.wcwidth.wcwidth import wcswidth, wcwidth
 from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, PreviewUI, SortUI
 
 if platform == "win32":
@@ -109,22 +109,54 @@ class HeaderNode(Node):
 class EntryNode(Node):
     """Content node."""
     def abbrev_name(self, width):
+        """ Return abbreviation of self.name such that it fits into `width`
+        (terminal) columns.
+        """
         if self.linkto is not None:
             name = self.name + ' -> ' + self.linkto
         else:
             name = self.name
 
-        sz = len(name)
-        if width >= sz:
-            return name.ljust(width)
+        sz = wcswidth(name)
 
-        width -= 1
-        ext_beg = name.rfind('.')
-        if ext_beg > 0:
-            return '{}~{}'.format(name[:width - (sz - ext_beg)],
-                                  name[ext_beg:])
+        if width >= sz:
+            # Conceptually, we should add (width - sz) spaces to meet the
+            # desired width.  (sz-len(name)) compensates for extra columns
+            # occupied by wide-characters.
+            return name.ljust(width - (sz - len(name)))
         else:
-            return name[:width] + '~'
+            ext_beg = name.rfind('.')
+            if ext_beg > 0:
+                name, ext = name[:ext_beg], '~' + name[ext_beg:]
+            else:
+                ext = '~'
+
+            if sz == len(name):
+                abbrev_name = name[:width - len(ext)]
+            else:
+                abbrev_name = self._bisect_trunc(name, width - len(ext))
+
+            return '{}{}'.format(abbrev_name, ext)
+
+    def _bisect_trunc(self, s, w):
+        """
+        Using bisection to find the longest substring that is of width less or
+        equal to w.
+        """
+        from itertools import accumulate
+        length = list(accumulate([wcwidth(c) for c in s]))
+        left = 0
+        right = len(s) - 1
+        while left < right:
+            middle = left + (right - left) // 2 + 1
+            if length[middle] == w:
+                return s[middle]
+            elif length[middle] > w:
+                right = middle - 1
+            else:
+                left = middle
+        # The result needs to include the left'th character.
+        return s[:left + 1]
 
     @property
     def highlight_content(self):
