@@ -79,22 +79,6 @@ class NETRApi(object):
             on_exit=lambda: self.ranger.dec_num_fs_op([cur_buf]))
 
     @classmethod
-    def cpas(self, src, dst):
-        cur_buf = self.ranger.cur_buf
-        FSTarget(dst).append(src).cpas(
-            dst,
-            on_begin=lambda: self.ranger.inc_num_fs_op([cur_buf]),
-            on_exit=lambda: self.ranger.dec_num_fs_op([cur_buf]))
-
-    @classmethod
-    def mvas(self, src, dst):
-        cur_buf = self.ranger.cur_buf
-        FSTarget(dst).append(src).mvas(
-            dst,
-            on_begin=lambda: self.ranger.inc_num_fs_op([cur_buf]),
-            on_exit=lambda: self.ranger.dec_num_fs_op([cur_buf]))
-
-    @classmethod
     def render(self, bufNum=None):
         if bufNum:
             buf = self.ranger.bufs[int(bufNum)]

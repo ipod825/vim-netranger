@@ -294,16 +294,6 @@ netranger#mv(src, dst)
 netranger#rm(src)
         Remove path {src}
 
-netranger#cpas(src, dst)
-        Copy path {src} as the path {dst}. Behaves only differently from
-        |netranger#cp|  when {dst} is in under |NETRemoteCacheDir| (i.e. a remote
-        target).
-
-netranger#mvas(src, dst)
-        Move path {src} as the path {dst}. Behaves only differently from
-        |netranger#mv|  when {dst} is in under |NETRemoteCacheDir| (i.e. a remote
-        target).
-
 netranger#mapvimfn(key, fn)
         Add a mapping {key} to perform a vim (or user definied) function with
         name {fn} in a vim-netranger buffer. This function only takes effect

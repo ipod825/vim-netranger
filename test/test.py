@@ -758,29 +758,6 @@ def test_api_cp_remote():
     assert_fs_remote('', ['dir', 'dir2', 'subdir', 'a'])
 
 
-def test_api_cpas_remote():
-    nvim.input('jza')
-    vimcwd = nvim.call('getcwd')
-    nvim.call('netranger#cpas', f'{vimcwd}/dir/subdir',
-              f'{vimcwd}/dir2/subdir')
-    nvim.call('netranger#cpas', f'{vimcwd}/dir/a', f'{vimcwd}/dir2/a')
-    wait_for_fs_free()
-    assert_content('subdir', ind=2, hi='dir', level=1)
-    assert_content('a', ind=3, hi='file', level=1)
-    assert_fs_cache('dir2', ['subdir', 'a'])
-    assert_fs_remote('dir2', ['subdir', 'a'])
-
-
-def test_api_cpas():
-    nvim.input('jza')
-    nvim.call('netranger#cpas', 'dir/subdir', 'dir2/subdir')
-    nvim.call('netranger#cpas', 'dir/a', 'dir2/a')
-    wait_for_fs_free()
-    assert_content('subdir', ind=2, hi='dir', level=1)
-    assert_content('a', ind=3, hi='file', level=1)
-    assert_fs('dir2', ['subdir', 'a'])
-
-
 def test_api_mv():
     nvim.input('za')
     nvim.call('netranger#mv', 'dir/subdir', './')
@@ -804,32 +781,6 @@ def test_api_mv_remote():
     assert_fs_cache('dir', ['subdir2'])
     assert_fs_remote('', ['dir', 'dir2', 'subdir', 'a'])
     assert_fs_remote('dir', ['subdir2'])
-
-
-def test_api_mvas():
-    nvim.input('jza')
-    nvim.call('netranger#mvas', 'dir/subdir', 'dir2/subdir')
-    nvim.call('netranger#mvas', 'dir/a', 'dir2/a')
-    wait_for_fs_free()
-    assert_content('subdir', ind=2, hi='dir', level=1)
-    assert_content('a', ind=3, hi='file', level=1)
-    assert_fs('dir', ['subdir2'])
-    assert_fs('dir2', ['subdir', 'a'])
-
-
-def test_api_mvas_remote():
-    nvim.input('jza')
-    vimcwd = nvim.call('getcwd')
-    nvim.call('netranger#mvas', f'{vimcwd}/dir/subdir',
-              f'{vimcwd}/dir2/subdir')
-    nvim.call('netranger#mvas', f'{vimcwd}/dir/a', f'{vimcwd}/dir2/a')
-    wait_for_fs_free()
-    assert_content('subdir', ind=2, hi='dir', level=1)
-    assert_content('a', ind=3, hi='file', level=1)
-    assert_fs_cache('dir', ['subdir2'])
-    assert_fs_cache('dir2', ['subdir', 'a'])
-    assert_fs_remote('dir', ['subdir2'])
-    assert_fs_remote('dir2', ['subdir', 'a'])
 
 
 def test_api_rm():
@@ -946,15 +897,11 @@ if __name__ == '__main__':
             do_test(test_api_cur_node_path)
 
             do_test(test_api_cp)
-            do_test(test_api_cpas)
             do_test(test_api_mv)
-            do_test(test_api_mvas)
             do_test(test_api_rm)
 
             do_test(fn_remote=test_api_cp_remote)
-            do_test(fn_remote=test_api_cpas_remote)
             do_test(fn_remote=test_api_mv_remote)
-            do_test(fn_remote=test_api_mvas_remote)
             do_test(fn_remote=test_api_rm_remote)
 
         do_test_api()

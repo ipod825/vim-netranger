@@ -73,22 +73,6 @@ class FSTarget(object):
             on_begin()
             Rclone.rm(self.remote_targets, force, on_exit=on_exit)
 
-    def cpas(self, target_dir, on_begin=do_nothing, on_exit=do_nothing):
-        if self.local_targets:
-            on_begin()
-            LocalFS.cp(self.local_targets, target_dir, on_exit=on_exit)
-        if self.remote_targets:
-            on_begin()
-            Rclone.cpas(self.remote_targets, target_dir, on_exit=on_exit)
-
-    def mvas(self, target_dir, on_begin=do_nothing, on_exit=do_nothing):
-        if self.local_targets:
-            on_begin()
-            LocalFS.mv(self.local_targets, target_dir, on_exit=on_exit)
-        if self.remote_targets:
-            on_begin()
-            Rclone.mvas(self.remote_targets, target_dir, on_exit=on_exit)
-
 
 class LocalFS(object):
     # Putting fs_server.py in the pythonx directory fail to import shutil
@@ -316,26 +300,6 @@ class Rclone(LocalFS):
     def cp(self, src_arr, dst, on_exit):
         self.exec_server_cmd(
             'cp', on_exit, {
-                'rsrc': [self.rpath(s) for s in src_arr],
-                'src': src_arr,
-                'rdst': self.rpath(dst),
-                'dst': dst
-            })
-
-    @classmethod
-    def cpas(self, src_arr, dst, on_exit):
-        self.exec_server_cmd(
-            'cpas', on_exit, {
-                'rsrc': [self.rpath(s) for s in src_arr],
-                'src': src_arr,
-                'rdst': self.rpath(dst),
-                'dst': dst
-            })
-
-    @classmethod
-    def mvas(self, src_arr, dst, on_exit):
-        self.exec_server_cmd(
-            'mvas', on_exit, {
                 'rsrc': [self.rpath(s) for s in src_arr],
                 'src': src_arr,
                 'rdst': self.rpath(dst),
