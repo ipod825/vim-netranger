@@ -5,6 +5,7 @@ import os
 import pickle
 import re
 import shutil
+import sys
 import tempfile
 import time
 
@@ -168,13 +169,13 @@ class LocalFS(object):
             pickle.dump(arguments, f)
 
         if sudo:
-            Vim.AsyncRun('sudo python {} {} {}'.format(self.ServerCmd, cmd,
-                                                       fname),
+            Vim.AsyncRun('sudo {} {} {} {}'.format(sys.executable,
+                                                   self.ServerCmd, cmd, fname),
                          on_exit=on_exit,
                          term=True)
         else:
-            Shell.run_async('python {} {} {}'.format(self.ServerCmd, cmd,
-                                                     fname),
+            Shell.run_async('{} {} {} {}'.format(sys.executable,
+                                                 self.ServerCmd, cmd, fname),
                             on_exit=on_exit)
 
     @classmethod
