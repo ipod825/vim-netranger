@@ -925,6 +925,9 @@ if __name__ == '__main__':
         # do_test(fn_remote=test_edit_remote)
         # # TODO
         # # add SORT test for broken link #issue 21
+
+        # TODO
+        # test toggle sudo
         nvim.close()
 
         try:

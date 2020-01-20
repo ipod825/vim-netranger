@@ -45,6 +45,8 @@ keymap = {
     'NETRForceDelete': (['X'], "Force delete all picked entries"),
     'NETRForceDeleteSingle': (['XX'], "Force delete the current entry."),
     'NETRToggleShowHidden': (['zh'], "(Toggle) Show hidden files"),
+    'NETRToggleSudo': (['zs'],
+                       "Toggle sudo privilege for paste/rm operations."),
     'NETRBookmarkSet':
     (['m'], "Bookmark current directory, pending for ui selection"),
     'NETRBookmarkGo': (["'"], "Jump to bookmark, pending for ui selection"),

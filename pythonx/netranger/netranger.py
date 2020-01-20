@@ -980,6 +980,7 @@ class Netranger(object):
 
     def __init__(self):
         self.inited = False
+        self.sudo = False
         self.bufs = {}
         self.wd2bufnum = {}
         self.picked_nodes = defaultdict(set)
@@ -1451,6 +1452,10 @@ class Netranger(object):
             buf.content_outdated = True
         self.cur_buf.refresh_nodes(force_refreh=True)
 
+    def NETRToggleSudo(self):
+        self.sudo = not self.sudo
+        Vim.WarningMsg(f'Sudo is turned {["ooff","on"][self.sudo]}.')
+
     def invoke_map(self, fn):
         if hasattr(self, fn):
             getattr(self, fn)()
@@ -1661,6 +1666,7 @@ class Netranger(object):
             self.cut_nodes = defaultdict(set)
 
             fsfilter.mv(cwd,
+                        sudo=self.sudo,
                         on_begin=lambda: self.inc_num_fs_op(busy_bufs),
                         on_exit=lambda: self.dec_num_fs_op(busy_bufs))
 
@@ -1675,6 +1681,7 @@ class Netranger(object):
 
         self.copied_nodes = defaultdict(set)
         fsfilter.cp(cwd,
+                    sudo=self.sudo,
                     on_begin=lambda: self.inc_num_fs_op(busy_bufs),
                     on_exit=lambda: self.dec_num_fs_op(busy_bufs))
 
@@ -1708,7 +1715,8 @@ class Netranger(object):
         busy_bufs = list(self.picked_nodes.keys())
         self.picked_nodes = defaultdict(set)
 
-        fsfilter.rm(force,
+        fsfilter.rm(force=force,
+                    sudo=self.sudo,
                     on_begin=lambda: self.inc_num_fs_op(busy_bufs),
                     on_exit=lambda: self.dec_num_fs_op(busy_bufs))
 
@@ -1722,7 +1730,8 @@ class Netranger(object):
         fsfilter.append(self.cur_node.fullpath)
         busy_bufs = [cur_buf]
 
-        fsfilter.rm(force,
+        fsfilter.rm(force=force,
+                    sudo=self.sudo,
                     on_begin=lambda: self.inc_num_fs_op(busy_bufs),
                     on_exit=lambda: self.dec_num_fs_op(busy_bufs))
 

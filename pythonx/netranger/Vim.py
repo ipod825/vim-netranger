@@ -108,6 +108,7 @@ else:
                                                    }})')
         else:
             vim.command('10 new')
+            vim.command('startinsert')
             cmd_win_id = vim.eval('win_getid()')
             vim.command('call term_start("{}", {{\
                         "curwin":v:true,\

@@ -49,29 +49,50 @@ class FSTarget(object):
             self.local_targets.extend(paths)
         return self
 
-    def mv(self, target_dir, on_begin=do_nothing, on_exit=do_nothing):
+    def mv(self,
+           target_dir,
+           sudo=False,
+           on_begin=do_nothing,
+           on_exit=do_nothing):
         if self.local_targets:
             on_begin()
-            LocalFS.mv(self.local_targets, target_dir, on_exit=on_exit)
+            LocalFS.mv(self.local_targets,
+                       target_dir,
+                       sudo=sudo,
+                       on_exit=on_exit)
         if self.remote_targets:
             on_begin()
             Rclone.mv(self.remote_targets, target_dir, on_exit=on_exit)
 
-    def cp(self, target_dir, on_begin=do_nothing, on_exit=do_nothing):
+    def cp(self,
+           target_dir,
+           sudo=False,
+           on_begin=do_nothing,
+           on_exit=do_nothing):
         if self.local_targets:
             on_begin()
-            LocalFS.cp(self.local_targets, target_dir, on_exit=on_exit)
+            LocalFS.cp(self.local_targets,
+                       target_dir,
+                       sudo=sudo,
+                       on_exit=on_exit)
         if self.remote_targets:
             on_begin()
             Rclone.cp(self.remote_targets, target_dir, on_exit=on_exit)
 
-    def rm(self, force, on_begin=do_nothing, on_exit=do_nothing):
+    def rm(self,
+           force=False,
+           sudo=False,
+           on_begin=do_nothing,
+           on_exit=do_nothing):
         if self.local_targets:
             on_begin()
-            LocalFS.rm(self.local_targets, force, on_exit=on_exit)
+            LocalFS.rm(self.local_targets,
+                       force=force,
+                       sudo=sudo,
+                       on_exit=on_exit)
         if self.remote_targets:
             on_begin()
-            Rclone.rm(self.remote_targets, force, on_exit=on_exit)
+            Rclone.rm(self.remote_targets, force=force, on_exit=on_exit)
 
 
 class LocalFS(object):
@@ -141,25 +162,43 @@ class LocalFS(object):
         shutil.move(src, dst)
 
     @classmethod
-    def exec_server_cmd(self, cmd, on_exit, arguments):
+    def exec_server_cmd(self, cmd, on_exit, arguments, sudo=False):
         fname = tempfile.mkstemp()[1]
         with open(fname, 'ab') as f:
             pickle.dump(arguments, f)
-        Shell.run_async(f'python {self.ServerCmd} {cmd} {fname}',
-                        on_exit=on_exit)
+
+        if sudo:
+            Vim.AsyncRun('sudo python {} {} {}'.format(self.ServerCmd, cmd,
+                                                       fname),
+                         on_exit=on_exit,
+                         term=True)
+        else:
+            Shell.run_async('python {} {} {}'.format(self.ServerCmd, cmd,
+                                                     fname),
+                            on_exit=on_exit)
 
     @classmethod
-    def mv(self, src_arr, dst, on_exit=None):
-        self.exec_server_cmd('mv', on_exit, {'src': src_arr, 'dst': dst})
+    def mv(self, src_arr, dst, sudo=False, on_exit=None):
+        self.exec_server_cmd('mv',
+                             on_exit, {
+                                 'src': src_arr,
+                                 'dst': dst
+                             },
+                             sudo=sudo)
 
     @classmethod
-    def cp(self, src_arr, dst, on_exit):
-        self.exec_server_cmd('cp', on_exit, {'src': src_arr, 'dst': dst})
+    def cp(self, src_arr, dst, sudo=False, on_exit=None):
+        self.exec_server_cmd('cp',
+                             on_exit, {
+                                 'src': src_arr,
+                                 'dst': dst
+                             },
+                             sudo=sudo)
 
     @classmethod
-    def rm(self, src_arr, force=False, on_exit=None):
+    def rm(self, src_arr, force=False, sudo=False, on_exit=None):
         # TODO force?
-        self.exec_server_cmd('rm', on_exit, {'src': src_arr})
+        self.exec_server_cmd('rm', on_exit, {'src': src_arr}, sudo=sudo)
 
     @classmethod
     def touch(self, name):

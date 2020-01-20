@@ -161,6 +161,9 @@ XX         Force delete the current entry.
                                         *NETRToggleShowHidden* *g:NETRToggleShowHidden*
 zh         Toggle Show hidden files.
 
+                                        *NETRToggleSudo* *g:NETRToggleSudo*
+zs         Toggle sudo privilege for paste/rm operations.
+
                                         *NETRBookmarkSet* *g:NETRBookmarkSet*
 m          Bookmark current directory, pending for ui selection.
            See |vim-netranger-user-interface|.
