@@ -1454,7 +1454,7 @@ class Netranger(object):
 
     def NETRToggleSudo(self):
         self.sudo = not self.sudo
-        Vim.WarningMsg(f'Sudo is turned {["ooff","on"][self.sudo]}.')
+        Vim.WarningMsg(f'Sudo is turned {["off","on"][self.sudo]}.')
 
     def invoke_map(self, fn):
         if hasattr(self, fn):
