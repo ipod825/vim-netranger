@@ -27,9 +27,9 @@ else:
 
 def c256(msg, c, background):
     if background:
-        return '[38;5;{};7m{}[0m'.format(c, msg)
+        return f'[38;5;{c};7m{msg}[0m'
     else:
-        return '[38;5;{}m{}[0m'.format(c, msg)
+        return f'[38;5;{c}m{msg}[0m'
 
 
 class Node(object):
@@ -136,7 +136,7 @@ class EntryNode(Node):
             else:
                 abbrev_name = self._bisect_trunc(name, width - len(ext))
 
-            return '{}{}'.format(abbrev_name, ext)
+            return f'{abbrev_name}{ext}'
 
     def _bisect_trunc(self, s, w):
         """
@@ -194,8 +194,8 @@ class EntryNode(Node):
                                      left_extra_len -
                                      right_extra_len)) + c(right) + right_extra
 
-        return c('{}{}{}'.format(
-            left, self.abbrev_name(width - len(left) - len(right)), right))
+        return c(
+            f'{left}{self.abbrev_name(width - len(left) - len(right))}{right}')
 
     @property
     def mtime(self):
@@ -416,8 +416,7 @@ class NetRangerBuf(object):
         cur_node = self.cur_node
         if not cur_node.is_INFO:
             cur_node.re_stat()
-            meta = ' {} {} {} {}'.format(cur_node.acl, cur_node.user,
-                                         cur_node.group, cur_node.mtime)
+            meta = f' {cur_node.acl} {cur_node.user} {cur_node.group} {cur_node.mtime}'
         self.footer_node.name = meta.strip()
         Vim.current.buffer[-1] = self.footer_node.highlight_content
 
@@ -628,19 +627,19 @@ class NetRangerBuf(object):
             if cur_node.level > prevNode.level:
                 # cur_node must be a DirNode, hence the same as in the folloing
                 # "cur_node.is_DIR" case
-                prefix += '  {}{}'.format(sort_fn(prevNode), prevNode.name)
+                prefix += f'  {sort_fn(prevNode)}{prevNode.name}'
                 prefixEndInd.append(len(prefix))
             else:
                 prefixEndInd = prefixEndInd[:cur_node.level + 1]
                 prefix = prefix[:prefixEndInd[-1]]
             if cur_node.is_DIR:
                 sortedNodes.append(
-                    ('{}  {}{}'.format(prefix, sort_fn(cur_node),
-                                       cur_node.name), cur_node))
+                    (f'{prefix}  {sort_fn(cur_node)}{cur_node.name}',
+                     cur_node))
             else:
                 sortedNodes.append(
-                    ('{} ~{}{}'.format(prefix, sort_fn(cur_node),
-                                       cur_node.name), cur_node))
+                    (f'{prefix} ~{sort_fn(cur_node)}{cur_node.name}',
+                     cur_node))
 
         sortedNodes = sorted(sortedNodes, key=lambda x: x[0])
         sortedNodes = [node[1] for node in sortedNodes]
@@ -725,7 +724,7 @@ class NetRangerBuf(object):
 
     def move_vim_cursor(self, lineNo):
         """Will trigger on_cursormoved."""
-        Vim.command('call cursor({},1)'.format(lineNo + 1))
+        Vim.command(f'call cursor({lineNo + 1},1)')
 
     def set_clineno_by_lineno(self, lineno):
         self.move_vim_cursor(lineno)
@@ -768,7 +767,7 @@ class NetRangerBuf(object):
         # This is a work-abound for the fact that
         # nVim.current.buffer[i]=content
         # moves the cursor
-        Vim.command('call setline({},"{}")'.format(i + 1, content))
+        Vim.command(f'call setline({i+1},"{content}")')
 
     def refresh_lines_hi(self, lineNos):
         Vim.command('setlocal modifiable')
@@ -806,7 +805,7 @@ class NetRangerBuf(object):
         target_dir = self.cur_node.fullpath
         if not os.path.isdir(target_dir):
             target_dir = os.path.dirname(target_dir)
-        Vim.command('silent lcd {}'.format(target_dir))
+        Vim.command(f'silent lcd {target_dir}')
         self.last_vim_pwd = target_dir
 
     def toggle_expand(self, rec=False):
@@ -833,8 +832,8 @@ class NetRangerBuf(object):
                 cur_node.expanded = True
                 self.expanded_nodes.add(cur_node)
             except PermissionError:
-                Vim.ErrorMsg('Permission Denied. Not Expanding: {}'.format(
-                    cur_node.name))
+                Vim.ErrorMsg(
+                    f'Permission Denied. Not Expanding: {cur_node.name}')
                 return
 
             if rec:
@@ -849,8 +848,8 @@ class NetRangerBuf(object):
                             self.expanded_nodes.add(iter_node)
                         except PermissionError:
                             Vim.ErrorMsg(
-                                'Permission Denied. Not Expanding: {}'.format(
-                                    iter_node.name))
+                                f'Permission Denied. Not Expanding: {iter_node.name}'
+                            )
                     ind += 1
 
             if len(new_nodes) > 0:
@@ -1087,20 +1086,18 @@ class Netranger(object):
             return escape_key
 
         for key in self.key2fn:
-            Vim.command("nnoremap <nowait> <silent> <buffer> {} "
-                        ':py3 ranger.key2fn[\"{}\"]()<cr>'.format(
-                            key, literal(key)))
+            Vim.command(f'nnoremap <nowait> <silent> <buffer> {key} '
+                        f':py3 ranger.key2fn[\"{literal(key)}\"]()<cr>')
         for key in self.visual_key2fn:
-            Vim.command("vnoremap <nowait> <silent> <buffer> {} "
-                        ':py3 ranger.visual_key2fn[\"{}\"]()<cr>'.format(
-                            key, literal(key)))
+            Vim.command(f'vnoremap <nowait> <silent> <buffer> {key} '
+                        f':py3 ranger.visual_key2fn[\"{literal(key)}\"]()<cr>')
 
     def unmap_keys(self):
         for key, fn in self.key2fn.items():
-            Vim.command("nunmap <silent> <buffer> {}".format(key))
+            Vim.command(f'nunmap <silent> <buffer> {key}')
 
         for key, fn in self.visual_key2fn.items():
-            Vim.command("vunmap <silent> <buffer> {}".format(key))
+            Vim.command(f'vunmap <silent> <buffer> {key}')
 
     def map(self, key, fn, check=False):
         if check and key in self.key2fn:
@@ -1172,7 +1169,7 @@ class Netranger(object):
     def show_existing_buf(self, bufname):
         ori_bufnum = Vim.current.buffer.number
         existed_bufnum = self.wd2bufnum[bufname]
-        Vim.command('{}b'.format(existed_bufnum))
+        Vim.command(f'{existed_bufnum}b')
         self.set_buf_option()
         buf = self.bufs[existed_bufnum]
         self.refresh_curbuf()
@@ -1183,7 +1180,7 @@ class Netranger(object):
 
         if ori_bufnum not in self.bufs:
             # wipe out the [No Name] temporary buffer
-            Vim.command('bwipeout {}'.format(ori_bufnum))
+            Vim.command(f'bwipeout {ori_bufnum}')
         buf.set_clineno_by_lineno(buf.clineNo)
 
     def gen_new_buf(self, bufname):
@@ -1194,7 +1191,7 @@ class Netranger(object):
         else:
             self.bufs[bufnum] = NetRangerBuf(self, os.path.abspath(bufname),
                                              LocalFS)
-        Vim.command('silent file N:{}'.format(bufname))
+        Vim.command(f'silent file N:{bufname}')
 
         self.map_keys()
         self.wd2bufnum[bufname] = bufnum
@@ -1293,12 +1290,12 @@ class Netranger(object):
         fullpath = cur_node.fullpath
         if cur_node.is_DIR:
             if not os.access(cur_node.fullpath, os.X_OK):
-                Vim.ErrorMsg('Permission Denied: {}'.format(cur_node.name))
+                Vim.ErrorMsg(f'Permission Denied: {cur_node.name}')
                 return
             if use_rifle and rifle_cmd is not None:
-                Shell.run_async(rifle_cmd.format('"{}"'.format(fullpath)))
+                Shell.run_async(rifle_cmd.format(f'"{fullpath}"'))
             else:
-                Vim.command('silent {} {}'.format(open_cmd, fullpath))
+                Vim.command(f'silent {open_cmd} {fullpath}')
                 # Manually call on_bufenLer as old vim version might not
                 # trigger BufEnter with the above command. It does not cause
                 # too much overhead calling on_bufenter two times because most
@@ -1312,10 +1309,10 @@ class Netranger(object):
                 rifle_cmd = self.rifle.decide_open_cmd(fullpath)
 
             if use_rifle and rifle_cmd is not None:
-                Shell.run_async(rifle_cmd.format('"{}"'.format(fullpath)))
+                Shell.run_async(rifle_cmd.format(f'"{fullpath}"'))
             else:
                 try:
-                    Vim.command('{} {}'.format(open_cmd, fullpath))
+                    Vim.command(f'{open_cmd} {fullpath}')
                 except Exception as e:
                     err_msg = str(e)
                     if 'E325' not in err_msg:
@@ -1351,11 +1348,11 @@ class Netranger(object):
             self.NETROpen(Vim.Var('NETRSplitOrientation') + ' vsplit',
                           use_rifle=False)
             newsize = Vim.CurWinWidth() * Vim.Var('NETRPanelSize')
-            Vim.command('vertical resize {}'.format(newsize))
+            Vim.command(f'vertical resize {newsize}')
         else:
             fpath = self.cur_node.fullpath
             Vim.command('wincmd l')
-            Vim.command('edit {}'.format(fpath))
+            Vim.command(f'edit {fpath}')
 
     def NETRAskOpen(self):
         fullpath = self.cur_node.fullpath
@@ -1373,7 +1370,7 @@ class Netranger(object):
         cur_buf = self.cur_buf
         cwd = cur_buf.wd
         pdir = LocalFS.parent_dir(cwd)
-        Vim.command('silent edit {}'.format(pdir))
+        Vim.command(f'silent edit {pdir}')
         # Manually call on_bufenter, see comments in NETROpen
         self.on_bufenter(Vim.eval("winnr()"))
         cur_buf = self.cur_buf
@@ -1395,7 +1392,7 @@ class Netranger(object):
 
     def NETRVimCD(self):
         self.cur_buf.VimCD()
-        Vim.WarningMsg('Set pwd to {}'.format(Vim.eval('getcwd()')))
+        Vim.WarningMsg(f'Set pwd to {Vim.eval("getcwd()")}')
 
     def NETRToggleExpand(self):
         self.cur_buf.toggle_expand()
@@ -1474,7 +1471,7 @@ class Netranger(object):
         # The following ls ensure that the directory exists on some remote file
         # system
         Shell.ls(fullpath)
-        Vim.command('silent edit {}'.format(fullpath))
+        Vim.command(f'silent edit {fullpath}')
         # Manually perform part of on_bufenter as synchronous
         # on_bufenter block (nested) on_bufenter event handler
         if self.buf_existed(fullpath):
@@ -1695,7 +1692,7 @@ class Netranger(object):
         cut_busy_bufs = list(self.cut_nodes.keys()) + [cur_buf]
         copy_busy_bufs = [cur_buf]
 
-        Vim.WarningMsg('Paste to {}'.format(Vim.eval('getcwd()')))
+        Vim.WarningMsg(f'Paste to {Vim.eval("getcwd()")}')
         self._NETRPaste_copied_nodes(copy_busy_bufs)
         self._NETRPaste_cut_nodes(cut_busy_bufs)
 

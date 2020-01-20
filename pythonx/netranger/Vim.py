@@ -32,10 +32,10 @@ if vim.eval('has("timers")') == "1" and not vim.vars.get("_NETRDebug", False):
 
     def Timer(delay, fn, pyfn, *args):
         if len(args):
-            vim.command('call timer_start({}, function("{}", {}))'.format(
-                delay, fn, list(args)))
+            vim.command(
+                f'call timer_start({delay}, function("{fn}", {list(args)}))')
         else:
-            vim.command('call timer_start({}, "{}")'.format(delay, fn))
+            vim.command(f'call timer_start({delay}, "{fn}")')
 else:
 
     def Timer(delay, fn, pyfn, *args):
@@ -57,7 +57,7 @@ def decode_if_bytes(obj, mode=True):
 
 
 def VimChansend(job_id, msg):
-    vim.command('chansend({},"{}\n")'.format(job_id, msg))
+    vim.command(f'chansend({job_id},"{msg}\n")')
 
 
 _NETRcbks = {}
@@ -84,17 +84,16 @@ if _hasnvim:
 
     def JobStart(cmd, display_progress=False):
         if not display_progress:
-            vim.command('let g:NETRJobId = jobstart(\'{}\',\
+            vim.command(f'let g:NETRJobId = jobstart(\'{cmd}\',\
                     {{"on_stdout":function("netranger#nvimAsyncCallBack"),\
                       "on_stderr":function("netranger#nvimAsyncCallBack"),\
-                      "on_exit":function("netranger#nvimAsyncCallBack")}})'.
-                        format(cmd))
+                      "on_exit":function("netranger#nvimAsyncCallBack")}})')
         else:
             ori_win_nr = vim.eval('win_getid()')
             vim.command('10 new')
             cmd_win_nr = vim.eval('win_getid()')
             vim.command('let g:NETRJobId = termopen(\'{}\',\
-                        {{"on_exit":{{j,d,e -> function("netranger#nvimAsyncDisplayCallBack")(j,d,e,{}, {})}} }})'
+                        {{"on_exit":{{j,d,e -> function("netranger#nvimTermAsyncCallBack")(j,d,e,{}, {})}} }})'
                         .format(cmd, ori_win_nr, cmd_win_nr, cmd_win_nr))
         return str(vim.vars['NETRJobId'])
 
@@ -103,11 +102,11 @@ else:
     def JobStart(cmd, display_progress=False):
         cur_time = str(time.time())
         if not display_progress:
-            vim.command('call job_start(\'{0}\',\
-                    {{"out_cb":{{job,data-> netranger#vimAsyncCallBack("{1}",data,"stdout")}},\
-                      "err_cb":{{job,data-> netranger#vimAsyncCallBack("{1}",data,"stderr")}},\
-                      "exit_cb":{{job,status-> netranger#vimAsyncCallBack("{1}",status,"exit")}} }})'
-                        .format(cmd, cur_time))
+            vim.command(f'call job_start(\'{cmd}\',\
+                    {{"out_cb":{{job,data-> netranger#vimAsyncCallBack("{cur_time}",data,"stdout")}},\
+                      "err_cb":{{job,data-> netranger#vimAsyncCallBack("{cur_time}",data,"stderr")}},\
+                      "exit_cb":{{job,status-> netranger#vimAsyncCallBack("{cur_time}",status,"exit")}} }})'
+                        )
         else:
             pass
         # wait for 'term' options in job_start to be implemented
@@ -169,11 +168,11 @@ def WarningMsg(msg):
 
 
 def Echo(msg):
-    vim.command('unsilent echo "{}"'.format(msg))
+    vim.command(f'unsilent echo "{msg}"')
 
 
 def UserInput(hint, default=''):
-    vim.command('let g:NETRRegister=input("{}: ", "{}")'.format(hint, default))
+    vim.command(f'let g:NETRRegister=input("{hint}: ", "{default}")')
     return decode_if_bytes(vim.vars['NETRRegister'])
 
 
@@ -201,9 +200,9 @@ def tabdrop(path):
     for tab in vim.tabpages:
         for window in tab.windows:
             if window.buffer.name == path:
-                vim.command("tabnext {}".format(tab.number))
+                vim.command(f'tabnext {tab.number}')
                 return
-    vim.command("tabedit {}".format(path))
+    vim.command(f'tabedit {path}')
 
 
 class pbar(object):

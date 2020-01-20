@@ -64,8 +64,8 @@ class Shell():
 
     @classmethod
     def shellrc(cls):
-        return os.path.expanduser('~/.{}rc'.format(
-            os.path.basename(os.environ['SHELL'])))
+        return os.path.expanduser(
+            f'~/.{os.path.basename(os.environ["SHELL"])}rc')
 
     @classmethod
     def mkdir(cls, name):

@@ -25,7 +25,7 @@ class NETRApi(object):
 
     @classmethod
     def mapvimfn(self, key, fn):
-        self.map(key, lambda: Vim.eval('function("{}")()'.format(fn)))
+        self.map(key, lambda: Vim.eval(f'function("{fn}")()'))
 
     @classmethod
     def HasHooker(self, *hooker_names):

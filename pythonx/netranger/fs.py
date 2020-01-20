@@ -145,7 +145,7 @@ class LocalFS(object):
         fname = tempfile.mkstemp()[1]
         with open(fname, 'ab') as f:
             pickle.dump(arguments, f)
-        Shell.run_async('python {} {} {}'.format(self.ServerCmd, cmd, fname),
+        Shell.run_async(f'python {self.ServerCmd} {cmd} {fname}',
                         on_exit=on_exit)
 
     @classmethod
@@ -254,13 +254,13 @@ class Rclone(LocalFS):
     def ls(self, dirname, cheap_remote_ls=False):
         if not cheap_remote_ls and len(dirname) > len(self.root_dir):
             local_files = set([
-                name
-                for name in Shell.run('ls -p "{}"'.format(dirname)).split('\n')
+                name for name in Shell.run(f'ls -p "{dirname}"').split('\n')
                 if len(name) > 0
             ])
             remote_files = set([
-                name for name in Shell.run('rclone lsf "{}"'.format(
-                    self.rpath(dirname))).split('\n') if len(name) > 0
+                name for name in Shell.run(
+                    f'rclone lsf "{self.rpath(dirname)}"').split('\n')
+                if len(name) > 0
             ])
             for name in remote_files.difference(local_files):
                 if name[-1] == '/':
@@ -278,12 +278,11 @@ class Rclone(LocalFS):
     def ensure_downloaded(self, lpath):
         if os.stat(lpath).st_size == 0:
             src, dst = self.sync_src_dst(lpath, Rclone.SyncDirection.DOWN)
-            Shell.run('rclone copyto --tpslimit=10 "{}" "{}"'.format(src, dst))
+            Shell.run(f'rclone copyto --tpslimit=10 "{src}" "{dst}"')
 
     @classmethod
     def rename(self, src, dst):
-        Shell.run('rclone moveto "{}" "{}"'.format(self.rpath(src),
-                                                   self.rpath(dst)))
+        Shell.run(f'rclone moveto "{self.rpath(src)}" "{self.rpath(dst)}"')
         super(Rclone, self).rename(src, dst)
 
     @classmethod
@@ -316,8 +315,9 @@ class Rclone(LocalFS):
     @classmethod
     def touch(self, name):
         Shell.touch(name)
-        Shell.run('rclone copyto "{}" "{}"'.format(
-            name, os.path.join(self.rpath(name), os.path.basename(name))))
+        Shell.run(
+            f'rclone copyto "{name}"'
+            f'"{os.path.join(self.rpath(name), os.path.basename(name))}"')
 
     @classmethod
     def mkdir(self, name):
@@ -326,7 +326,7 @@ class Rclone(LocalFS):
     @classmethod
     def sync(self, lpath, direction):
         src, dst = self.sync_src_dst(lpath, direction)
-        Shell.run('rclone sync "{}" "{}"'.format(src, dst))
+        Shell.run(f'rclone sync "{src}" "{dst}"')
 
     @classmethod
     def run_cmd(self, cmd):
@@ -382,8 +382,7 @@ class Rclone(LocalFS):
             # Should support arm??
             pass
 
-        url = 'https://downloads.rclone.org/rclone-current-{}-{}.zip'\
-            .format(system, processor)
+        url = f'https://downloads.rclone.org/rclone-current-{system}-{processor}.zip'
         zip_fname = os.path.join(rclone_dir, 'rclone.zip')
         Shell.urldownload(url, zip_fname)
         zip_ref = zipfile.ZipFile(zip_fname, 'r')
@@ -401,5 +400,5 @@ class Rclone(LocalFS):
             Shell.shellrc())
         if len(shellrc) > 0:
             with open(shellrc, 'a') as f:
-                f.write('PATH={}:$PATH\n'.format(rclone_dir))
+                f.write(f'PATH={rclone_dir}:$PATH\n')
         os.environ['PATH'] += ':' + rclone_dir
