@@ -13,13 +13,26 @@ function! s:list2str(lst)
     return res
 endfunction
 
-function! netranger#nvimAsyncCallBack(job_id, data, event)
+function! netranger#asyncCallBack(job_id, data, event)
    if a:event == "exit"
         exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","[]")'
     else
-        let data = escape(join(a:data,'\n'),'"')
+        if has("nvim")
+            let data = escape(join(a:data,'\n'),'"')
+        else
+            let data = escape(a:data, '"')
+        endif
         exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","'.data.'")'
    endif
+endfunction
+
+function! netranger#termAsyncCallBack(job_id, data, event, cmd_win_id)
+   call assert_true(a:event == "exit", "termAsyncCallBack should only handle exit")
+   call win_gotoid(a:cmd_win_id)
+   if a:data==0
+       wincmd c
+   endif
+   exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","[]")'
 endfunction
 
 function! netranger#vimAsyncCallBack(job_id, data, event)
