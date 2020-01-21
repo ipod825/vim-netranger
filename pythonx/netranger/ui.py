@@ -99,7 +99,7 @@ class PreviewUI(UI):
                 with open(path, 'r') as f:
                     self.buf[:] = [l.strip() for l in f.readlines()]
             except Exception:
-                self.buf[:] = Shell.run(f'file {path}').split('\n')
+                self.buf[:] = Shell.run(f'file "{path}"').split('\n')
 
         self.buf.options['modifiable'] = False
 
