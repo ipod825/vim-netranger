@@ -1,3 +1,0 @@
-[submodule "pythonx/netranger/thirdparty/wcwidth"]
-	path = pythonx/netranger/thirdparty/wcwidth
-	url = https://github.com/jquast/wcwidth.git

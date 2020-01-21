@@ -10,6 +10,7 @@ current = vim.current
 eval = vim.eval
 vars = vim.vars
 buffers = vim.buffers
+strwidth = vim.strwidth
 
 if _hasnvim:
 

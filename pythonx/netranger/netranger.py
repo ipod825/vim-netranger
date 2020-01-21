@@ -15,7 +15,6 @@ from netranger.enum import Enum
 from netranger.fs import FSTarget, LocalFS, Rclone
 from netranger.rifle import Rifle
 from netranger.shell import Shell
-from netranger.thirdparty.wcwidth.wcwidth import wcswidth, wcwidth
 from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, PreviewUI, SortUI
 
 if platform == "win32":
@@ -117,7 +116,7 @@ class EntryNode(Node):
         else:
             name = self.name
 
-        sz = wcswidth(name)
+        sz = Vim.strwidth(name)
 
         if width >= sz:
             # Conceptually, we should add (width - sz) spaces to meet the
@@ -144,7 +143,7 @@ class EntryNode(Node):
         equal to w.
         """
         from itertools import accumulate
-        length = list(accumulate([wcwidth(c) for c in s]))
+        length = list(accumulate([Vim.strwidth(c) for c in s]))
         left = 0
         right = len(s) - 1
         while left < right:
@@ -176,14 +175,14 @@ class EntryNode(Node):
             left_extra_len = 0
             for hooker in NETRApi.Hookers['node_highlight_content_l']:
                 l_s, l_h = hooker(self)
-                left_extra_len += wcswidth(l_s)
+                left_extra_len += Vim.strwidth(l_s)
                 left_extra += c256(l_s, l_h, False)
 
             right_extra = ''
             right_extra_len = 0
             for hooker in NETRApi.Hookers['node_highlight_content_r']:
                 r_s, r_h = hooker(self)
-                right_extra_len += wcswidth(r_s)
+                right_extra_len += Vim.strwidth(r_s)
                 right_extra += c256(r_s, r_h, False)
 
             # Calling c and concatenation multiple times is rather expensive.
