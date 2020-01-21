@@ -900,8 +900,7 @@ class NetRangerBuf(object):
         for oripath, fullpath in change.items():
             self.fs.rename(oripath, fullpath)
 
-        self.nodes = [self.header_node] + self.sort_nodes(
-            self.nodes) + [self.footer_node]
+        self.nodes = self.nodes_plus_header_footer(self.sort_nodes(self.nodes))
         self.render()
         self.set_clineno_by_node(oriNode)
         Vim.command('setlocal nomodifiable')
@@ -1523,22 +1522,22 @@ class Netranger(object):
         """Increase number of filesystem operation for buffers.
         The mechanisms of filesystem operation locking are as follows:
         1. The general guideline is that after operation, if the content (but
-        1not highlight) of the buffer will change, the buffer should be locked.
-        2. When a buffer contains nodes under deletion, the buffer should be
-        locked.
-        3. When performing paste operation on a buffer, the buffer should be
-        locked. The source buffers for cut nodes should also be locked.
-        However, The source buffers for copied nodes need not be locked as
-        only highlight will change.
+        not highlight) of the buffer will change, the buffer should be locked.
+        2. By 1, when a buffer contains nodes under deletion, the buffer should
+        be locked.
+        3. By 1, when performing paste operation on a buffer, the buffer should
+        be locked. The source buffers for cut nodes should also be locked.
+        However, The source buffers for copied nodes need not be locked as only
+        highlight will change.
         4. When a buffer is locked, NETRTogglePick/NETRDeleteSingle/NETRPaste
-        are forbidden, i.e. operation that will change content of the buffer.
+        are forbidden, i.e. operations that will change content of the buffer.
         5. Note that NETRCut/NETRCopy/NETRDelete get their sources from
         picked_nodes, so they are not forbidden though you still can't pick
         nodes and then perform cut/copy/delete in the current buffer (as
         NETRTogglePick is forbidden in the current buffer)
-        5. To lock a buffer, we increase it's num_fs_op by 1.
-        6. To unlock a buffer, we decrease it's num_fs_op by 1.
-        7. A buffer is considered as locked if its num_fs_op>0.
+        6. To lock a buffer, we increase it's num_fs_op by 1.
+        7. To unlock a buffer, we decrease it's num_fs_op by 1.
+        8. A buffer is considered as locked if its num_fs_op>0.
         """
         for buf in bufs:
             buf.inc_num_fs_op()
