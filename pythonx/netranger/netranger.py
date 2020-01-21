@@ -150,7 +150,7 @@ class EntryNode(Node):
         while left < right:
             middle = left + (right - left) // 2 + 1
             if length[middle] == w:
-                return s[middle]
+                return s[:middle]
             elif length[middle] > w:
                 right = middle - 1
             else:
