@@ -921,7 +921,8 @@ if __name__ == '__main__':
         do_test_delete_remote()
         do_test_pickCopyCutPaste_remote()
 
-        # do_test(test_rifle)
+        do_test(test_rifle)
+
         # do_test(fn_remote=test_edit_remote)
         # # TODO
         # # add SORT test for broken link #issue 21

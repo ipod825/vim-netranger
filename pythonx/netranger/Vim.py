@@ -85,14 +85,14 @@ if _hasnvim:
 
     def JobStart(cmd, term=False):
         if not term:
-            vim.command(f'let g:NETRJobId = jobstart("{cmd}",\
+            vim.command(f'let g:NETRJobId = jobstart(\'{cmd}\',\
                     {{"on_stdout":function("netranger#asyncCallBack"),\
                       "on_stderr":function("netranger#asyncCallBack"),\
                       "on_exit":function("netranger#asyncCallBack")}})')
         else:
             vim.command('10 new')
             cmd_win_id = vim.eval('win_getid()')
-            vim.command('let g:NETRJobId = termopen("{}",\
+            vim.command('let g:NETRJobId = termopen(\'{}\',\
                         {{"on_exit":{{j,d,e -> function("netranger#termAsyncCallBack")(j,d,e, {})}} }})'
                         .format(cmd, cmd_win_id))
         return str(vim.vars['NETRJobId'])
@@ -102,7 +102,7 @@ else:
     def JobStart(cmd, term=False):
         cur_time = str(time.time())
         if not term:
-            vim.command(f'call job_start("{cmd}", {{\
+            vim.command(f'call job_start(\'{cmd}\', {{\
                     "out_cb":{{j,d-> netranger#asyncCallBack("{cur_time}",d,"stdout")}},\
                       "err_cb":{{j,d-> netranger#asyncCallBack("{cur_time}",d,"stderr")}},\
                       "exit_cb":{{j,s-> netranger#asyncCallBack("{cur_time}",s,"exit")}}\
@@ -111,7 +111,7 @@ else:
             vim.command('10 new')
             vim.command('startinsert')
             cmd_win_id = vim.eval('win_getid()')
-            vim.command('call term_start("{}", {{\
+            vim.command('call term_start(\'{}\', {{\
                         "curwin":v:true,\
                         "exit_cb":{{j,s-> netranger#termAsyncCallBack("{}",s,"exit",{})}}\
                                                  }})'.format(
