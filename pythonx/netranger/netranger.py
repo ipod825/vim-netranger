@@ -860,6 +860,11 @@ class NetRangerBuf(object):
         self.render(plain=True)
         Vim.command('setlocal buftype=acwrite')
         Vim.command('setlocal modifiable')
+        Vim.command('let old_undolevels = &undolevels')
+        Vim.command('set undolevels=-1')
+        Vim.command('exe "normal a \<BS>\<Esc>"')
+        Vim.command('let &undolevels = old_undolevels')
+        Vim.command('unlet old_undolevels')
 
     def save(self):
         """Rename the files according to current buffer content.
