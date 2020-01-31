@@ -1173,9 +1173,6 @@ class Netranger(object):
 
     def refresh_curbuf(self):
         cur_buf = self.cur_buf
-        # manually turn off highlight of current linen as synchronous
-        # on_bufenter block on_cursormoved event handler
-        cur_buf.cur_node.cursor_off()
 
         # deal with content changed, e.g., file operation outside
         cur_buf.refresh_nodes()
@@ -1392,10 +1389,6 @@ class Netranger(object):
         # self._manual_on_bufenter()  # case 2
         cur_buf = self.cur_buf
         cur_buf.set_clineno_by_path(cwd)
-        # Manually call on_cursormoved as synchronous on_bufenter block
-        # on_cursormoved event handler, which should trigger by the previous
-        # line.
-        self.on_cursormoved(Vim.current.buffer.number)
 
     def NETRGoPrevSibling(self):
         cur_buf = self.cur_buf
