@@ -1583,9 +1583,8 @@ class Netranger(object):
         cur_buf = self.cur_buf
         if cur_buf.fs_busy():
             return
-        Vim.command('normal! gv')
-        beg = int(Vim.eval('line("\'<")')) - 1
-        end = int(Vim.eval('line("\'>")'))
+        beg = Vim.current.range.start
+        end = Vim.current.range.end + 1
         for i in range(beg, end):
             node = cur_buf.nodes[i]
             res = node.toggle_pick()
@@ -1594,7 +1593,6 @@ class Netranger(object):
             else:
                 self.picked_nodes[cur_buf].remove(node)
         cur_buf.refresh_lines_hi([i for i in range(beg, end)])
-        Vim.command('normal! V')
 
     def NETRCut(self):
         """Move picked_nodes to cut_nodes.

@@ -320,8 +320,8 @@ def test_NETRTogglePick():
 
 def test_NETRTogglePickVisual():
     nvim.input('vVjv')
-    assert_content('dir', ind=0, level=0, hi='dir')
-    assert_content('dir2', ind=1, level=0, hi='pick', hi_fg=True)
+    assert_content('dir', ind=0, level=0, hi='dir', hi_fg=True)
+    assert_content('dir2', ind=1, level=0, hi='pick', hi_fg=False)
 
 
 def test_NETRCut():
