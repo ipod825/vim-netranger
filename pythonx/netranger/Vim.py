@@ -178,26 +178,6 @@ def UserInput(hint, default=''):
     return decode_if_bytes(vim.vars['NETRRegister'])
 
 
-_NETRlastWidth = None
-
-
-def CurWinWidth(cache=False):
-    global _NETRlastWidth
-    if cache:
-        return _NETRlastWidth
-    ve = vim.options['virtualedit']
-    vim.options['virtualedit'] = 'all'
-    vim.command('norm! g$')
-    _NETRlastWidth = int(vim.eval('virtcol(".")'))
-    vim.command('norm! g0')
-    vim.options['virtualedit'] = ve
-    return _NETRlastWidth
-
-
-def VimCurWinHeight():
-    return int(vim.eval("winheight('.')"))
-
-
 def tabdrop(path):
     for tab in vim.tabpages:
         for window in tab.windows:
@@ -216,7 +196,7 @@ class pbar(object):
             self.total = total
         self.cur = 0
         self.chunkSize = chunkSize
-        self.wid = CurWinWidth()
+        self.wid = vim.current.window.width
         self.st_save = vim.current.window.options['statusline']
 
     def __iter__(self):

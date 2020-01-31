@@ -363,7 +363,7 @@ class NetRangerBuf(object):
         # see if any content in the buffer is changed. Adding the header_node
         # simply means we check the mtime of the wd everytime.
         self.expanded_nodes = set([self.header_node])
-        self.winwidth = Vim.CurWinWidth()
+        self.winwidth = Vim.current.window.width
         self.pseudo_header_lineNo = None
         self.pseudo_footer_lineNo = None
         self.is_editing = False
@@ -667,7 +667,7 @@ class NetRangerBuf(object):
         if self.is_editing:
             return
 
-        winwidth = Vim.CurWinWidth()
+        winwidth = Vim.current.window.width
         if self.winwidth != winwidth:
             self.winwidth = winwidth
             self.refresh_lines_hi(range(len(self.nodes)))
@@ -1351,7 +1351,7 @@ class Netranger(object):
         if len(Vim.current.tabpage.windows) == 1:
             self.NETROpen(Vim.Var('NETRSplitOrientation') + ' vsplit',
                           use_rifle=False)
-            newsize = Vim.CurWinWidth() * Vim.Var('NETRPanelSize')
+            newsize = Vim.current.window.width * Vim.Var('NETRPanelSize')
             Vim.command(f'vertical resize {newsize}')
         else:
             fpath = self.cur_node.fullpath
