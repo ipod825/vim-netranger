@@ -1115,6 +1115,24 @@ class Netranger(object):
         if bufnum in self.bufs:
             self.cur_buf.refresh_hi_if_winwidth_changed()
 
+    def _manual_on_bufenter(self):
+        """ Calls on_bufenter manually.
+        Usage case 1:
+            Vim's autocmd does not nested by default and the ++nestd option has
+            bugs on some old vim version. Since sometimes when ranger is
+            handling a BufEnter command, it calls :edit (for e.g., in
+            ranger.bookmarkgo_onuiquit), triggering another (nested) BufEnter
+            event that will not trigger ranger.on_bufenter due to the
+            aformentioned reason. In such case, we call ranger on_bufenter
+            manually.
+        Usage case 2:
+            In some old vim/python version (see issue #6), due to some unknown
+            bug, :edit does not trigger range.on_bufenter. In such case, we
+            call ranger on_bufenter manually. The overhead for calling
+            on_bufenter two times is light as most things are cached.
+        """
+        self.on_bufenter(Vim.current.buffer.number)
+
     def on_bufenter(self, bufnum):
         """There are four cases on bufenter:
 
@@ -1300,11 +1318,7 @@ class Netranger(object):
                 Shell.run_async(rifle_cmd.format(f'"{fullpath}"'))
             else:
                 Vim.command(f'silent {open_cmd} {fullpath}')
-                # Manually call on_bufenLer as old vim version might not
-                # trigger BufEnter with the above command. It does not cause
-                # too much overhead calling on_bufenter two times because most
-                # of things are cached
-                self.on_bufenter(Vim.eval("winnr()"))
+                self._manual_on_bufenter()  # case 2
         else:
             if self.cur_buf_is_remote:
                 Rclone.ensure_downloaded(fullpath)
@@ -1375,8 +1389,7 @@ class Netranger(object):
         cwd = cur_buf.wd
         pdir = LocalFS.parent_dir(cwd)
         Vim.command(f'silent edit {pdir}')
-        # Manually call on_bufenter, see comments in NETROpen
-        self.on_bufenter(Vim.eval("winnr()"))
+        # self._manual_on_bufenter()  # case 2
         cur_buf = self.cur_buf
         cur_buf.set_clineno_by_path(cwd)
         # Manually call on_cursormoved as synchronous on_bufenter block
@@ -1476,16 +1489,11 @@ class Netranger(object):
         self.bookmarkUI.go()
 
     def bookmarkgo_onuiquit(self, fullpath):
-        # The following ls ensure that the directory exists on some remote file
-        # system
+        # The following ls ensure that the directory exists on some mounted
+        # file system
         Shell.ls(fullpath)
         Vim.command(f'silent edit {fullpath}')
-        # Manually perform part of on_bufenter as synchronous
-        # on_bufenter block (nested) on_bufenter event handler
-        if self.buf_existed(fullpath):
-            self.show_existing_buf(fullpath)
-        else:
-            self.gen_new_buf(fullpath)
+        self._manual_on_bufenter()  # case 1
 
     def NETRBookmarkEdit(self):
         self.init_bookmark_ui()
