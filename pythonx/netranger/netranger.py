@@ -658,7 +658,7 @@ class NetRangerBuf(object):
             self.vim_buf_handel[:] = self.highlight_content
         self.vim_buf_handel.options['modifiable'] = False
         if Vim.current.buffer.number is self.vim_buf_handel.number:
-            self.move_vim_cursor(self.clineNo)
+            self._move_vim_cursor(self.clineNo)
 
         for hooker in NETRApi.Hookers['render_end']:
             hooker(self)
@@ -670,7 +670,28 @@ class NetRangerBuf(object):
         winwidth = Vim.current.window.width
         if self.winwidth != winwidth:
             self.winwidth = winwidth
-            self.refresh_lines_hi(range(len(self.nodes)))
+            Vim.command('setlocal modifiable')
+            for i, node in enumerate(self.nodes):
+                Vim.command(f'call setline({i+1},"{node.highlight_content}")')
+            Vim.command('setlocal nomodifiable')
+
+    def _move_vim_cursor(self, lineNo):
+        """ Will trigger on_cursormoved -> _update_clineno. """
+        Vim.command(f'call cursor({lineNo + 1},1)')
+
+    def _update_clineno(self, newLineNo):
+        """ Turn on newLineNo and turn off self.clineNo. """
+        if newLineNo == self.clineNo:
+            self.nodes[newLineNo].cursor_on()
+            self.refresh_lines_hi([newLineNo])
+            return
+
+        oc = self.clineNo
+        self.clineNo = newLineNo
+        if oc < len(self.nodes):
+            self.nodes[oc].cursor_off()
+        self.nodes[newLineNo].cursor_on()
+        self.refresh_lines_hi([oc, newLineNo])
 
     def on_cursormoved(self):
         """Remember the current line no.
@@ -721,46 +742,24 @@ class NetRangerBuf(object):
         self.set_pseudo_footer_content(self.clineNo)
         Vim.command("setlocal nomodifiable")
 
-    def move_vim_cursor(self, lineNo):
-        """Will trigger on_cursormoved."""
-        Vim.command(f'call cursor({lineNo + 1},1)')
-
     def set_clineno_by_lineno(self, lineno):
-        self.move_vim_cursor(lineno)
+        self._move_vim_cursor(lineno)
 
     def set_clineno_by_path(self, path):
-        """Real work is done in on_cursormoved.
-
-        Eventually call _update_clineno.
+        """
         """
         for ind, node in enumerate(self.nodes):
             if node.fullpath == path:
-                self.move_vim_cursor(ind)
+                self._move_vim_cursor(ind)
                 break
 
     def set_clineno_by_node(self, node, ori_clineNo=0):
-        """Real work is done in on_cursormoved.
-
-        Eventually call _update_clineno.
+        """
         """
         if node in self.nodes:
-            self.move_vim_cursor(self.nodes.index(node))
+            self._move_vim_cursor(self.nodes.index(node))
         else:
-            self.move_vim_cursor(ori_clineNo)
-
-    def _update_clineno(self, newLineNo):
-        """Turn on newLineNo and turn off self.clineNo."""
-        if newLineNo == self.clineNo:
-            self.nodes[newLineNo].cursor_on()
-            self.refresh_lines_hi([newLineNo])
-            return
-
-        oc = self.clineNo
-        self.clineNo = newLineNo
-        if oc < len(self.nodes):
-            self.nodes[oc].cursor_off()
-        self.nodes[newLineNo].cursor_on()
-        self.refresh_lines_hi([oc, newLineNo])
+            self._move_vim_cursor(ori_clineNo)
 
     def vim_set_line(self, i, content):
         # This is a work-abound for the fact that
@@ -1111,8 +1110,9 @@ class Netranger(object):
         self.key2fn[key] = fn
 
     def on_winenter(self, bufnum):
-        # deal with window width changed
+
         if bufnum in self.bufs:
+
             self.cur_buf.refresh_hi_if_winwidth_changed()
 
     def _manual_on_bufenter(self):
