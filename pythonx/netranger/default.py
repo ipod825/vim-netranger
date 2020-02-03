@@ -52,12 +52,12 @@ keymap = {
     'NETRBookmarkGo': (["'"], "Jump to bookmark, pending for ui selection"),
     'NETRBookmarkEdit': (["em"], "Open bookmark file to edit"),
     'NETRSort':
-    (['S'], 'Sort contnet in current directory, pending for ui selection'),
+    (['S'], 'Sort contnet in current directory, pending for ui selection.'),
     'NETRHelp': (['?'], "Show help message"),
     'NETRefresh':
     (['r'],
      "Force refresh netranger buffer to be the same as the file system"),
-    'NETRTogglePreview': (["P"], "Open preview window"),
+    'NETRTogglePreview': (["P"], "Toggle open preview window."),
 }
 
 visual_keymap = {
@@ -98,6 +98,7 @@ variables = {
     'NETRColors': {},
     'NETRRedrawDelay': 200,
     'NETRLazyLoadStat': False,
+    'NETRPreviewDefaultOn': True,
 }
 
 internal_variables = {

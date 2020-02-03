@@ -344,7 +344,7 @@ class NetRangerBuf(object):
         self._num_fs_op = 0
         self._pending_on_cursormoved_post = 0
         self._last_on_curosormoved_lineno = -1
-        self.is_previewing = False
+        self.is_previewing = Vim.Var('NETRPreviewDefaultOn')
 
         self.content_outdated = False
         self._highlight_outdated_nodes = set()
@@ -876,21 +876,27 @@ class NetRangerBuf(object):
             total_width = Vim.current.window.width
             preview_width = int(total_width * Vim.Var('NETRPreviewSize') / 2)
 
-            # # parent panel needs more design. Specificall, the cwd is too short when 3 vertical splits exists.
+            # # parent panel needs more design. Specifically, the cwd is too
+            # short # when 3 vertical splits exists. Besides, it seems too slow
+            # that is not competitive to ranger.
             # parent_width = int(total_width * Vim.Var('NETRParentPreviewSize') /
             #                    2)
             # Vim.command(f'topleft vertical vsplit {os.path.dirname(self.wd)}')
             # Vim.current.window.width = parent_width
             # Vim.command('wincmd l')
 
-        if cur_node.is_DIR:
+        if cur_node.is_INFO:
+            self.refresh_highlight_if_winwidth_changed()
+            return
+        elif cur_node.is_DIR:
             with self._controler.OpenBufWithWidth(preview_width):
                 with self.ManualRefreshOnWidthChange():
                     Vim.command(f'botright vsplit {cur_node.fullpath}')
         else:
-            Vim.command(f'noswap botright vsplit {cur_node.fullpath}')
-            Vim.current.window.width = preview_width
+            Vim.command(f'botright vnew')
+            Vim.command(f'view {cur_node.fullpath}')
             Vim.command('setlocal foldnestmax=0')
+            Vim.current.window.width = preview_width
 
         with self.ManualRefreshOnWidthChange():
             Vim.command('wincmd h')

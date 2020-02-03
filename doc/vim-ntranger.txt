@@ -188,6 +188,8 @@ r          Force refresh netranger buffer to be the same as the file system.
            file system such that vim-netranger fails to detect change on file
            system.
 
+                                        *NETRTogglePreview* *g:NETRTogglePreview*
+P          Toggle open preview window.
 -------------------------------------------------------------------------------
 USER INTERFACE                          *vim-netranger-user-interface*
 
@@ -404,6 +406,9 @@ g:NETRNETRLazyLoadStat  boolean (default off)
     information). Usually this is not necessary unless your file system is not
     an actual local file system (where each stat call involves an rpc).
 
+                                        *g:NETRPreviewDefaultOn*
+g:NETRPreviewDefaultOn  boolean (default on)
+    Whether the preview window is on by default.
 -------------------------------------------------------------------------------
 COLORS                                  *vim-netranger-colors*
 
