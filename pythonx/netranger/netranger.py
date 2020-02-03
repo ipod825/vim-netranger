@@ -160,10 +160,10 @@ class EntryNode(Node):
     @property
     def highlight_content(self):
         width = self.buf.winwidth
-        levelPad = '  ' * self.level
+        level_pad = '  ' * self.level
         size_info = self.size.rjust(file_sz_display_wid + 1)
 
-        left = levelPad
+        left = level_pad
         right = size_info
 
         def c(msg):
@@ -296,7 +296,7 @@ class EntryNode(Node):
         self.state = Node.State.UNDEROP
         self.set_highlight(default.color['copy'])
 
-    def reset_hi(self):
+    def reset_highlight(self):
         self.state = Node.State.NORMAL
         self.highlight = self.ori_highlight
 
@@ -328,51 +328,50 @@ class NetRangerBuf(object):
 
     @property
     def cur_node(self):
-        return self.nodes[self.clineNo]
+        return self.nodes[self.clineno]
 
     @property
     def highlight_outdated(self):
-        return 0 < len(self.highlight_outdated_nodes)
+        return 0 < len(self._highlight_outdated_nodes)
 
     def nodes_plus_header_footer(self, nodes):
-        return [self.header_node] + nodes + [self.footer_node]
+        return [self._header_node] + nodes + [self._footer_node]
 
     def __init__(self, controler, wd, fs):
-        self.controler = controler
+        self._controler = controler
         self.wd = wd
         self.last_vim_pwd = self.wd
         self.fs = fs
-        self.num_fs_op = 0
-        self.pending_on_cursormoved_post = 0
-        self.last_on_curosormoved_lineNo = -1
+        self._num_fs_op = 0
+        self._pending_on_cursormoved_post = 0
+        self._last_on_curosormoved_lineno = -1
 
         self.content_outdated = False
-        self.highlight_outdated_nodes = set()
-        self.nodes_order_outdated = False
+        self._highlight_outdated_nodes = set()
+        self._sort_outdated = False
 
         if Vim.Var('NETRAutochdir'):
             Vim.command('lcd ' + wd)
 
-        self.header_node = HeaderNode(wd)
-        self.footer_node = FooterNode()
+        self._header_node = HeaderNode(wd)
+        self._footer_node = FooterNode()
         self.nodes = self.nodes_plus_header_footer(self.create_nodes(self.wd))
 
-        self.clineNo = 1
-        self.nodes[self.clineNo].cursor_on()
+        self.clineno = 1
+        self.nodes[self.clineno].cursor_on()
         # In refresh_nodes we need to check the mtime of all expanded nodes to
         # see if any content in the buffer is changed. Adding the header_node
         # simply means we check the mtime of the wd everytime.
-        self.expanded_nodes = set([self.header_node])
+        self._expanded_nodes = set([self._header_node])
         self.winwidth = Vim.current.window.width
-        self.pseudo_header_lineNo = None
-        self.pseudo_footer_lineNo = None
+        self._pseudo_header_lineno = None
+        self._pseudo_footer_lineno = None
         self.is_editing = False
-        self.visual_start_line = 0
-        self.vim_buf_handel = Vim.current.buffer
-        self.render()
+        self._vim_buf_handel = Vim.current.buffer
+        self._render()
 
     def fs_busy(self, echo=True):
-        if self.num_fs_op > 0:
+        if self._num_fs_op > 0:
             if echo:
                 Vim.ErrorMsg(
                     'Previous operation that might change the view is not done'
@@ -382,10 +381,10 @@ class NetRangerBuf(object):
             return False
 
     def inc_num_fs_op(self):
-        self.num_fs_op += 1
+        self._num_fs_op += 1
 
     def dec_num_fs_op(self):
-        self.num_fs_op -= 1
+        self._num_fs_op -= 1
 
     def abbrev_cwd(self, width):
         res = self.wd.replace(Shell.userhome, '~')
@@ -407,8 +406,8 @@ class NetRangerBuf(object):
                 total += len(sp[i]) - 1
 
     def set_header_content(self):
-        self.header_node.name = self.abbrev_cwd(self.winwidth).strip()
-        Vim.current.buffer[0] = self.header_node.highlight_content
+        self._header_node.name = self.abbrev_cwd(self.winwidth).strip()
+        Vim.current.buffer[0] = self._header_node.highlight_content
 
     def set_footer_content(self):
         meta = ''
@@ -416,16 +415,16 @@ class NetRangerBuf(object):
         if not cur_node.is_INFO:
             cur_node.re_stat()
             meta = f' {cur_node.acl} {cur_node.user} {cur_node.group} {cur_node.mtime}'
-        self.footer_node.name = meta.strip()
-        Vim.current.buffer[-1] = self.footer_node.highlight_content
+        self._footer_node.name = meta.strip()
+        Vim.current.buffer[-1] = self._footer_node.highlight_content
 
-    def set_pseudo_header_content(self, clineNo):
+    def set_pseudo_header_content(self, clineno):
         # recover content for the last line occupied by pseudo header
         # ignore error when buffer no longer has the last line
-        if self.pseudo_header_lineNo is not None:
+        if self._pseudo_header_lineno is not None:
             try:
-                Vim.current.buffer[self.pseudo_header_lineNo] = self.nodes[
-                    self.pseudo_header_lineNo].highlight_content
+                Vim.current.buffer[self._pseudo_header_lineno] = self.nodes[
+                    self._pseudo_header_lineno].highlight_content
             except IndexError:
                 pass
 
@@ -435,22 +434,22 @@ class NetRangerBuf(object):
         if first_visible_line > 0:
             # if current line is at the header we need to keep the current line
             # to be 2nd visible line
-            if first_visible_line == clineNo:
+            if first_visible_line == clineno:
                 Vim.command("normal! ")
                 first_visible_line -= 1
-            self.pseudo_header_lineNo = first_visible_line
+            self._pseudo_header_lineno = first_visible_line
             Vim.current.buffer[
-                first_visible_line] = self.header_node.highlight_content
+                first_visible_line] = self._header_node.highlight_content
         else:
-            self.pseudo_header_lineNo = None
+            self._pseudo_header_lineno = None
 
-    def set_pseudo_footer_content(self, clineNo):
+    def set_pseudo_footer_content(self, clineno):
         # recover content for the last line occupied by pseudo footer
         # ignore error when buffer no longer has the last line
-        if self.pseudo_footer_lineNo is not None:
+        if self._pseudo_footer_lineno is not None:
             try:
-                Vim.current.buffer[self.pseudo_footer_lineNo] = self.nodes[
-                    self.pseudo_footer_lineNo].highlight_content
+                Vim.current.buffer[self._pseudo_footer_lineno] = self.nodes[
+                    self._pseudo_footer_lineno].highlight_content
             except IndexError:
                 pass
 
@@ -460,21 +459,21 @@ class NetRangerBuf(object):
         if last_visible_line < int(Vim.eval("line('$')")) - 1:
             # if current line is at the footer we need to keep the current line
             # to be penultimate visible line
-            if last_visible_line == clineNo:
+            if last_visible_line == clineno:
                 Vim.command("normal! ")
                 last_visible_line += 1
-            self.pseudo_footer_lineNo = last_visible_line
+            self._pseudo_footer_lineno = last_visible_line
             Vim.current.buffer[
-                last_visible_line] = self.footer_node.highlight_content
+                last_visible_line] = self._footer_node.highlight_content
         else:
-            self.pseudo_footer_lineNo = None
+            self._pseudo_footer_lineno = None
 
     def create_nodes(self, wd, level=0):
         nodes = self.create_nodes_with_file_names(self.fs.ls(wd), wd, level)
         return self.sort_nodes(nodes)
 
     def create_nodes_with_file_names(self, files, dirpath, level):
-        files = [f for f in files if not self.controler.should_ignore(f)]
+        files = [f for f in files if not self._controler.should_ignore(f)]
         return [self.create_node(dirpath, f, level) for f in files]
 
     def create_node(self, dirname, basename, level):
@@ -484,7 +483,8 @@ class NetRangerBuf(object):
         else:
             return EntryNode(fullpath, basename, level=level, buf=self)
 
-    def creat_nodes_if_not_exist(self, nodes, dirpath, level, cheap_remote_ls):
+    def create_nodes_if_not_exist(self, nodes, dirpath, level,
+                                  cheap_remote_ls):
         old_paths = set([node.fullpath for node in nodes if not node.is_INFO])
         new_paths = set([
             os.path.join(dirpath, name)
@@ -509,7 +509,7 @@ class NetRangerBuf(object):
            ignore, remove it from the node list so that it will be invisible
            next time.
         """
-        for node in self.expanded_nodes:
+        for node in self._expanded_nodes:
             if os.access(node.fullpath, os.R_OK):
                 ori_mtime = node.stat.st_mtime if node.stat else -1
                 node.re_stat()
@@ -523,12 +523,12 @@ class NetRangerBuf(object):
         self.content_outdated = False
 
         # create nodes corresponding to new files
-        new_nodes = self.creat_nodes_if_not_exist(self.nodes, self.wd, -1,
-                                                  cheap_remote_ls)
+        new_nodes = self.create_nodes_if_not_exist(self.nodes, self.wd, -1,
+                                                   cheap_remote_ls)
         fs_files = [set(self.fs.ls(self.wd, cheap_remote_ls))]
-        nextValidInd = -1
+        next_valid_ind = -1
         for i in range(len(self.nodes)):
-            if i < nextValidInd:
+            if i < next_valid_ind:
                 continue
 
             cur_node = self.nodes[i]
@@ -539,68 +539,68 @@ class NetRangerBuf(object):
             # When the first child of a parent node (directory) is
             # encountered, we push the "context" including the list
             # of existing  files in the parent directory.
-            # When cur_node is no more a decendent of prevNode,
+            # When cur_node is no more a decendent of prev_node,
             # We should reset the "context" to the corresponding parent
             # node.
-            prevNode = self.nodes[i - 1]
-            if cur_node.level > prevNode.level and os.path:
+            prev_node = self.nodes[i - 1]
+            if cur_node.level > prev_node.level and os.path:
                 fs_files.append(
-                    set(self.fs.ls(prevNode.fullpath, cheap_remote_ls)))
+                    set(self.fs.ls(prev_node.fullpath, cheap_remote_ls)))
             else:
                 fs_files = fs_files[:cur_node.level + 1]
 
             # The children of an invalid node will all be invalid
             # Hence, we will start with the next valid node
-            if self.controler.should_ignore(
+            if self._controler.should_ignore(
                     cur_node.name) or cur_node.name not in fs_files[-1]:
-                nextValidInd = self.next_lesseq_level_ind(i)
+                next_valid_ind = self.next_lesseq_level_ind(i)
                 continue
 
             # create nodes corresponding to new files in expanded directories
             new_nodes.append(cur_node)
             if cur_node.is_DIR and cur_node.expanded:
-                nextInd = self.next_lesseq_level_ind(i)
-                new_nodes += self.creat_nodes_if_not_exist(
-                    self.nodes[i + 1:nextInd + 1], cur_node.fullpath,
+                next_ind = self.next_lesseq_level_ind(i)
+                new_nodes += self.create_nodes_if_not_exist(
+                    self.nodes[i + 1:next_ind + 1], cur_node.fullpath,
                     cur_node.level, cheap_remote_ls)
 
-        oriNode = self.cur_node
-        ori_clineNo = self.clineNo
+        ori_node = self.cur_node
+        ori_clineno = self.clineno
         self.nodes = self.nodes_plus_header_footer(self.sort_nodes(new_nodes))
-        self.render()
-        self.set_clineno_by_node(oriNode, ori_clineNo)
+        self._render()
+        self.set_clineno_by_node(ori_node, ori_clineno)
 
     def reverse_sorted_nodes(self, nodes):
         rev = []
-        prevLevel = -1
-        curInd = 0
+        prev_level = -1
+        cur_ind = 0
         for node in nodes:
-            if node.level <= prevLevel:
+            if node.level <= prev_level:
                 for i, n in enumerate(rev):
                     if n.level == node.level:
                         rev.insert(i, node)
-                        curInd = i + 1
+                        cur_ind = i + 1
                         break
             else:
-                rev.insert(curInd, node)
-                curInd += 1
+                rev.insert(cur_ind, node)
+                cur_ind += 1
 
-            prevLevel = node.level
+            prev_level = node.level
         return rev
 
     def sort_prep(self):
-        self.nodes_order_outdated = True
-        self.lastNodeId = self.nodes[self.clineNo]
+        self._sort_outdated = True
+        self._last_node_id = self.nodes[self.clineno]
 
     def sort(self):
-        if not self.nodes_order_outdated:
+        if not self._sort_outdated:
             return
-        self.nodes_order_outdated = False
+        self._sort_outdated = False
         for node in self.nodes:
             node.re_stat()
         self.nodes = self.nodes_plus_header_footer(self.sort_nodes(self.nodes))
-        self.render()
-        self.set_clineno_by_node(self.lastNodeId)
+        self._render()
+        self.set_clineno_by_node(self._last_node_id)
 
     def sort_nodes(self, nodes):
         """Sort the nodes by their path and SortUI.sort_fn.
@@ -614,51 +614,51 @@ class NetRangerBuf(object):
         """
         sort_fn = SortUI.get_sort_fn()
         reverse = SortUI.reverse
-        sortedNodes = []
+        sorted_nodes = []
         prefix = ''
-        prefixEndInd = [0]
+        prefix_end_ind = [0]
         for i in range(len(nodes)):
             cur_node = nodes[i]
             if cur_node.is_INFO:
                 continue
 
-            prevNode = nodes[i - 1]
-            if cur_node.level > prevNode.level:
+            prev_node = nodes[i - 1]
+            if cur_node.level > prev_node.level:
                 # cur_node must be a DirNode, hence the same as in the folloing
                 # "cur_node.is_DIR" case
-                prefix += f'  {sort_fn(prevNode)}{prevNode.name}'
-                prefixEndInd.append(len(prefix))
+                prefix += f'  {sort_fn(prev_node)}{prev_node.name}'
+                prefix_end_ind.append(len(prefix))
             else:
-                prefixEndInd = prefixEndInd[:cur_node.level + 1]
-                prefix = prefix[:prefixEndInd[-1]]
+                prefix_end_ind = prefix_end_ind[:cur_node.level + 1]
+                prefix = prefix[:prefix_end_ind[-1]]
             if cur_node.is_DIR:
-                sortedNodes.append(
+                sorted_nodes.append(
                     (f'{prefix}  {sort_fn(cur_node)}{cur_node.name}',
                      cur_node))
             else:
-                sortedNodes.append(
+                sorted_nodes.append(
                     (f'{prefix} ~{sort_fn(cur_node)}{cur_node.name}',
                      cur_node))
 
-        sortedNodes = sorted(sortedNodes, key=lambda x: x[0])
-        sortedNodes = [node[1] for node in sortedNodes]
+        sorted_nodes = sorted(sorted_nodes, key=lambda x: x[0])
+        sorted_nodes = [node[1] for node in sorted_nodes]
         if reverse:
-            sortedNodes = self.reverse_sorted_nodes(sortedNodes)
+            sorted_nodes = self.reverse_sorted_nodes(sorted_nodes)
 
-        return sortedNodes
+        return sorted_nodes
 
-    def render(self, plain=False):
+    def _render(self, plain=False):
         for hooker in NETRApi.Hookers['render_begin']:
             hooker(self)
 
-        self.vim_buf_handel.options['modifiable'] = True
+        self._vim_buf_handel.options['modifiable'] = True
         if plain:
-            self.vim_buf_handel[:] = self.plain_content
+            self._vim_buf_handel[:] = self.plain_content
         else:
-            self.vim_buf_handel[:] = self.highlight_content
-        self.vim_buf_handel.options['modifiable'] = False
-        if Vim.current.buffer.number is self.vim_buf_handel.number:
-            self._move_vim_cursor(self.clineNo)
+            self._vim_buf_handel[:] = self.highlight_content
+        self._vim_buf_handel.options['modifiable'] = False
+        if Vim.current.buffer.number is self._vim_buf_handel.number:
+            self._move_vim_cursor(self.clineno)
 
         for hooker in NETRApi.Hookers['render_end']:
             hooker(self)
@@ -675,57 +675,57 @@ class NetRangerBuf(object):
                 Vim.command(f'call setline({i+1},"{node.highlight_content}")')
             Vim.command('setlocal nomodifiable')
 
-    def _move_vim_cursor(self, lineNo):
+    def _move_vim_cursor(self, lineno):
         """ Will trigger on_cursormoved -> _update_clineno. """
-        Vim.command(f'call cursor({lineNo + 1},1)')
+        Vim.command(f'call cursor({lineno + 1},1)')
 
-    def _update_clineno(self, newLineNo):
-        """ Turn on newLineNo and turn off self.clineNo. """
-        if newLineNo == self.clineNo:
-            self.nodes[newLineNo].cursor_on()
-            self.refresh_lines_hi([newLineNo])
+    def _update_clineno(self, new_lineno):
+        """ Turn on new_lineno and turn off self.clineno. """
+        if new_lineno == self.clineno:
+            self.nodes[new_lineno].cursor_on()
+            self.refresh_lines_highlight([new_lineno])
             return
 
-        oc = self.clineNo
-        self.clineNo = newLineNo
+        oc = self.clineno
+        self.clineno = new_lineno
         if oc < len(self.nodes):
             self.nodes[oc].cursor_off()
-        self.nodes[newLineNo].cursor_on()
-        self.refresh_lines_hi([oc, newLineNo])
+        self.nodes[new_lineno].cursor_on()
+        self.refresh_lines_highlight([oc, new_lineno])
 
     def on_cursormoved(self):
         """Remember the current line no.
 
         and refresh the highlight of the current line no.
         """
-        clineNo = int(Vim.eval("line('.')")) - 1
+        clineno = int(Vim.eval("line('.')")) - 1
 
         # do not stay on footer
-        if clineNo == len(self.nodes) - 1:
+        if clineno == len(self.nodes) - 1:
             Vim.command('normal! k')
-            clineNo -= 1
+            clineno -= 1
 
-        self._update_clineno(clineNo)
+        self._update_clineno(clineno)
 
         # Avoid throttling by avoiding rerender the buffer (in
         # on_cursormoved_post) for each call of on_cursormoved (e.g. when the
         # user press j and don't let go).
-        self.pending_on_cursormoved_post += 1
+        self._pending_on_cursormoved_post += 1
 
     def on_cursormoved_post(self):
-        self.pending_on_cursormoved_post -= 1
-        if self.pending_on_cursormoved_post > 0:
+        self._pending_on_cursormoved_post -= 1
+        if self._pending_on_cursormoved_post > 0:
             return
 
         # The line self.vim_set_line... below triggers on_cursormoved event,
         # which in term triggers on_cursormoved_post. This test is to avoid
         # such call loop.
-        if self.clineNo == self.last_on_curosormoved_lineNo:
+        if self.clineno == self._last_on_curosormoved_lineno:
             return
-        self.last_on_curosormoved_lineNo = self.clineNo
+        self._last_on_curosormoved_lineno = self.clineno
 
         # Avoid rerender if this buffer is not the current vim buffer.
-        if self.vim_buf_handel.number != Vim.current.buffer.number\
+        if self._vim_buf_handel.number != Vim.current.buffer.number\
                 or self.is_editing:
             return
 
@@ -735,11 +735,11 @@ class NetRangerBuf(object):
 
         # set_footer_content re_stat the node, now we refresh the current
         # node to update the size information
-        self.vim_set_line(self.clineNo,
-                          self.nodes[self.clineNo].highlight_content)
+        self.vim_set_line(self.clineno,
+                          self.nodes[self.clineno].highlight_content)
 
-        self.set_pseudo_header_content(self.clineNo)
-        self.set_pseudo_footer_content(self.clineNo)
+        self.set_pseudo_header_content(self.clineno)
+        self.set_pseudo_footer_content(self.clineno)
         Vim.command("setlocal nomodifiable")
 
     def set_clineno_by_lineno(self, lineno):
@@ -753,13 +753,13 @@ class NetRangerBuf(object):
                 self._move_vim_cursor(ind)
                 break
 
-    def set_clineno_by_node(self, node, ori_clineNo=0):
+    def set_clineno_by_node(self, node, ori_clineno=0):
         """
         """
         if node in self.nodes:
             self._move_vim_cursor(self.nodes.index(node))
         else:
-            self._move_vim_cursor(ori_clineNo)
+            self._move_vim_cursor(ori_clineno)
 
     def vim_set_line(self, i, content):
         # This is a work-abound for the fact that
@@ -767,21 +767,17 @@ class NetRangerBuf(object):
         # moves the cursor
         Vim.command(f'call setline({i+1},"{content}")')
 
-    def refresh_lines_hi(self, lineNos):
+    def refresh_lines_highlight(self, linenos):
         Vim.command('setlocal modifiable')
 
         sz = min(len(self.nodes), len(Vim.current.buffer))
-        for i in lineNos:
+        for i in linenos:
             if i < sz:
                 self.vim_set_line(i, self.nodes[i].highlight_content)
         Vim.command('setlocal nomodifiable')
 
-    def refresh_clineNo(self):
-        if self.clineNo == Vim.eval("line('.')") - 1:
-            return
-
-    def refresh_highlight(self):
-        """Refresh the highlight of nodes in highlight_outdated_nodes.
+    def refresh_outdated_highlight(self):
+        """Refresh the highlight of nodes in _highlight_outdated_nodes.
 
         Rather expensive, so consider use refresh_line_hi or
         refresh_cur_line_hi if possible.
@@ -791,13 +787,13 @@ class NetRangerBuf(object):
         lines = []
         # TODO This is expensive but called frequently, can we do better?
         for i, node in enumerate(self.nodes):
-            if node in self.highlight_outdated_nodes:
+            if node in self._highlight_outdated_nodes:
                 lines.append(i)
-        self.refresh_lines_hi(lines)
-        self.highlight_outdated_nodes.clear()
+        self.refresh_lines_highlight(lines)
+        self._highlight_outdated_nodes.clear()
 
     def refresh_cur_line_hi(self):
-        self.refresh_lines_hi([self.clineNo])
+        self.refresh_lines_highlight([self.clineno])
 
     def VimCD(self):
         target_dir = self.cur_node.fullpath
@@ -817,18 +813,18 @@ class NetRangerBuf(object):
         if not cur_node.is_DIR:
             return
         if cur_node.expanded:
-            endInd = self.next_lesseq_level_ind(self.clineNo)
-            for i in range(self.clineNo, endInd):
+            end_ind = self.next_lesseq_level_ind(self.clineno)
+            for i in range(self.clineno, end_ind):
                 if self.nodes[i].is_DIR and self.nodes[i].expanded:
-                    self.expanded_nodes.remove(self.nodes[i])
-            del self.nodes[self.clineNo + 1:endInd]
+                    self._expanded_nodes.remove(self.nodes[i])
+            del self.nodes[self.clineno + 1:end_ind]
             cur_node.expanded = False
         else:
             try:
                 new_nodes = self.create_nodes(self.cur_node.fullpath,
                                               cur_node.level + 1)
                 cur_node.expanded = True
-                self.expanded_nodes.add(cur_node)
+                self._expanded_nodes.add(cur_node)
             except PermissionError:
                 Vim.ErrorMsg(
                     f'Permission Denied. Not Expanding: {cur_node.name}')
@@ -843,7 +839,7 @@ class NetRangerBuf(object):
                             new_nodes[ind + 1:ind + 1] = self.create_nodes(
                                 iter_node.fullpath, iter_node.level + 1)
                             iter_node.expanded = True
-                            self.expanded_nodes.add(iter_node)
+                            self._expanded_nodes.add(iter_node)
                         except PermissionError:
                             Vim.ErrorMsg(
                                 f'Permission Denied. Not Expanding: {iter_node.name}'
@@ -851,12 +847,12 @@ class NetRangerBuf(object):
                     ind += 1
 
             if len(new_nodes) > 0:
-                self.nodes[self.clineNo + 1:self.clineNo + 1] = new_nodes
-        self.render()
+                self.nodes[self.clineno + 1:self.clineno + 1] = new_nodes
+        self._render()
 
     def edit(self):
         self.is_editing = True
-        self.render(plain=True)
+        self._render(plain=True)
         Vim.command('setlocal buftype=acwrite')
         Vim.command('setlocal modifiable')
         Vim.command('let old_undolevels = &undolevels')
@@ -875,18 +871,18 @@ class NetRangerBuf(object):
             return False
         self.is_editing = False
 
-        vimBuf = Vim.current.buffer
-        if len(self.nodes) != len(vimBuf):
+        vim_buf = Vim.current.buffer
+        if len(self.nodes) != len(vim_buf):
             Vim.ErrorMsg('Edit mode can not add/delete files!')
-            self.render()
+            self._render()
             return True
 
-        oriNode = self.cur_node
+        ori_node = self.cur_node
 
         change = {}
         i = 0
-        for i in range(len(vimBuf)):
-            line = vimBuf[i].strip()
+        for i in range(len(vim_buf)):
+            line = vim_buf[i].strip()
             if not self.nodes[i].is_INFO and line != self.nodes[i].name:
 
                 # change name of the i'th node
@@ -894,8 +890,8 @@ class NetRangerBuf(object):
                 change[oripath] = self.nodes[i].fullpath
 
                 # change dirname of subnodes
-                endInd = self.next_lesseq_level_ind(begInd=i)
-                for j in range(i + 1, endInd):
+                end_ind = self.next_lesseq_level_ind(beg_ind=i)
+                for j in range(i + 1, end_ind):
                     self.nodes[j].change_dirname(oripath,
                                                  self.nodes[i].fullpath)
 
@@ -904,8 +900,8 @@ class NetRangerBuf(object):
             self.fs.rename(oripath, fullpath)
 
         self.nodes = self.nodes_plus_header_footer(self.sort_nodes(self.nodes))
-        self.render()
-        self.set_clineno_by_node(oriNode)
+        self._render()
+        self.set_clineno_by_node(ori_node)
         Vim.command('setlocal nomodifiable')
         Vim.command('setlocal buftype=nofile')
         return True
@@ -913,17 +909,17 @@ class NetRangerBuf(object):
     def cut(self, nodes):
         for node in nodes:
             node.cut()
-        self.highlight_outdated_nodes.update(nodes)
+        self._highlight_outdated_nodes.update(nodes)
 
     def copy(self, nodes):
         for node in nodes:
             node.copy()
-        self.highlight_outdated_nodes.update(nodes)
+        self._highlight_outdated_nodes.update(nodes)
 
-    def reset_hi(self, nodes):
+    def reset_highlight(self, nodes):
         for node in nodes:
-            node.reset_hi()
-        self.highlight_outdated_nodes.update(nodes)
+            node.reset_highlight()
+        self._highlight_outdated_nodes.update(nodes)
 
     def find_next_ind(self, nodes, ind, pred):
         beg_node = nodes[ind]
@@ -935,10 +931,10 @@ class NetRangerBuf(object):
             ind += 1
         return ind
 
-    def next_lesseq_level_ind(self, begInd, nodes=None):
+    def next_lesseq_level_ind(self, beg_ind, nodes=None):
         if nodes is None:
             nodes = self.nodes
-        return self.find_next_ind(nodes, begInd,
+        return self.find_next_ind(nodes, beg_ind,
                                   lambda beg, new: new.level <= beg.level)
 
     def find_prev_ind(self, nodes, ind, pred):
@@ -950,10 +946,10 @@ class NetRangerBuf(object):
             ind -= 1
         return ind
 
-    def prev_lesseq_level_ind(self, begInd, nodes=None):
+    def prev_lesseq_level_ind(self, beg_ind, nodes=None):
         if nodes is None:
             nodes = self.nodes
-        return self.find_prev_ind(nodes, begInd,
+        return self.find_prev_ind(nodes, beg_ind,
                                   lambda beg, new: new.level <= beg.level)
 
 
@@ -966,7 +962,7 @@ class Netranger(object):
     """
     @property
     def cur_buf(self):
-        return self.bufs[Vim.current.buffer.number]
+        return self._bufs[Vim.current.buffer.number]
 
     @property
     def cur_buf_is_remote(self):
@@ -981,28 +977,27 @@ class Netranger(object):
         return self.cur_buf.wd
 
     def __init__(self):
-        self.inited = False
-        self.sudo = False
-        self.bufs = {}
-        self.wd2bufnum = {}
-        self.picked_nodes = defaultdict(set)
-        self.cut_nodes = defaultdict(set)
-        self.copied_nodes = defaultdict(set)
-        self.bookmarkUI = None
-        self.helpUI = None
-        self.sortUI = None
-        self.askUI = None
-        self.onuiquit = None
-        self.newUI = None
-        self.previewUI = None
-        self.onuiquit_num_args = 0
+        self._sudo = False
+        self._bufs = {}
+        self._wd2bufnum = {}
+        self._picked_nodes = defaultdict(set)
+        self._cut_nodes = defaultdict(set)
+        self._copied_nodes = defaultdict(set)
+        self._bookmarkUI = None
+        self._helpUI = None
+        self._sortUI = None
+        self._askUI = None
+        self._onuiquit = None
+        self._newUI = None
+        self._previewUI = None
+        self._onuiquit_num_args = 0
 
         self.init_vim_variables()
         self.init_keymaps()
 
         Rclone.init(Vim.Var('NETRemoteCacheDir'), Vim.Var('NETRemoteRoots'))
         Shell.mkdir(default.variables['NETRRootDir'])
-        self.rifle = Rifle(Vim.Var('NETRRifleFile'))
+        self._rifle = Rifle(Vim.Var('NETRRifleFile'))
 
         ignore_pat = list(Vim.Var('NETRIgnore'))
         if '.*' not in ignore_pat:
@@ -1111,7 +1106,7 @@ class Netranger(object):
 
     def on_winenter(self, bufnum):
 
-        if bufnum in self.bufs:
+        if bufnum in self._bufs:
 
             self.cur_buf.refresh_hi_if_winwidth_changed()
 
@@ -1144,17 +1139,17 @@ class Netranger(object):
            directory. Then we either create a new netranger buffer or bring up
            an existing netranger buffer
         """
-        if bufnum in self.bufs:
+        if bufnum in self._bufs:
             self.refresh_curbuf()
-            if self.onuiquit is not None:
+            if self._onuiquit is not None:
                 # If not enough arguments are passed, ignore the pending
                 # onuituit, e.g. quit the bookmark go ui without pressing
                 # key to specify where to go.
-                if len(Vim.Var('NETRRegister')) == self.onuiquit_num_args:
-                    self.onuiquit(*Vim.Var('NETRRegister'))
-                self.onuiquit = None
+                if len(Vim.Var('NETRRegister')) == self._onuiquit_num_args:
+                    self._onuiquit(*Vim.Var('NETRRegister'))
+                self._onuiquit = None
                 Vim.vars['NETRRegister'] = []
-                self.onuiquit_num_args = 0
+                self._onuiquit_num_args = 0
         else:
             bufname = Vim.current.buffer.name
             if len(bufname) > 0 and bufname[-1] == '~':
@@ -1179,7 +1174,7 @@ class Netranger(object):
 
         # deal with highlight changed, e.g., pick, copy hi dismiss because of
         # paste
-        cur_buf.refresh_highlight()
+        cur_buf.refresh_outdated_highlight()
 
         # ensure pwd is correct
         if Vim.Var('NETRAutochdir'):
@@ -1187,33 +1182,33 @@ class Netranger(object):
 
     def show_existing_buf(self, bufname):
         ori_bufnum = Vim.current.buffer.number
-        existed_bufnum = self.wd2bufnum[bufname]
+        existed_bufnum = self._wd2bufnum[bufname]
         Vim.command(f'{existed_bufnum}b')
         self.set_buf_option()
-        buf = self.bufs[existed_bufnum]
+        buf = self._bufs[existed_bufnum]
         self.refresh_curbuf()
 
         # Check window width in case the window was closed in a different
         # width
         buf.refresh_hi_if_winwidth_changed()
 
-        if ori_bufnum not in self.bufs:
+        if ori_bufnum not in self._bufs:
             # wipe out the [No Name] temporary buffer
             Vim.command(f'bwipeout {ori_bufnum}')
-        buf.set_clineno_by_lineno(buf.clineNo)
+        buf.set_clineno_by_lineno(buf.clineno)
 
     def gen_new_buf(self, bufname):
         bufnum = Vim.current.buffer.number
         if (bufname.startswith(Vim.Var('NETRemoteCacheDir'))):
-            self.bufs[bufnum] = NetRangerBuf(self, os.path.abspath(bufname),
-                                             Rclone)
+            self._bufs[bufnum] = NetRangerBuf(self, os.path.abspath(bufname),
+                                              Rclone)
         else:
-            self.bufs[bufnum] = NetRangerBuf(self, os.path.abspath(bufname),
-                                             LocalFS)
+            self._bufs[bufnum] = NetRangerBuf(self, os.path.abspath(bufname),
+                                              LocalFS)
         Vim.command(f'silent file N:{bufname}')
 
         self.map_keys()
-        self.wd2bufnum[bufname] = bufnum
+        self._wd2bufnum[bufname] = bufnum
         self.set_buf_option()
 
     def buf_existed(self, wd):
@@ -1221,16 +1216,16 @@ class Netranger(object):
         This avoids reinitializing a NETRangerBuf when the corresponding vim
         buffer is wipeout and later reentered.
         """
-        if wd not in self.wd2bufnum:
+        if wd not in self._wd2bufnum:
             return False
 
-        bufnum = self.wd2bufnum[wd]
+        bufnum = self._wd2bufnum[wd]
         try:
             buf = Vim.buffers[bufnum]
             return buf.valid
         except KeyError:
-            del self.wd2bufnum[wd]
-            del self.bufs[bufnum]
+            del self._wd2bufnum[wd]
+            del self._bufs[bufnum]
             return False
 
     def set_buf_option(self):
@@ -1255,9 +1250,9 @@ class Netranger(object):
 
         @param bufnum: current buffer number
         """
-        # if bufnum in self.bufs and not self.bufs[bufnum].is_editing:
-        if not self.bufs[bufnum].is_editing:
-            self.bufs[bufnum].on_cursormoved()
+        # if bufnum in self._bufs and not self._bufs[bufnum].is_editing:
+        if not self._bufs[bufnum].is_editing:
+            self._bufs[bufnum].on_cursormoved()
             Vim.Timer(Vim.Var('NETRRedrawDelay'), '_NETROnCursorMovedPost',
                       self.on_cursormoved_post, bufnum)
 
@@ -1270,11 +1265,11 @@ class Netranger(object):
         re_stat throttling using a trick documented in NETRangerBuf.
         on_cursormoved_post.
         """
-        self.bufs[bufnum].on_cursormoved_post()
-        if self.previewUI and Vim.current.buffer.number in self.bufs:
-            self.previewUI.set_content(self.cur_node.fullpath)
+        self._bufs[bufnum].on_cursormoved_post()
+        if self._previewUI and Vim.current.buffer.number in self._bufs:
+            self._previewUI.set_content(self.cur_node.fullpath)
 
-    def pend_onuiquit(self, fn, numArgs=0):
+    def pend_onuiquit(self, fn, num_args=0):
         """Called by UIs to perform actions after reentering netranger buffer.
         Used for waiting for user input in some UI and then defer what to do
         when the UI window is quit and the netranger buffer gain focus again.
@@ -1282,13 +1277,13 @@ class Netranger(object):
         NETRRegister'.
 
         @param fn: function to be executed
-        @param numArgs: number of args expected to see in g:'NETRRegister'.
-                        When exectuing fn, if numArgs do not match, fn will not
+        @param num_args: number of args expected to see in g:'NETRRegister'.
+                        When exectuing fn, if num_args do not match, fn will not
                         be executed. (e.g. User press no keys in BookMarkGo UI
                         but simply quit the UI)
         """
-        self.onuiquit = fn
-        self.onuiquit_num_args = numArgs
+        self._onuiquit = fn
+        self._onuiquit_num_args = num_args
 
     def NETROpen(self, open_cmd=None, rifle_cmd=None, use_rifle=True):
         """The real work for opening directories is handled in on_bufenter.
@@ -1321,7 +1316,7 @@ class Netranger(object):
                 Rclone.ensure_downloaded(fullpath)
 
             if rifle_cmd is None:
-                rifle_cmd = self.rifle.decide_open_cmd(fullpath)
+                rifle_cmd = self._rifle.decide_open_cmd(fullpath)
 
             if use_rifle and rifle_cmd is not None:
                 Shell.run_async(rifle_cmd.format(f'"{fullpath}"'))
@@ -1371,14 +1366,14 @@ class Netranger(object):
 
     def NETRAskOpen(self):
         fullpath = self.cur_node.fullpath
-        if self.askUI is None:
-            self.askUI = AskUI(self)
-        self.askUI.ask(self.rifle.list_available_cmd(fullpath), fullpath)
+        if self._askUI is None:
+            self._askUI = AskUI(self)
+        self._askUI.ask(self._rifle.list_available_cmd(fullpath), fullpath)
 
     def NETRTogglePreview(self):
-        if self.previewUI is None:
-            self.previewUI = PreviewUI()
-        self.previewUI.close_or_show(self.cur_node.fullpath)
+        if self._previewUI is None:
+            self._previewUI = PreviewUI()
+        self._previewUI.close_or_show(self.cur_node.fullpath)
 
     def NETRParentDir(self):
         """Real work is done in on_bufenter."""
@@ -1393,12 +1388,12 @@ class Netranger(object):
     def NETRGoPrevSibling(self):
         cur_buf = self.cur_buf
         cur_buf.set_clineno_by_lineno(
-            cur_buf.prev_lesseq_level_ind(cur_buf.clineNo))
+            cur_buf.prev_lesseq_level_ind(cur_buf.clineno))
 
     def NETRGoNextSibling(self):
         cur_buf = self.cur_buf
         cur_buf.set_clineno_by_lineno(
-            cur_buf.next_lesseq_level_ind(cur_buf.clineNo))
+            cur_buf.next_lesseq_level_ind(cur_buf.clineno))
 
     def NETRVimCD(self):
         self.cur_buf.VimCD()
@@ -1413,10 +1408,10 @@ class Netranger(object):
     def NETRNew(self):
         if self.cur_buf.fs_busy():
             return
-        if self.newUI is None:
-            self.newUI = NewUI()
-        self.newUI.show()
-        self.pend_onuiquit(self.new_onuiiquit, numArgs=1)
+        if self._newUI is None:
+            self._newUI = NewUI()
+        self._newUI.show()
+        self.pend_onuiquit(self.new_onuiiquit, num_args=1)
 
     def new_onuiiquit(self, opt):
         cur_buf = self.cur_buf
@@ -1457,29 +1452,29 @@ class Netranger(object):
             ignore_pat = ['$^']
 
         self.ignore_pattern = re.compile('|'.join(ignore_pat))
-        for buf in self.bufs.values():
+        for buf in self._bufs.values():
             buf.content_outdated = True
         self.cur_buf.refresh_nodes(force_refreh=True)
 
     def NETRToggleSudo(self):
-        self.sudo = not self.sudo
-        Vim.WarningMsg(f'Sudo is turned {["off","on"][self.sudo]}.')
+        self._sudo = not self._sudo
+        Vim.WarningMsg(f'Sudo is turned {["off","on"][self._sudo]}.')
 
     def invoke_map(self, fn):
         if hasattr(self, fn):
             getattr(self, fn)()
 
     def init_bookmark_ui(self):
-        if self.bookmarkUI is None:
-            self.bookmarkUI = BookMarkUI(self)
+        if self._bookmarkUI is None:
+            self._bookmarkUI = BookMarkUI(self)
 
     def NETRBookmarkSet(self):
         self.init_bookmark_ui()
-        self.bookmarkUI.set(self.cwd)
+        self._bookmarkUI.set(self.cwd)
 
     def NETRBookmarkGo(self):
         self.init_bookmark_ui()
-        self.bookmarkUI.go()
+        self._bookmarkUI.go()
 
     def bookmarkgo_onuiquit(self, fullpath):
         # The following ls ensure that the directory exists on some mounted
@@ -1490,38 +1485,38 @@ class Netranger(object):
 
     def NETRBookmarkEdit(self):
         self.init_bookmark_ui()
-        self.bookmarkUI.edit()
+        self._bookmarkUI.edit()
 
     def NETRSort(self):
         if self.cur_buf.fs_busy():
             return
-        if self.sortUI is None:
-            self.sortUI = SortUI()
-        self.sortUI.show()
-        self.pend_onuiquit(self.sort_onuiiquit, numArgs=1)
+        if self._sortUI is None:
+            self._sortUI = SortUI()
+        self._sortUI.show()
+        self.pend_onuiquit(self.sort_onuiiquit, num_args=1)
 
     def sort_onuiiquit(self, opt):
         SortUI.reverse = opt.isupper()
         SortUI.select_sort_fn(opt.lower())
-        for buf in self.bufs.values():
+        for buf in self._bufs.values():
             buf.sort_prep()
         self.cur_buf.sort()
 
     def NETRHelp(self):
-        if self.helpUI is None:
-            self.helpUI = HelpUI(self.keymap_doc)
-        self.helpUI.show()
+        if self._helpUI is None:
+            self._helpUI = HelpUI(self.keymap_doc)
+        self._helpUI.show()
 
     def reset_pick_cut_copy(self):
-        for buf, nodes in self.cut_nodes.items():
-            buf.reset_hi(nodes)
-        for buf, nodes in self.copied_nodes.items():
-            buf.reset_hi(nodes)
-        for buf, nodes in self.picked_nodes.items():
-            buf.reset_hi(nodes)
-        self.picked_nodes = defaultdict(set)
-        self.cut_nodes = defaultdict(set)
-        self.copied_nodes = defaultdict(set)
+        for buf, nodes in self._cut_nodes.items():
+            buf.reset_highlight(nodes)
+        for buf, nodes in self._copied_nodes.items():
+            buf.reset_highlight(nodes)
+        for buf, nodes in self._picked_nodes.items():
+            buf.reset_highlight(nodes)
+        self._picked_nodes = defaultdict(set)
+        self._cut_nodes = defaultdict(set)
+        self._copied_nodes = defaultdict(set)
 
     def inc_num_fs_op(self, bufs):
         """Increase number of filesystem operation for buffers.
@@ -1540,9 +1535,9 @@ class Netranger(object):
         picked_nodes, so they are not forbidden though you still can't pick
         nodes and then perform cut/copy/delete in the current buffer (as
         NETRTogglePick is forbidden in the current buffer)
-        6. To lock a buffer, we increase it's num_fs_op by 1.
-        7. To unlock a buffer, we decrease it's num_fs_op by 1.
-        8. A buffer is considered as locked if its num_fs_op>0.
+        6. To lock a buffer, we increase it's _num_fs_op by 1.
+        7. To unlock a buffer, we decrease it's _num_fs_op by 1.
+        8. A buffer is considered as locked if its _num_fs_op>0.
         """
         for buf in bufs:
             buf.inc_num_fs_op()
@@ -1555,14 +1550,14 @@ class Netranger(object):
         for buf in bufs:
             buf.dec_num_fs_op()
 
-        if Vim.current.buffer.number in self.bufs:
+        if Vim.current.buffer.number in self._bufs:
             cur_buf = self.cur_buf
             if not cur_buf.fs_busy(echo=False):
                 cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
 
     def NETRCancelPickCutCopy(self):
         self.reset_pick_cut_copy()
-        self.cur_buf.refresh_highlight()
+        self.cur_buf.refresh_outdated_highlight()
 
     def NETRTogglePick(self):
         """Funciton to Add or remove cur_node to/from picked_nodes.
@@ -1575,9 +1570,9 @@ class Netranger(object):
         cur_node = self.cur_node
         res = cur_node.toggle_pick()
         if res == Node.ToggleOpRes.ON:
-            self.picked_nodes[cur_buf].add(cur_node)
+            self._picked_nodes[cur_buf].add(cur_node)
         elif res == Node.ToggleOpRes.OFF:
-            self.picked_nodes[cur_buf].remove(cur_node)
+            self._picked_nodes[cur_buf].remove(cur_node)
         self.cur_buf.refresh_cur_line_hi()
 
     def NETRTogglePickVisual(self):
@@ -1590,10 +1585,10 @@ class Netranger(object):
             node = cur_buf.nodes[i]
             res = node.toggle_pick()
             if res == Node.ToggleOpRes.ON:
-                self.picked_nodes[cur_buf].add(node)
+                self._picked_nodes[cur_buf].add(node)
             else:
-                self.picked_nodes[cur_buf].remove(node)
-        cur_buf.refresh_lines_hi([i for i in range(beg, end)])
+                self._picked_nodes[cur_buf].remove(node)
+        cur_buf.refresh_lines_highlight([i for i in range(beg, end)])
 
     def NETRCut(self):
         """Move picked_nodes to cut_nodes.
@@ -1602,11 +1597,11 @@ class Netranger(object):
         highlight_outdated so that their highlight will be updated when
         entered again.
         """
-        for buf, nodes in self.picked_nodes.items():
+        for buf, nodes in self._picked_nodes.items():
             buf.cut(nodes)
-            self.cut_nodes[buf].update(nodes)
-        self.picked_nodes = defaultdict(set)
-        self.cur_buf.refresh_highlight()
+            self._cut_nodes[buf].update(nodes)
+        self._picked_nodes = defaultdict(set)
+        self.cur_buf.refresh_outdated_highlight()
 
     def NETRCutSingle(self):
         cur_buf = self.cur_buf
@@ -1614,7 +1609,7 @@ class Netranger(object):
             return
         cur_node = self.cur_node
         cur_node.cut()
-        self.cut_nodes[cur_buf].add(cur_node)
+        self._cut_nodes[cur_buf].add(cur_node)
         cur_buf.refresh_cur_line_hi()
 
     def NETRCopy(self):
@@ -1624,11 +1619,11 @@ class Netranger(object):
         highlight_outdated so that their highlight will be updated when
         entered again.
         """
-        for buf, nodes in self.picked_nodes.items():
+        for buf, nodes in self._picked_nodes.items():
             buf.copy(nodes)
-            self.copied_nodes[buf].update(nodes)
-        self.picked_nodes = defaultdict(set)
-        self.cur_buf.refresh_highlight()
+            self._copied_nodes[buf].update(nodes)
+        self._picked_nodes = defaultdict(set)
+        self.cur_buf.refresh_outdated_highlight()
 
     def NETRCopySingle(self):
         cur_buf = self.cur_buf
@@ -1636,7 +1631,7 @@ class Netranger(object):
             return
         cur_node = self.cur_node
         cur_node.copy()
-        self.copied_nodes[cur_buf].add(cur_node)
+        self._copied_nodes[cur_buf].add(cur_node)
         cur_buf.refresh_cur_line_hi()
 
     def _NETRPaste_cut_nodes(self, busy_bufs):
@@ -1644,16 +1639,16 @@ class Netranger(object):
         fsfilter = FSTarget(cwd)
 
         alreday_moved = set()
-        for buf, nodes in self.cut_nodes.items():
-            buf.reset_hi(nodes)
+        for buf, nodes in self._cut_nodes.items():
+            buf.reset_highlight(nodes)
 
             # For all ancestor directories of the source directory,
             # It's possible that their content contains the cutted
             # entry (by expansion). Hence we also mark them as content_outdated
             wd = buf.wd
             while True:
-                if wd in self.wd2bufnum:
-                    self.bufs[self.wd2bufnum[wd]].content_outdated = True
+                if wd in self._wd2bufnum:
+                    self._bufs[self._wd2bufnum[wd]].content_outdated = True
                 wd = os.path.dirname(wd)
                 if len(wd) == 1:
                     break
@@ -1665,10 +1660,10 @@ class Netranger(object):
                     fsfilter.append(node.fullpath)
                     alreday_moved.add(node.fullpath)
 
-            self.cut_nodes = defaultdict(set)
+            self._cut_nodes = defaultdict(set)
 
             fsfilter.mv(cwd,
-                        sudo=self.sudo,
+                        sudo=self._sudo,
                         on_begin=lambda: self.inc_num_fs_op(busy_bufs),
                         on_exit=lambda: self.dec_num_fs_op(busy_bufs))
 
@@ -1676,14 +1671,14 @@ class Netranger(object):
         cwd = Vim.eval('getcwd()')
         fsfilter = FSTarget(cwd)
 
-        for buf, nodes in self.copied_nodes.items():
-            buf.reset_hi(nodes)
+        for buf, nodes in self._copied_nodes.items():
+            buf.reset_highlight(nodes)
             for node in nodes:
                 fsfilter.append(node.fullpath)
 
-        self.copied_nodes = defaultdict(set)
+        self._copied_nodes = defaultdict(set)
         fsfilter.cp(cwd,
-                    sudo=self.sudo,
+                    sudo=self._sudo,
                     on_begin=lambda: self.inc_num_fs_op(busy_bufs),
                     on_exit=lambda: self.dec_num_fs_op(busy_bufs))
 
@@ -1698,7 +1693,7 @@ class Netranger(object):
             return
 
         # Set locked bufs. See comments in inc_num_fs_op.
-        cut_busy_bufs = list(self.cut_nodes.keys()) + [cur_buf]
+        cut_busy_bufs = list(self._cut_nodes.keys()) + [cur_buf]
         copy_busy_bufs = [cur_buf]
 
         Vim.WarningMsg(f'Paste to {Vim.eval("getcwd()")}')
@@ -1708,17 +1703,17 @@ class Netranger(object):
     def NETRDelete(self, force=False):
         fsfilter = FSTarget('')
 
-        for buf, nodes in self.picked_nodes.items():
+        for buf, nodes in self._picked_nodes.items():
             buf.content_outdated = True
-            buf.reset_hi(nodes)
+            buf.reset_highlight(nodes)
             fsfilter.extend([n.fullpath for n in nodes], hint=buf.wd)
 
         # Set locked bufs. See comments in inc_num_fs_op.
-        busy_bufs = list(self.picked_nodes.keys())
-        self.picked_nodes = defaultdict(set)
+        busy_bufs = list(self._picked_nodes.keys())
+        self._picked_nodes = defaultdict(set)
 
         fsfilter.rm(force=force,
-                    sudo=self.sudo,
+                    sudo=self._sudo,
                     on_begin=lambda: self.inc_num_fs_op(busy_bufs),
                     on_exit=lambda: self.dec_num_fs_op(busy_bufs))
 
@@ -1733,7 +1728,7 @@ class Netranger(object):
         busy_bufs = [cur_buf]
 
         fsfilter.rm(force=force,
-                    sudo=self.sudo,
+                    sudo=self._sudo,
                     on_begin=lambda: self.inc_num_fs_op(busy_bufs),
                     on_exit=lambda: self.dec_num_fs_op(busy_bufs))
 

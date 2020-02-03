@@ -383,17 +383,17 @@ def test_NETRPaste_sided_by_side():
 
 def wait_for_fs_free():
     while nvim.command_output(
-            'python3 print(ranger.cur_buf.num_fs_op)') != '0':
+            'python3 print(ranger.cur_buf._num_fs_op)') != '0':
         pass
     return
 
 
 def lock_fs():
-    nvim.command('python3 ranger.cur_buf.num_fs_op=1')
+    nvim.command('python3 ranger.cur_buf._num_fs_op=1')
 
 
 def unlock_fs():
-    nvim.command('python3 ranger.cur_buf.num_fs_op=0')
+    nvim.command('python3 ranger.cur_buf._num_fs_op=0')
 
 
 def ensure_buf_no_expand():
