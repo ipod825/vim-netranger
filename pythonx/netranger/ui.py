@@ -4,10 +4,12 @@ import os
 import string
 
 from netranger import Vim
-from netranger.shell import Shell
 
 
 class UI(object):
+    """ Parent class for all uis.
+    Each ui might have more than one buffer for different purposes.
+    """
     @property
     def position(self):
         return Vim.Var('NETRSplitOrientation')
@@ -16,20 +18,33 @@ class UI(object):
         self.bufs = {}
 
     def map_key_reg(self, key, regval):
+        """ Register a key mapping in a UI buffer.
+        The mapped action is:
+        1. Store regval into g:NETRRegister, which serves as the argument for
+        netranger buffer's call back after UI buffer quit.
+        2. Quit the UI buffer.
+
+        See Netranger.pend_onuiquit for details.
+        """
         Vim.command(f'nnoremap <nowait> <silent> <buffer> {key} '
                     f':let g:NETRRegister=["{regval}"] <cr> :quit <cr>')
 
     def buf_valid(self, name='default'):
+        """ Return True if a UI buffer existed and not wiped out. """
         return name in self.bufs and self.bufs[name].valid
 
     def del_buf(self, name):
+        """ Wipe out a UI buffer. """
         if name in self.bufs:
             del self.bufs[name]
 
     def show(self, name='default'):
+        """ Show the UI buffer. """
         Vim.command(f'{self.position} {self.bufs[name].number}sb')
+        Vim.command('wincmd J')
 
     def create_buf(self, content, mappings=None, name='default', map_cr=False):
+        """ Create the UI buffer. """
         Vim.command(f'{self.position} new')
         self.set_buf_common_option()
         new_buf = Vim.current.buffer
@@ -54,6 +69,7 @@ class UI(object):
         Vim.command('quit')
 
     def set_buf_common_option(self, modifiable=False):
+        """ Set common option for a UI buffer. """
         Vim.command('setlocal noswapfile')
         Vim.command('setlocal foldmethod=manual')
         Vim.command('setlocal foldcolumn=0')
@@ -66,6 +82,7 @@ class UI(object):
 
 
 class HelpUI(UI):
+    """ The UI displaying Netranger's current key mappings. """
     def __init__(self, keymap_doc):
         UI.__init__(self)
 
@@ -76,6 +93,7 @@ class HelpUI(UI):
 
 
 class AskUI(UI):
+    """ The UI asking for the method for opening the current node. """
     def __init__(self, netranger):
         UI.__init__(self)
         self.netranger = netranger
@@ -117,25 +135,8 @@ class AskUI(UI):
             self.netranger.NETROpen(rifle_cmd=cmd)
 
 
-def size(path):
-    try:
-        if os.path.isdir(path):
-            return str(len(os.listdir(path))).rjust(18)
-        else:
-            return str(os.stat(path).st_size).rjust(18)
-    except PermissionError:
-        return -1
-
-
-def ext_name(path):
-    ind = path.rfind('.')
-    if ind < 0:
-        return ' '
-    else:
-        return path[ind + 1:]
-
-
 class SortUI(UI):
+    """ The UI for choosing sorting method. """
     sort_fns = {
         'a': lambda n: n.stat.st_atime if n.stat is not None else -1,
         'c': lambda n: n.stat.st_ctime if n.stat is not None else -1,
@@ -188,6 +189,7 @@ class SortUI(UI):
 
 
 class NewUI(UI):
+    """ The UI for creating directory/file. """
     def __init__(self):
         UI.__init__(self)
         content = ['d.directory', 'f.file']
@@ -196,6 +198,9 @@ class NewUI(UI):
 
 
 class BookMarkUI(UI):
+    """ The UI for bookmarks.
+    It contains two buffers for set/go actions.
+    """
     def __init__(self, netranger):
         UI.__init__(self)
         self.valid_mark = string.ascii_lowercase + string.ascii_uppercase
@@ -223,6 +228,7 @@ class BookMarkUI(UI):
                         self.mark_dict[kp[0].strip()] = kp[1].strip()
 
     def set(self, path):
+        """ Show the buffer for setting bookmark. """
         if not self.buf_valid('set'):
             self.create_buf(
                 mappings=zip(self.valid_mark, self.valid_mark),
@@ -233,6 +239,7 @@ class BookMarkUI(UI):
         self.netranger.pend_onuiquit(self._set, 1)
 
     def _set(self, mark):
+        """ The callback for the BookMarkUI/set. """
         if mark == '':
             return
         if mark not in self.valid_mark:
@@ -261,6 +268,7 @@ class BookMarkUI(UI):
                 f.write(f'{k}:{p}\n')
 
     def go(self):
+        """ Show the buffer for going to bookmark. """
         if not self.buf_valid('go'):
             self.create_buf(
                 mappings=self.mark_dict.items(),
@@ -271,6 +279,7 @@ class BookMarkUI(UI):
         self.netranger.pend_onuiquit(self.netranger.bookmarkgo_onuiquit, 1)
 
     def edit(self):
+        """ Show the buffer for editing the bookmark. """
         Vim.command(f'belowright split {Vim.Var("NETRBookmarkFile")}')
         Vim.command('setlocal bufhidden=wipe')
         self.del_buf('set')

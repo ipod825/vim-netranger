@@ -862,7 +862,7 @@ if __name__ == '__main__':
 
             # reset pick,cut,copy sets because previous tests do not paste to
             # reset them
-            nvim.command('python3 ranger.reset_pick_cut_copy()')
+            nvim.command('python3 ranger._reset_pick_cut_copy()')
             do_test(test_NETRPaste_by_cut)
             do_test(test_NETRPaste_by_copy)
             do_test(test_NETRPaste_sided_by_side)
