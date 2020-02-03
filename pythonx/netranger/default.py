@@ -93,6 +93,8 @@ variables = {
     },
     'NETRSplitOrientation': 'belowright',
     'NETRPanelSize': 1.5,
+    'NETRPreviewSize': 1.2,
+    'NETRParentPreviewSize': 0.3,
     'NETRColors': {},
     'NETRRedrawDelay': 200,
     'NETRLazyLoadStat': False,

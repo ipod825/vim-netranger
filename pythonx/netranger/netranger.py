@@ -15,7 +15,7 @@ from netranger.enum import Enum
 from netranger.fs import FSTarget, LocalFS, Rclone
 from netranger.rifle import Rifle
 from netranger.shell import Shell
-from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, PreviewUI, SortUI
+from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, SortUI
 
 if platform == "win32":
     from os import getenv
@@ -77,8 +77,7 @@ class Node(object):
 
 class FooterNode(Node):
     def __init__(self):
-        super(FooterNode, self).__init__("METAINFO", "METAINFO",
-                                         default.color['footer'])
+        super(FooterNode, self).__init__("", "", default.color['footer'])
 
     @property
     def is_INFO(self):
@@ -345,6 +344,7 @@ class NetRangerBuf(object):
         self._num_fs_op = 0
         self._pending_on_cursormoved_post = 0
         self._last_on_curosormoved_lineno = -1
+        self.is_previewing = False
 
         self.content_outdated = False
         self._highlight_outdated_nodes = set()
@@ -363,9 +363,13 @@ class NetRangerBuf(object):
         # see if any content in the buffer is changed. Adding the header_node
         # simply means we check the mtime of the wd everytime.
         self._expanded_nodes = set([self._header_node])
-        self.winwidth = Vim.current.window.width
         self._pseudo_header_lineno = None
         self._pseudo_footer_lineno = None
+
+        if Vim.Var('_NETRNewBufWidth'):
+            self.winwidth = Vim.Var('_NETRNewBufWidth')
+        else:
+            self.winwidth = Vim.current.window.width
         self.is_editing = False
         self._vim_buf_handel = Vim.current.buffer
         self._render()
@@ -663,18 +667,6 @@ class NetRangerBuf(object):
         for hooker in NETRApi.Hookers['render_end']:
             hooker(self)
 
-    def refresh_hi_if_winwidth_changed(self):
-        if self.is_editing:
-            return
-
-        winwidth = Vim.current.window.width
-        if self.winwidth != winwidth:
-            self.winwidth = winwidth
-            Vim.command('setlocal modifiable')
-            for i, node in enumerate(self.nodes):
-                Vim.command(f'call setline({i+1},"{node.highlight_content}")')
-            Vim.command('setlocal nomodifiable')
-
     def _move_vim_cursor(self, lineno):
         """ Will trigger on_cursormoved -> _update_clineno. """
         Vim.command(f'call cursor({lineno + 1},1)')
@@ -732,6 +724,8 @@ class NetRangerBuf(object):
         self.set_pseudo_header_content(self.clineno)
         self.set_pseudo_footer_content(self.clineno)
         Vim.command("setlocal nomodifiable")
+        if self.is_previewing:
+            self.preview_on()
 
     def set_clineno_by_lineno(self, lineno):
         self._move_vim_cursor(lineno)
@@ -767,6 +761,38 @@ class NetRangerBuf(object):
                 self.vim_set_line(i, self.nodes[i].highlight_content)
         Vim.command('setlocal nomodifiable')
 
+    @classmethod
+    def ManualRefreshOnWidthChange(cls):
+        """ Context for disabling hghlight refresh on WinEnter event.
+        Useful to save unnecessary refresh_highlight_if_winwidth_changed call.
+        """
+        class C(object):
+            def __enter__(self):
+                cls._manual_refresh_on_width_change = True
+                return self
+
+            def __exit__(self, type, value, traceback):
+                cls._manual_refresh_on_width_change = False
+
+        return C()
+
+    _manual_refresh_on_width_change = False
+
+    def refresh_highlight_if_winwidth_changed(self):
+        """ Refresh the buffer highlight if the window widhth changed. """
+
+        if self.is_editing or NetRangerBuf._manual_refresh_on_width_change:
+            return
+
+        winwidth = Vim.current.window.width
+        if self.winwidth != winwidth:
+            # print('hi', self.header_node.name, 'real: ', winwidth, 'saved: ', self.winwidth)
+            self.winwidth = winwidth
+            Vim.command('setlocal modifiable')
+            for i, node in enumerate(self.nodes):
+                Vim.command(f'call setline({i+1},"{node.highlight_content}")')
+            Vim.command('setlocal nomodifiable')
+
     def refresh_outdated_highlight(self):
         """Refresh the highlight of nodes in _highlight_outdated_nodes.
 
@@ -792,6 +818,56 @@ class NetRangerBuf(object):
             target_dir = os.path.dirname(target_dir)
         Vim.command(f'silent lcd {target_dir}')
         self.last_vim_pwd = target_dir
+
+    def toggle_preview(self):
+        """ Toggle the preview panel. """
+        if self.is_previewing:
+            self.preview_off()
+            Vim.WarningMsg('Preview off')
+        else:
+            self.preview_on()
+            Vim.WarningMsg('Preview on')
+
+    def preview_on(self):
+        """ Turn preview panel on. """
+        prev_is_previewing = self.is_editing == True
+        self.is_previewing = True
+        cur_node = self.cur_node
+
+        with self.ManualRefreshOnWidthChange():
+            Vim.command('silent wincmd o')
+            total_width = Vim.current.window.width
+            preview_width = int(total_width * Vim.Var('NETRPreviewSize') / 2)
+
+            # # parent panel needs more design. Specificall, the cwd is too short when 3 vertical splits exists.
+            # parent_width = int(total_width * Vim.Var('NETRParentPreviewSize') /
+            #                    2)
+            # Vim.command(f'topleft vertical vsplit {os.path.dirname(self.wd)}')
+            # Vim.current.window.width = parent_width
+            # Vim.command('wincmd l')
+
+        if cur_node.is_DIR:
+            with self._controler.OpenBufWithWidth(preview_width):
+                with self.ManualRefreshOnWidthChange():
+                    Vim.command(f'botright vsplit {cur_node.fullpath}')
+        else:
+            Vim.command(f'noswap botright vsplit {cur_node.fullpath}')
+            Vim.current.window.width = preview_width
+            Vim.command('setlocal foldnestmax=0')
+
+        with self.ManualRefreshOnWidthChange():
+            Vim.command('wincmd h')
+
+        # # Adjust the width if previewing is off previously as the adjustment is
+        # # disabled by the previous ManualRefreshOnWidthChange.
+        if not prev_is_previewing:
+            self.refresh_highlight_if_winwidth_changed()
+
+    def preview_off(self):
+        """ Turn preview panel off. """
+        self.is_previewing = False
+        Vim.command('wincmd o')
+        self.refresh_highlight_if_winwidth_changed()
 
     def toggle_expand(self, rec=False):
         """Create subnodes for the target directory.
@@ -980,7 +1056,6 @@ class Netranger(object):
         self._askUI = None
         self._onuiquit = None
         self._newUI = None
-        self._previewUI = None
         self._onuiquit_num_args = 0
 
         self.init_vim_variables()
@@ -1099,7 +1174,7 @@ class Netranger(object):
 
         if bufnum in self._bufs:
 
-            self.cur_buf.refresh_hi_if_winwidth_changed()
+            self.cur_buf.refresh_highlight_if_winwidth_changed()
 
     def _manual_on_bufenter(self):
         """ Calls on_bufenter manually.
@@ -1181,7 +1256,7 @@ class Netranger(object):
 
         # Check window width in case the window was closed in a different
         # width
-        buf.refresh_hi_if_winwidth_changed()
+        buf.refresh_highlight_if_winwidth_changed()
 
         if ori_bufnum not in self._bufs:
             # wipe out the [No Name] temporary buffer
@@ -1232,7 +1307,7 @@ class Netranger(object):
         Vim.command('setlocal nospell')
         Vim.command('setlocal bufhidden=hide')
         Vim.command('setlocal conceallevel=3')
-        Vim.command('set concealcursor=nvic')
+        Vim.command('setlocal concealcursor=nv')
         Vim.command('setlocal nocursorline')
         Vim.command('setlocal nolist')
 
@@ -1257,8 +1332,6 @@ class Netranger(object):
         on_cursormoved_post.
         """
         self._bufs[bufnum].on_cursormoved_post()
-        if self._previewUI and Vim.current.buffer.number in self._bufs:
-            self._previewUI.set_content(self.cur_node.fullpath)
 
     def pend_onuiquit(self, fn, num_args=0):
         """Called by UIs to perform actions after reentering netranger buffer.
@@ -1300,8 +1373,9 @@ class Netranger(object):
             if use_rifle and rifle_cmd is not None:
                 Shell.run_async(rifle_cmd.format(f'"{fullpath}"'))
             else:
-                Vim.command(f'silent {open_cmd} {fullpath}')
-                self._manual_on_bufenter()  # case 2
+                with self.KeepPreviewState():
+                    Vim.command(f'silent {open_cmd} {fullpath}')
+                    self._manual_on_bufenter()  # case 2
         else:
             if self.cur_buf_is_remote:
                 Rclone.ensure_downloaded(fullpath)
@@ -1348,8 +1422,8 @@ class Netranger(object):
         if len(Vim.current.tabpage.windows) == 1:
             self.NETROpen(Vim.Var('NETRSplitOrientation') + ' vsplit',
                           use_rifle=False)
-            newsize = Vim.current.window.width * Vim.Var('NETRPanelSize')
-            Vim.command(f'vertical resize {newsize}')
+            Vim.current.window.width = int(Vim.current.window.width *
+                                           Vim.Var('NETRPanelSize'))
         else:
             fpath = self.cur_node.fullpath
             Vim.command('wincmd l')
@@ -1362,19 +1436,54 @@ class Netranger(object):
         self._askUI.ask(self._rifle.list_available_cmd(fullpath), fullpath)
 
     def NETRTogglePreview(self):
-        if self._previewUI is None:
-            self._previewUI = PreviewUI()
-        self._previewUI.close_or_show(self.cur_node.fullpath)
+        """ Toggle preview panel. """
+        self.cur_buf.toggle_preview()
+
+    def OpenBufWithWidth(netranger, width):
+        """ Context for opening new/existing NetRangerBuf with specified width.
+
+        Useful to save unnecessary refresh_highlight_if_winwidth_changed call.
+        """
+        class C(object):
+            def __enter__(self):
+                # For new NetRangerBuf to initialize its width.
+                Vim.vars['_NETRNewBufWidth'] = width
+                return self
+
+            def __exit__(self, type, value, traceback):
+                Vim.current.window.width = width
+
+                # Ensure nested BufEnter to succeed.
+                netranger._manual_on_bufenter()  # case 1
+
+                # Intentional for existing NetRangerBuf. The overhead for new
+                # NetRangerBuf is cheap as width doesn't really change.
+                netranger.cur_buf.refresh_highlight_if_winwidth_changed()
+
+                Vim.vars['_NETRNewBufWidth'] = None
+
+        return C()
+
+    def KeepPreviewState(netranger):
+        """ Context to keep the preview panel on. """
+        class C(object):
+            def __enter__(self):
+                self.is_previewing = netranger.cur_buf.is_previewing
+
+            def __exit__(self, type, value, traceback):
+                if self.is_previewing:
+                    netranger.cur_buf.preview_on()
+
+        return C()
 
     def NETRParentDir(self):
         """Real work is done in on_bufenter."""
-        cur_buf = self.cur_buf
-        cwd = cur_buf.wd
-        pdir = LocalFS.parent_dir(cwd)
-        Vim.command(f'silent edit {pdir}')
-        # self._manual_on_bufenter()  # case 2
-        cur_buf = self.cur_buf
-        cur_buf.set_clineno_by_path(cwd)
+        cdir = self.cur_buf.wd
+        pdir = LocalFS.parent_dir(cdir)
+        with self.KeepPreviewState():
+            Vim.command(f'silent edit {pdir}')
+            self._manual_on_bufenter()  # case 2
+            self.cur_buf.set_clineno_by_path(cdir)
 
     def NETRGoPrevSibling(self):
         cur_buf = self.cur_buf
@@ -1471,8 +1580,9 @@ class Netranger(object):
         # The following ls ensure that the directory exists on some mounted
         # file system
         Shell.ls(fullpath)
-        Vim.command(f'silent edit {fullpath}')
-        self._manual_on_bufenter()  # case 1
+        with self.KeepPreviewState():
+            Vim.command(f'silent edit {fullpath}')
+            self._manual_on_bufenter()  # case 1
 
     def NETRBookmarkEdit(self):
         self.init_bookmark_ui()
@@ -1722,6 +1832,22 @@ class Netranger(object):
                     sudo=self._sudo,
                     on_begin=lambda: self.inc_num_fs_op(busy_bufs),
                     on_exit=lambda: self.dec_num_fs_op(busy_bufs))
+
+    def _tabdrop(self, path):
+        if Vim.current.buffer.number in self._bufs and self.cur_buf.is_previewing:
+            previewing_tab_num = Vim.current.tabpage.number
+        else:
+            previewing_tab_num = -1
+
+        for tab in Vim.tabpages:
+            if tab.number == previewing_tab_num:
+                continue
+            for window in tab.windows:
+                if window.buffer.name == path:
+                    Vim.command(f'tabnext {tab.number}')
+                    return
+
+        Vim.command(f'tabedit {path}')
 
     def NETRForceDelete(self):
         self.NETRDelete(force=True)

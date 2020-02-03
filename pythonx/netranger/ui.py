@@ -65,45 +65,6 @@ class UI(object):
         Vim.command('setlocal nomodifiable')
 
 
-class PreviewUI(UI):
-    def __init__(self):
-        UI.__init__(self)
-        self.create_buf(content=[])
-        self.buf = self.bufs['default']
-
-    def close_or_show(self, file_path):
-        # close
-        for window in Vim.current.tabpage.windows:
-            if window.buffer.number == self.buf.number:
-                Vim.command(f'call win_gotoid(win_getid({window.number}))')
-                Vim.command('quit')
-                return
-        # show
-        Vim.command(f'vertical botright {self.buf.number}sb')
-        self.set_content(file_path)
-        Vim.command('wincmd h')
-
-    def set_content(self, path):
-        # do nothing if preview window is not visible in the current tab
-        if not any([
-                w.buffer.number == self.buf.number
-                for w in Vim.current.tabpage.windows
-        ]):
-            return
-
-        self.buf.options['modifiable'] = True
-        if os.path.isdir(path):
-            self.buf[:] = Shell.ls(path)
-        else:
-            try:
-                with open(path, 'r') as f:
-                    self.buf[:] = [l.strip() for l in f.readlines()]
-            except Exception:
-                self.buf[:] = Shell.run(f'file "{path}"').split('\n')
-
-        self.buf.options['modifiable'] = False
-
-
 class HelpUI(UI):
     def __init__(self, keymap_doc):
         UI.__init__(self)

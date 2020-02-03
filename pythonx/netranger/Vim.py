@@ -181,15 +181,6 @@ def UserInput(hint, default=''):
     return decode_if_bytes(vim.vars['NETRRegister'])
 
 
-def tabdrop(path):
-    for tab in vim.tabpages:
-        for window in tab.windows:
-            if window.buffer.name == path:
-                vim.command(f'tabnext {tab.number}')
-                return
-    vim.command(f'tabedit {path}')
-
-
 class pbar(object):
     def __init__(self, objects, total=None, chunkSize=100):
         self.objects = iter(objects)
