@@ -891,8 +891,8 @@ class NetRangerBuf(object):
                 with self.ManualRefreshOnWidthChange():
                     Vim.command(f'botright vsplit {cur_node.fullpath}')
         else:
-            Vim.command(f'botright vnew')
-            Vim.command(f'view {cur_node.fullpath}')
+            Vim.command(f'botright vertical pedit {cur_node.fullpath}')
+            Vim.command('wincmd l')
             Vim.command('setlocal foldnestmax=0')
             Vim.current.window.width = preview_width
 
