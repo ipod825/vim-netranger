@@ -5,12 +5,15 @@ import vim
 _hasnvim = int(vim.eval('has("nvim")'))
 
 # original api
-command = vim.command
-current = vim.current
 eval = vim.eval
 vars = vim.vars
-buffers = vim.buffers
+error = vim.error
+options = vim.options
+command = vim.command
 strwidth = vim.strwidth
+current = vim.current
+buffers = vim.buffers
+tabpages = vim.tabpages
 
 if _hasnvim:
 
