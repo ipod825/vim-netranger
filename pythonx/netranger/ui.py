@@ -179,13 +179,31 @@ class SortUI(UI):
         'a': lambda n: n.stat.st_atime if n.stat is not None else -1,
         'c': lambda n: n.stat.st_ctime if n.stat is not None else -1,
         'd': lambda n: '',
-        'e': lambda n: ext_name(n.name),
+        'e': lambda n: SortUI.ext_name(n.name),
         'm': lambda n: n.stat.st_ctime if n.stat is not None else -1,
-        's': lambda n: size(n.fullpath),
+        's': lambda n: SortUI.size(n.fullpath),
     }
 
     sort_fn_ch = 'd'
     reverse = False
+
+    @classmethod
+    def size(self, path):
+        try:
+            if os.path.isdir(path):
+                return str(len(os.listdir(path))).rjust(18)
+            else:
+                return str(os.stat(path).st_size).rjust(18)
+        except PermissionError:
+            return -1
+
+    @classmethod
+    def ext_name(self, path):
+        ind = path.rfind('.')
+        if ind < 0:
+            return ' '
+        else:
+            return path[ind + 1:]
 
     @classmethod
     def select_sort_fn(cls, ch):
