@@ -679,37 +679,28 @@ class NetRangerBuf(object):
         """ Will trigger on_cursormoved -> _update_clineno. """
         Vim.command(f'call cursor({lineno + 1},1)')
 
-    def _update_clineno(self, new_lineno):
-        """ Turn on new_lineno and turn off self.clineno. """
-        if new_lineno == self.clineno:
-            self.nodes[new_lineno].cursor_on()
-            self.refresh_lines_highlight([new_lineno])
-            return
-
-        oc = self.clineno
-        self.clineno = new_lineno
-        if oc < len(self.nodes):
-            self.nodes[oc].cursor_off()
-        self.nodes[new_lineno].cursor_on()
-        self.refresh_lines_highlight([oc, new_lineno])
-
     def on_cursormoved(self):
         """Remember the current line no.
 
         and refresh the highlight of the current line no.
         """
-        clineno = int(Vim.eval("line('.')")) - 1
+        new_lineno = int(Vim.eval("line('.')")) - 1
 
-        # do not stay on footer
-        if clineno == len(self.nodes) - 1:
+        # Do not stay on footer
+        if new_lineno == len(self.nodes) - 1:
             Vim.command('normal! k')
-            clineno -= 1
+            new_lineno -= 1
 
-        self._update_clineno(clineno)
-
-        # Avoid throttling by avoiding rerender the buffer (in
-        # on_cursormoved_post) for each call of on_cursormoved (e.g. when the
-        # user press j and don't let go).
+        if new_lineno == self.clineno:
+            self.nodes[new_lineno].cursor_on()
+            self.refresh_lines_highlight([new_lineno])
+        else:
+            oc = self.clineno
+            self.clineno = new_lineno
+            if oc < len(self.nodes):
+                self.nodes[oc].cursor_off()
+            self.nodes[new_lineno].cursor_on()
+            self.refresh_lines_highlight([oc, new_lineno])
         self._pending_on_cursormoved_post += 1
 
     def on_cursormoved_post(self):
