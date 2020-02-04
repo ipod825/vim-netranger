@@ -1321,6 +1321,11 @@ class Netranger(object):
             self._bufs[bufnum] = NetRangerBuf(self, os.path.abspath(bufname),
                                               Rclone)
         else:
+            fullpath = os.path.abspath(bufname)
+            if not os.access(fullpath, os.X_OK):
+                Vim.ErrorMsg('Permission Denied')
+                Vim.command('quit')
+                return
             self._bufs[bufnum] = NetRangerBuf(self, os.path.abspath(bufname),
                                               LocalFS)
         Vim.command(f'silent file N:{bufname}')
