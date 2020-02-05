@@ -20,11 +20,12 @@ def cp(args, err_msg):
     process = []
     rdst = args['rdst']
     dst = args['dst']
+    flags = args['flags']
     need_local_cp = dst != rdst
 
     for rsrc in args['rsrc']:
-        p = subprocess.Popen('rclone copyto --tpslimit=10 "{}" "{}"'.format(
-            rsrc, os.path.join(rdst, os.path.basename(rsrc))),
+        p = subprocess.Popen('rclone {} copyto --tpslimit=10 "{}" "{}"'.format(
+            flags, rsrc, os.path.join(rdst, os.path.basename(rsrc))),
                              shell=True,
                              stdout=PIPE,
                              stderr=PIPE)
@@ -41,9 +42,10 @@ def cp(args, err_msg):
 
 def rm(args, err_msg):
     process = []
+    flags = args['flags']
     for src, rsrc in zip(args['src'], args['rsrc']):
         cmd = 'purge' if os.path.isdir(src) else 'delete'
-        p = subprocess.Popen('rclone "{}" "{}"'.format(cmd, rsrc),
+        p = subprocess.Popen('rclone {} "{}" "{}"'.format(flags, cmd, rsrc),
                              shell=True,
                              stdout=PIPE,
                              stderr=PIPE)

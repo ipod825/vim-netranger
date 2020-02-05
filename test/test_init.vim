@@ -1,5 +1,6 @@
 set timeoutlen=1
 let g:_NETRDebug=v:true
-let g:NETRBookmarkFile='/tmp/netrbookmark'
+let g:NETRRootDir='/tmp/netrtestroot'
 let g:NETRPreviewDefaultOn=v:false
-exec 'set runtimepath^='.getcwd().'/..'
+let g:_NETRRcloneFlags='--config='.expand('%:p:h').'/netrtest_rclone.conf'
+exec 'set runtimepath^='.expand('%:p:h').'/..'

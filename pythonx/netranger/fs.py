@@ -259,6 +259,7 @@ class Rclone(LocalFS):
 
     @classmethod
     def init(self, root_dir, remote_remap):
+        self._flags = Vim.Var("_NETRRcloneFlags", default="")
         if root_dir[-1] == '/':
             root_dir = root_dir[:-1]
 
@@ -299,8 +300,8 @@ class Rclone(LocalFS):
             ])
             remote_files = set([
                 name for name in Shell.run(
-                    f'rclone lsf "{self.rpath(dirname)}"').split('\n')
-                if len(name) > 0
+                    f'rclone {self._flags} lsf "{self.rpath(dirname)}"').split(
+                        '\n') if len(name) > 0
             ])
             for name in remote_files.difference(local_files):
                 if name[-1] == '/':
@@ -309,20 +310,24 @@ class Rclone(LocalFS):
                     Shell.touch(os.path.join(dirname, name))
 
             for name in local_files.difference(remote_files):
-                Shell.run_async('rclone copyto --tpslimit=10 "{}" "{}"'.format(
-                    os.path.join(dirname, name),
-                    os.path.join(self.rpath(dirname), name)))
+                Shell.run_async(
+                    'rclone {self._flags} copyto --tpslimit=10 "{}" "{}"'.
+                    format(os.path.join(dirname, name),
+                           os.path.join(self.rpath(dirname), name)))
         return super(Rclone, self).ls(dirname)
 
     @classmethod
     def ensure_downloaded(self, lpath):
         if os.stat(lpath).st_size == 0:
             src, dst = self.sync_src_dst(lpath, Rclone.SyncDirection.DOWN)
-            Shell.run(f'rclone copyto --tpslimit=10 "{src}" "{dst}"')
+            Shell.run(
+                f'rclone {self._flags} copyto --tpslimit=10 "{src}" "{dst}"')
 
     @classmethod
     def rename(self, src, dst):
-        Shell.run(f'rclone moveto "{self.rpath(src)}" "{self.rpath(dst)}"')
+        Shell.run(
+            f'rclone {self._flags} moveto "{self.rpath(src)}" "{self.rpath(dst)}"'
+        )
         super(Rclone, self).rename(src, dst)
 
     @classmethod
@@ -332,7 +337,8 @@ class Rclone(LocalFS):
                 'rsrc': [self.rpath(s) for s in src_arr],
                 'src': src_arr,
                 'rdst': self.rpath(dst),
-                'dst': dst
+                'dst': dst,
+                'flags': self._flags
             })
 
     @classmethod
@@ -342,21 +348,24 @@ class Rclone(LocalFS):
                 'rsrc': [self.rpath(s) for s in src_arr],
                 'src': src_arr,
                 'rdst': self.rpath(dst),
-                'dst': dst
+                'dst': dst,
+                'flags': self._flags
             })
 
     @classmethod
     def rm(self, src_arr, force=False, on_exit=None):
-        self.exec_server_cmd('rm', on_exit, {
-            'rsrc': [self.rpath(s) for s in src_arr],
-            'src': src_arr
-        })
+        self.exec_server_cmd(
+            'rm', on_exit, {
+                'rsrc': [self.rpath(s) for s in src_arr],
+                'src': src_arr,
+                'flags': self._flags
+            })
 
     @classmethod
     def touch(self, name):
         Shell.touch(name)
         Shell.run(
-            f'rclone copyto "{name}"'
+            f'rclone {self._flags} copyto "{name}"'
             f'"{os.path.join(self.rpath(name), os.path.basename(name))}"')
 
     @classmethod
@@ -366,20 +375,22 @@ class Rclone(LocalFS):
     @classmethod
     def sync(self, lpath, direction):
         src, dst = self.sync_src_dst(lpath, direction)
-        Shell.run(f'rclone sync "{src}" "{dst}"')
+        Shell.run(f'rclone {self._flags} sync "{src}" "{dst}"')
 
     @classmethod
     def run_cmd(self, cmd):
         if not self.rcd_started:
             Vim.AsyncRun(
-                f'rclone rcd --rc-no-auth --rc-addr=localhost:{rclone_rcd_port}'
+                f'rclone {self._flags} rcd --rc-no-auth --rc-addr=localhost:{rclone_rcd_port}'
             )
             self.rcd_started = True
             # Ensure the server running before executing the next command.
             time.sleep(.1)
+
         return json.loads(
             Shell.run(
-                f'rclone rc --rc-addr=localhost:{rclone_rcd_port} {cmd}'))
+                f'rclone {self._flags} rc --rc-addr=localhost:{rclone_rcd_port} {cmd}'
+            ))
 
     @classmethod
     def cmd_listremotes(self):
