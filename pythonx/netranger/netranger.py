@@ -1941,9 +1941,6 @@ class Netranger(object):
                     on_exit=lambda: self.dec_num_fs_op(busy_bufs))
 
     def _tabdrop(self, path):
-        if path[-1] == '/':
-            path = path[:-1]
-
         if Vim.current.buffer.number in self._bufs and self.cur_buf.is_previewing:
             previewing_tab_num = Vim.current.tabpage.number
         else:

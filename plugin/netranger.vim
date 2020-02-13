@@ -38,7 +38,7 @@ endfunc
 command! NETRemoteList python3 ranger.NETRemoteList()
 command! NETRemotePull python3 ranger.NETRemotePull()
 command! NETRemotePush python3 ranger.NETRemotePush()
-command! -nargs=1 -complete=file -complete=dir NETRTabdrop exec s:pyx 'ranger._tabdrop("'.fnamemodify("<args>", ":p").'")'
+command! -nargs=1 -complete=file NETRTabdrop exec s:pyx 'ranger._tabdrop("'.<q-args>.'")'
 
 silent doautocmd USER NETRInit
 
