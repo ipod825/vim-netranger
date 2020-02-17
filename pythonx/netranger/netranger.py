@@ -812,7 +812,7 @@ class NetRangerBuf(object):
 
         winwidth = Vim.current.window.width
         if self.winwidth != winwidth:
-            # print('hi', self.header_node.name, 'real: ', winwidth, 'saved: ', self.winwidth)
+            # print('hi', self.wd, 'real: ', winwidth, 'saved: ', self.winwidth)
             self.winwidth = winwidth
             Vim.command('setlocal modifiable')
             for i, node in enumerate(self.nodes):
@@ -892,13 +892,15 @@ class NetRangerBuf(object):
                 with self.ManualRefreshOnWidthChange():
                     Vim.command(f'botright vsplit {cur_node.fullpath}')
         else:
-            bak_shortmess = Vim.options['shortmess']
-            Vim.options['shortmess'] = 'A'
-            Vim.command(f'silent botright vertical pedit {cur_node.fullpath}')
-            Vim.options['shortmess'] = bak_shortmess
-            Vim.command('wincmd l')
-            Vim.command('setlocal foldnestmax=0')
-            Vim.current.window.width = preview_width
+            with self.ManualRefreshOnWidthChange():
+                bak_shortmess = Vim.options['shortmess']
+                Vim.options['shortmess'] = 'A'
+                Vim.command(
+                    f'silent botright vertical pedit {cur_node.fullpath}')
+                Vim.options['shortmess'] = bak_shortmess
+                Vim.command('wincmd l')
+                Vim.command('setlocal foldnestmax=0')
+                Vim.current.window.width = preview_width
 
         with self.ManualRefreshOnWidthChange():
             Vim.command('wincmd h')
