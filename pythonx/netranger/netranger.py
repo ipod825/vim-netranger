@@ -802,7 +802,9 @@ class NetRangerBuf(object):
 
         return C()
 
-    _manual_refresh_on_width_change = False
+    @classmethod
+    def init_class_variables(cls):
+        cls._manual_refresh_on_width_change = False
 
     def refresh_highlight_if_winwidth_changed(self):
         """ Refresh the buffer highlight if the window widhth changed. """
@@ -1123,6 +1125,8 @@ class Netranger(object):
 
         Vim.vars['NETRemoteCacheDir'] = os.path.expanduser(
             Vim.Var('NETRemoteCacheDir'))
+
+        NetRangerBuf.init_class_variables()
 
     def init_vim_variables(self):
         for k, v in default.variables.items():
