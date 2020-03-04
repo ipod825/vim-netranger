@@ -366,10 +366,7 @@ class NetRangerBuf(object):
         self._pseudo_header_lineno = None
         self._pseudo_footer_lineno = None
 
-        if Vim.Var('_NETRNewBufWidth'):
-            self.winwidth = Vim.Var('_NETRNewBufWidth')
-        else:
-            self.winwidth = Vim.current.window.width
+        self.winwidth = controler.buf_init_width
         self.is_editing = False
         self._vim_buf_handle = Vim.current.buffer
         self._render()
@@ -1094,6 +1091,17 @@ class Netranger(object):
     def cwd(self):
         return self.cur_buf.wd
 
+    @property
+    def buf_init_width(self):
+        if self._NetRangerBuf_init_winwidth < 0:
+            return Vim.current.window.width
+        else:
+            return self._NetRangerBuf_init_winwidth
+
+    @buf_init_width.setter
+    def buf_init_width(self, width):
+        self._NetRangerBuf_init_winwidth = width
+
     def __init__(self):
         self._sudo = False
         self._bufs = {}
@@ -1108,6 +1116,7 @@ class Netranger(object):
         self._onuiquit = None
         self._newUI = None
         self._onuiquit_num_args = 0
+        self._NetRangerBuf_init_winwidth = -1
 
         self.init_vim_variables()
         self.init_keymaps()
@@ -1519,28 +1528,31 @@ class Netranger(object):
         """ Toggle preview panel. """
         self.cur_buf.toggle_preview()
 
-    def OpenBufWithWidth(netranger, width):
+    def OpenBufWithWidth(self, width):
         """ Context for opening new/existing NetRangerBuf with specified width.
 
         Useful to save unnecessary refresh_highlight_if_winwidth_changed call.
         """
         class C(object):
-            def __enter__(self):
-                # For new NetRangerBuf to initialize its width.
-                Vim.vars['_NETRNewBufWidth'] = width
-                return self
+            def __enter__(cself):
+                # Intentional for new NetRangerBuf. The new NetRangerBuf will
+                # render according to this width regardless of
+                # Vim.current.window.width, which will be reset in __exit__.
+                # This saves us from reredering just for the width change.
+                self.buf_init_width = width
+                return cself
 
-            def __exit__(self, type, value, traceback):
+            def __exit__(cself, type, value, traceback):
                 Vim.current.window.width = width
 
                 # Ensure nested BufEnter to succeed.
-                netranger._manual_on_bufenter()  # case 1
+                self._manual_on_bufenter()  # case 1
 
                 # Intentional for existing NetRangerBuf. The overhead for new
                 # NetRangerBuf is cheap as width doesn't really change.
-                netranger.cur_buf.refresh_highlight_if_winwidth_changed()
+                self.cur_buf.refresh_highlight_if_winwidth_changed()
 
-                Vim.vars['_NETRNewBufWidth'] = None
+                self.buf_init_width = -1
 
         return C()
 
