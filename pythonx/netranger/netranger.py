@@ -126,6 +126,7 @@ class EntryNode(Node):
             ext_beg = name.rfind('.')
             if ext_beg > 0:
                 name, ext = name[:ext_beg], '~' + name[ext_beg:]
+                sz = Vim.strwidth(name)
             else:
                 ext = '~'
 
@@ -1955,7 +1956,7 @@ class Netranger(object):
                     on_exit=lambda: self.dec_num_fs_op(busy_bufs))
 
     def _tabdrop(self, path):
-        if Vim.current.buffer.number in self._bufs and self.cur_buf.is_previewing:
+        if Vim.current.buffer.number in self._bufs and self._is_previewing:
             previewing_tab_num = Vim.current.tabpage.number
         else:
             previewing_tab_num = -1
