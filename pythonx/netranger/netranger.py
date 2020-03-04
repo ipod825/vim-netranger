@@ -344,7 +344,6 @@ class NetRangerBuf(object):
         self._num_fs_op = 0
         self._pending_on_cursormoved_post = 0
         self._last_on_curosormoved_lineno = -1
-        self.is_previewing = Vim.Var('NETRPreviewDefaultOn')
 
         self.content_outdated = False
         self._highlight_outdated_nodes = set()
@@ -745,7 +744,7 @@ class NetRangerBuf(object):
         Vim.command("setlocal nomodifiable")
 
         # Only set preview for the most left window
-        if self.is_previewing and Vim.current.window.number == 1:
+        if self._controler._is_previewing and Vim.current.window.number == 1:
             self.preview_on()
 
         self.set_pedueo_header_footer()
@@ -854,19 +853,9 @@ class NetRangerBuf(object):
         Vim.command(f'silent lcd {target_dir}')
         self.last_vim_pwd = target_dir
 
-    def toggle_preview(self):
-        """ Toggle the preview panel. """
-        if self.is_previewing:
-            self.preview_off()
-            Vim.WarningMsg('Preview off')
-        else:
-            self.preview_on()
-            Vim.WarningMsg('Preview on')
-
     def preview_on(self):
         """ Turn preview panel on. """
-        prev_is_previewing = self.is_editing == True
-        self.is_previewing = True
+        # prev_is_previewing = self.is_editing == True
         cur_node = self.cur_node
 
         with self.ManualRefreshOnWidthChange():
@@ -904,14 +893,14 @@ class NetRangerBuf(object):
         with self.ManualRefreshOnWidthChange():
             Vim.command('wincmd h')
 
+        self.refresh_highlight_if_winwidth_changed()
         # # Adjust the width if previewing is off previously as the adjustment is
         # # disabled by the previous ManualRefreshOnWidthChange.
-        if not prev_is_previewing:
-            self.refresh_highlight_if_winwidth_changed()
+        # if not prev_is_previewing:
+        #     self.refresh_highlight_if_winwidth_changed()
 
     def preview_off(self):
         """ Turn preview panel off. """
-        self.is_previewing = False
         Vim.command('wincmd o')
         self.refresh_highlight_if_winwidth_changed()
 
@@ -1103,6 +1092,8 @@ class Netranger(object):
         self._NetRangerBuf_init_winwidth = width
 
     def __init__(self):
+        self.init_vim_variables()
+
         self._sudo = False
         self._bufs = {}
         self._wd2bufnum = {}
@@ -1117,8 +1108,7 @@ class Netranger(object):
         self._newUI = None
         self._onuiquit_num_args = 0
         self._NetRangerBuf_init_winwidth = -1
-
-        self.init_vim_variables()
+        self._is_previewing = Vim.Var("NETRPreviewDefaultOn")
         self.init_keymaps()
 
         Rclone.init(Vim.Var('NETRemoteCacheDir'), Vim.Var('NETRemoteRoots'))
@@ -1526,7 +1516,13 @@ class Netranger(object):
 
     def NETRTogglePreview(self):
         """ Toggle preview panel. """
-        self.cur_buf.toggle_preview()
+        self._is_previewing = not self._is_previewing
+        if self._is_previewing:
+            self.cur_buf.preview_on()
+            Vim.WarningMsg('Preview on')
+        else:
+            self.cur_buf.preview_off()
+            Vim.WarningMsg('Preview off')
 
     def OpenBufWithWidth(self, width):
         """ Context for opening new/existing NetRangerBuf with specified width.
@@ -1556,15 +1552,15 @@ class Netranger(object):
 
         return C()
 
-    def KeepPreviewState(netranger):
+    def KeepPreviewState(self):
         """ Context to keep the preview panel on. """
         class C(object):
-            def __enter__(self):
-                self.is_previewing = netranger.cur_buf.is_previewing
+            def __enter__(cself):
+                return cself
 
-            def __exit__(self, type, value, traceback):
-                if self.is_previewing:
-                    netranger.cur_buf.preview_on()
+            def __exit__(cself, type, value, traceback):
+                if self._is_previewing:
+                    self.cur_buf.preview_on()
 
         return C()
 
