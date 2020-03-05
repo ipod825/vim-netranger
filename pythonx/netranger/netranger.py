@@ -1457,6 +1457,9 @@ class Netranger(object):
             else:
                 try:
                     Vim.command(f'{open_cmd} {fullpath}')
+                    if NETRApi.HasHooker('NETROpenCmd_end'):
+                        for hooker in NETRApi.Hookers['NETROpenCmd_end']:
+                            hooker(self)
                 except Exception as e:
                     err_msg = str(e)
                     if 'E325' not in err_msg:

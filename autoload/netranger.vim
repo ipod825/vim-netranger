@@ -96,3 +96,7 @@ function! netranger#mapvimfn(key, fn)
     " fn: the name of a vim's user defined function
     return py3eval('NETRApi.mapvimfn("'.a:key.'","'.a:fn.'")')
 endfunction
+
+function! netranger#registerHookerVimFn(hooker, fn)
+    return py3eval('NETRApi.RegisterHookerVimFn("'.a:hooker.'","'.a:fn.'")')
+endfunction

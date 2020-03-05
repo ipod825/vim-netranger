@@ -8,6 +8,7 @@ class NETRApi(object):
         'node_highlight_content_r': [],
         'render_begin': [],
         'render_end': [],
+        'NETROpenCmd_end': [],
     }
     ranger = None
 
@@ -18,6 +19,11 @@ class NETRApi(object):
     @classmethod
     def RegisterHooker(self, hooker):
         self.Hookers[hooker.__name__].append(hooker)
+
+    @classmethod
+    def RegisterHookerVimFn(self, hooker, fn):
+        self.Hookers[hooker].append(
+            lambda api: Vim.eval(f'function("{fn}")()'))
 
     @classmethod
     def map(self, key, fn, check=False):

@@ -281,32 +281,46 @@ COMMANDS                                *vim-netranger-commands*
 FUNCTIONS                                *vim-netranger-functions*
 
 
+                                        *netranger#cur_node_name*
 netranger#cur_node_name()
         The result is a string, which is the basename of the current node.
 
+                                        *netranger#cur_node_path*
 netranger#cur_node_path()
         The result is a string, which is the full path of the current node.
 
+                                        *netranger#render*
 netranger#render()
         Redraw the highlight of all nodes in the current buffer.
 
+                                        *netranger#cp*
 netranger#cp({src}, {dst})
         Copy path {src} to the directory path {dst}.
 
+                                        *netranger#mv*
 netranger#mv(src, dst)
         Move path {src} to the directory path {dst}.
 
+                                        *netranger#rm*
 netranger#rm(src)
         Remove path {src}
 
+                                        *netranger#mapvimfn*
 netranger#mapvimfn(key, fn)
         Add a mapping {key} to perform a vim (or user definied) function with
-        name {fn} in a vim-netranger buffer. This function only takes effect
-        called on NETRInit autocmd. See |vim-netranger-customization-mapping|
-        for an example.
+        name {fn} in a vim-netranger buffer. This function is meant to be used
+        in |NETRInit| autocmd. See |vim-netranger-customization-mapping|.
+
+                                        *netranger#registerHookerVimFn*
+netranger#registerHookerVimFn(hook, fn)
+        Register {fn} to be the call back function of the {hook}. This
+        function is meant to be used in |NETRInit| autocmd. See
+        |vim-netranger-customization-hooks|.
+
+
 
 ===============================================================================
-Customization                                  *vim-netranger-customization*
+CUSTOMIZATION                                  *vim-netranger-customization*
 
 -------------------------------------------------------------------------------
 MAPPING                                 *vim-netranger-customization-mapping*
@@ -320,7 +334,7 @@ you need to put the following in your vimrc: >
     let g:NETRBookmarkGo = ["m"]
 
 To achieve operations not provided by vim-netranger, for e.g. duplicate a file
-under cursor or to remap j to 2j, users can add mapping on NETRInit autocmd: >
+under cursor or to remap j to 2j, users can add mapping on |NETRInit| autocmd: >
     function! DuplicateNode()
         call netranger#cp(netranger#cur_node_path(),
         \ netranger#cur_node_path().'DUP')
@@ -375,6 +389,20 @@ g:NETRAutochdir         boolean (default on)
                                         *g:NETROpenCmd*
 g:NETROpenCmd           string (default "NETROpen")
     Vim command to open files on |NETROpen| (when rifle is not available).
+    When preview mode (see |NETRTogglePreview|) is on, setting |g:NETROpenCmd|
+    to |edit|, |split|, |vsplit|, etc might not make much sense. In such case,
+    please use |netranger#registerHookerVimFn| to register a `NETROpenCmd_end` hook:
+
+>
+    function! NETROpenCmd_end_hook()
+        wincmd o
+    endfunction
+
+    function! NETRInit()
+        call netranger#registerHookerVimFn('NETROpenCmd_end', 'NETROpenCmd_end_hook')
+    endfunction
+
+    autocmd USER NETRInit call NETRInit()
 
                                         *g:NETRDefaultMapSkip*
 g:NETRDefaultMapSkip    list (default [])
@@ -439,7 +467,43 @@ run palette to see directly how the colors look in your terminal: >
     echo -e "\e[38;05;${i}m${i}"; done | column -c 180 -s "  "; echo -e "\e[m"'
 
 -------------------------------------------------------------------------------
-API                                     *vim-netranger-api*
+AUTOCMD                                *NETRInit* *vim-netranger-customization-autocmd*
+vim-netranger issues a |User| autocommand |NETRInit| on initialization. Users
+can add mapping or register hooks within it. Please see
+|vim-netranger-customization-mapping| and |vim-netranger-customization-hooks|
+for examples.
+
+-------------------------------------------------------------------------------
+HOOKS                                 *vim-netranger-customization-hooks*
+Users can register hooks using |NETRInit| autocmd in their |vimrc|:
+
+>
+    function! Function_name()
+        " do some stuff for Hook_name
+    endfunction
+
+    function! NETRInit()
+        call netranger#registerHookerVimFn('Hook_name', 'Function_name')
+    endfunction
+
+    autocmd USER NETRInit call NETRInit()
+
+`Hook_name` is a valid hook listed below and `Function_name` is a global vim
+function name. The function takes no arguments.
+
+Advanced users can write a vim plugin using |python|, which provides more
+powerful way dealing with hooks. Please see |vim-netranger-python-api| for
+details.
+
+Currently valid hooks are listed as follows:
+
+                                               *NETROpenCmd_end*
+NETROpenCmd_end is called after |g:NETROpenCmd| is issued. One would want to
+register this hook is |g:NETROpenCmd| were set to |edit|, |split|, |vsplit|,
+etc.
+
+-------------------------------------------------------------------------------
+PYTHON API                                     *vim-netranger-python-api*
 
 vim-netranger expose both vim and python api. Vim api are just vim functions
 that enable users to customize mapping for simple operations in their vimrc
