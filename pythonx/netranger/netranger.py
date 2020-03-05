@@ -1182,7 +1182,7 @@ class Netranger(object):
         for fn, (keys, desc) in default.keymap.items():
             user_keys = Vim.Var(fn, [])
             user_keys += [k for k in keys if k not in skip]
-            self.keymap_doc[fn] = (keys, desc)
+            self.keymap_doc[fn] = (user_keys, desc)
             for key in user_keys:
                 self.key2fn[key] = getattr(self, fn)
 
