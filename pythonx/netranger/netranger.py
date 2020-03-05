@@ -1499,17 +1499,13 @@ class Netranger(object):
         a panel.
         """
         if self.cur_node.is_DIR:
+            with self.KeepPreviewState():
+                self.NETRBufOpen()
             return
 
-        if len(Vim.current.tabpage.windows) == 1:
-            self.NETROpen(Vim.Var('NETRSplitOrientation') + ' vsplit',
-                          use_rifle=False)
-            Vim.current.window.width = int(Vim.current.window.width *
-                                           Vim.Var('NETRPanelSize'))
-        else:
-            fpath = self.cur_node.fullpath
-            Vim.command('wincmd l')
-            Vim.command(f'edit {fpath}')
+        if not self._is_previewing:
+            self.NETRTogglePreview()
+        Vim.command('wincmd l')
 
     def NETRAskOpen(self):
         """ Show the AskUI. """

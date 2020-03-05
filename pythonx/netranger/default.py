@@ -92,8 +92,7 @@ variables = {
         test_remote_name: test_remote_dir
     },
     'NETRSplitOrientation': 'belowright',
-    'NETRPanelSize': 1.5,
-    'NETRPreviewSize': 1.2,
+    'NETRPreviewSize': 1.3,
     'NETRParentPreviewSize': 0.3,
     'NETRColors': {},
     'NETRRedrawDelay': 200,

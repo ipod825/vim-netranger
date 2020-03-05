@@ -18,6 +18,7 @@ Usage          |vim-netranger-usage|
   Key mappings   |vim-netranger-key-mappings|
   User interface |vim-netranger-user-interface|
   Edit mode      |vim-netranger-edit-mode|
+  Preview mode   |vim-netranger-preview-mode|
   Panel mode     |vim-netranger-panel-mode|
   Rifle          |vim-netranger-rifle|
   Rclone         |vim-netranger-rclone|
@@ -189,7 +190,7 @@ r          Force refresh netranger buffer to be the same as the file system.
            system.
 
                                         *NETRTogglePreview* *g:NETRTogglePreview*
-P          Toggle open preview window.
+P          Toggle enter preview mode. See |vim-netranger-preview-mode|
 -------------------------------------------------------------------------------
 USER INTERFACE                          *vim-netranger-user-interface*
 
@@ -203,22 +204,37 @@ keys, no action will be triggered.
 -------------------------------------------------------------------------------
 EDIT MODE                               *vim-netranger-edit-mode*
 
-On |NETREdit| mapping, the current buffer enters edit mode. You can  modify any
-file/directory name in this mode just like editing a regular file in vim. Note
-that in edit mode, you can't delete file by deleting lines and neither can you
-add files. To save changes in edit mode, just save the buffer, for e.g.
-by pressing ':w', ':x', or ':wq'.
+On |NETREdit| mapping (default `i`), the current buffer enters edit mode. You
+can  modify any file/directory name in this mode just like editing a regular
+file in vim. Note that in edit mode, you can't delete file by deleting lines and
+neither can you add files. To save changes in edit mode, just save the buffer,
+for e.g.  by pressing ':w', ':x', or ':wq'.
+
+-------------------------------------------------------------------------------
+PREVIEW MODE                              *vim-netranger-preview-mode*
+
+nerdtree enables users to have a single panel on the left side that always open
+files on the right side when pressing enter. vim-netranger provides a similar
+functionality. In a vim-netranger buffer, on |NETRTogglePreview| mapping
+(default `p`) to preview the file under cursor. The cursor will remain on the
+left panel. To directly enter the panel, use the |NETRBufPanelOpen| mapping
+(default `ep`). The size of the right panel can be customized by
+|g:NETRPreviewSize|, which is the ratio between the actual size of the right
+panel to half of the screen width (e.g.  setting it to 1 you'll get a equal
+split).
+
+One who is used to nerdtree panel might want to have the following custom mapping:
+>
+    let g:NETRDefaultMapSkip = ['l']
+    let g:NETRBufPanelOpen = ['l']
+
+This makes the |NETROpen| mapping mapped to |NETRBufPanelOpen|.
+
 
 -------------------------------------------------------------------------------
 PANEL MODE                              *vim-netranger-panel-mode*
 
-nerdtree enables users to have a single panel on the left side that always open
-files on the right side when pressing enter. vim-netranger provides a similar
-functionality. In a vim-netranger buffer, press `ep` to open the file under
-cursor on the right. The size of the right panel can be customized by
-|g:NETRPanelSize|, which is the ratio between the actual size of the right
-panel to half of the screen width (e.g. setting it to 1 you'll get a equal
-split.)
+See |vim-netranger-preview-mode|.
 
 -------------------------------------------------------------------------------
 RIFLE                                   *vim-netranger-rifle*
