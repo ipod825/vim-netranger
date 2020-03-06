@@ -9,13 +9,10 @@ let s:colorHexstr = [ '#000000', '#800000', '#008000', '#808000', '#000080', '#8
 syn match ansiSuppress conceal contained '\e\[[0-9;]*m'
 hi def link ansiSuppress Conceal
 
-let c = 0
-while c < 256
+
+for c in values(g:NETRColors)
   exec 'syntax match NETRhi'.c.' "\e\[38;5;'.c.'m[^\e]*\e\[0m"  contains=ansiSuppress'
   exec 'syntax match NETRhi'.c.'r "\e\[38;5;'.c.';7m[^\e]*\e\[0m"  contains=ansiSuppress'
   exec 'hi NETRhi'.c.' ctermfg='.c.' guifg='.s:colorHexstr[c]
   exec 'hi NETRhi'.c.'r ctermbg='.c.' ctermfg=black guibg='.s:colorHexstr[c].' guifg=black'
-  let c += 1
-endwhile
-
-hi NETRhiProgressBar ctermfg=None ctermbg=Blue
+endfor

@@ -1149,11 +1149,12 @@ class Netranger(object):
                 continue
             elif type(color) is str:
                 if color[0] == '#':
-                    color = colorhexstr2ind.get(color, None)
+                    color, ocolor = colorhexstr2ind.get(color, None), color
                 else:
-                    color = colorname2ind.get(color, None)
+                    color, ocolor = colorname2ind.get(color, None), color
                 if color is None:
-                    Vim.ErrorMsg('netranger: {} is not a valid color name!')
+                    Vim.ErrorMsg(
+                        f'netranger: {name}:{ocolor} is not a valid color!')
                     continue
 
             default.color[name] = color
@@ -1161,6 +1162,10 @@ class Netranger(object):
         for key, value in default.color.items():
             if type(value) is str:
                 default.color[key] = colorname2ind[value]
+
+        # Store the final colors back to vim so that the syntax file have
+        # access to them.
+        Vim.SetVar('NETRColors', default.color)
 
     def should_ignore(self, basename):
         """ Return True if basename should not be displayed in a NetRangerBuf. """
