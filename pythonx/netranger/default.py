@@ -102,4 +102,5 @@ variables = {
 
 internal_variables = {
     'NETRRegister': [],
+    '_NETRSavedColors': [],
 }

@@ -10,7 +10,7 @@ syn match ansiSuppress conceal contained '\e\[[0-9;]*m'
 hi def link ansiSuppress Conceal
 
 
-for c in values(g:NETRColors)
+for c in g:_NETRSavedColors
   exec 'syntax match NETRhi'.c.' "\e\[38;5;'.c.'m[^\e]*\e\[0m"  contains=ansiSuppress'
   exec 'syntax match NETRhi'.c.'r "\e\[38;5;'.c.';7m[^\e]*\e\[0m"  contains=ansiSuppress'
   exec 'hi NETRhi'.c.' ctermfg='.c.' guifg='.s:colorHexstr[c]

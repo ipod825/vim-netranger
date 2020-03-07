@@ -1094,6 +1094,7 @@ class Netranger(object):
 
     def __init__(self):
         self.init_vim_variables()
+        self.init_keymaps()
 
         self._sudo = False
         self._bufs = {}
@@ -1110,7 +1111,6 @@ class Netranger(object):
         self._onuiquit_num_args = 0
         self._NetRangerBuf_init_winwidth = -1
         self._is_previewing = Vim.Var("NETRPreviewDefaultOn")
-        self.init_keymaps()
 
         Rclone.init(Vim.Var('NETRemoteCacheDir'), Vim.Var('NETRemoteRoots'))
         Shell.mkdir(default.variables['NETRRootDir'])
@@ -1163,9 +1163,7 @@ class Netranger(object):
             if type(value) is str:
                 default.color[key] = colorname2ind[value]
 
-        # Store the final colors back to vim so that the syntax file have
-        # access to them.
-        Vim.SetVar('NETRColors', default.color)
+        Vim.SetVar('_NETRSavedColors', list(default.color.values()))
 
     def should_ignore(self, basename):
         """ Return True if basename should not be displayed in a NetRangerBuf. """
