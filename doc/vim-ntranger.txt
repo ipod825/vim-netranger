@@ -11,7 +11,7 @@
 
 CONTENTS                                *vim-netranger-help-contents*
 
-Introduction   |vim-netranger-introduction|
+Introduction  |vim-netranger-introduction|
 Compatibility |vim-netranger-compatibility|
 Usage          |vim-netranger-usage|
   Open buffer    |vim-netranger-open-buffers|
@@ -27,9 +27,8 @@ Usage          |vim-netranger-usage|
 Customization  |vim-netranger-customization|
   Mapping        |vim-netranger-customization-mapping|
   Option         |vim-netranger-customization-option|
-  Colors         |vim-netrange-colors|
-  Api            |vim-netranger-api|
-About         |vim-netranger-about|
+  Colors         |vim-netranger-colors|
+  Python Api     |vim-netranger-python-api|
 
 ===============================================================================
 Introduction                                   *vim-netranger*
