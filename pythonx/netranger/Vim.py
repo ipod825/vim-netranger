@@ -3,6 +3,9 @@ import time
 import vim
 
 _hasnvim = int(vim.eval('has("nvim")'))
+gui_compaitable = int(
+    vim.eval('has("gui")')) or (int(vim.eval('has("termguicolors")'))
+                                and vim.options['termguicolors'])
 
 # original api
 eval = vim.eval
@@ -44,6 +47,22 @@ else:
 
     def Timer(delay, fn, pyfn, *args):
         pyfn(*args)
+
+
+if gui_compaitable:
+
+    def ColorMsg(msg, c, background):
+        if background:
+            return f'[48;2;{c}m{msg}[0m'
+        else:
+            return f'[38;2;{c}m{msg}[0m'
+else:
+
+    def ColorMsg(msg, c, background):
+        if background:
+            return f'[48;5;{c}m{msg}[0m'
+        else:
+            return f'[38;5;{c}m{msg}[0m'
 
 
 def log(*msg):

@@ -9,7 +9,7 @@ from sys import platform
 
 from netranger import Vim, default
 from netranger.api import NETRApi
-from netranger.colortbl import colorhexstr2ind, colorname2ind
+from netranger.colortbl import colorhexstr2ind, colorind2hexstr, colorname2ind
 from netranger.config import file_sz_display_wid
 from netranger.enum import Enum
 from netranger.fs import FSTarget, LocalFS, Rclone
@@ -22,13 +22,6 @@ if platform == "win32":
 else:
     import pwd
     import grp
-
-
-def c256(msg, c, background):
-    if background:
-        return f'[38;5;{c};7m{msg}[0m'
-    else:
-        return f'[38;5;{c}m{msg}[0m'
 
 
 class Node(object):
@@ -52,7 +45,7 @@ class Node(object):
 
     @property
     def highlight_content(self):
-        return c256(self.name, self.highlight, self.is_cursor_on)
+        return Vim.ColorMsg(self.name, self.highlight, self.is_cursor_on)
 
     @property
     def is_DIR(self):
@@ -97,7 +90,7 @@ class HeaderNode(Node):
 
     @property
     def highlight_content(self):
-        return c256(self.name, self.highlight, False)
+        return Vim.ColorMsg(self.name, self.highlight, False)
 
     @property
     def is_INFO(self):
@@ -167,7 +160,7 @@ class EntryNode(Node):
         right = size_info
 
         def c(msg):
-            return c256(msg, self.highlight, self.is_cursor_on)
+            return Vim.ColorMsg(msg, self.highlight, self.is_cursor_on)
 
         if NETRApi.HasHooker('node_highlight_content_l',
                              'node_highlight_content_r'):
@@ -176,14 +169,14 @@ class EntryNode(Node):
             for hooker in NETRApi.Hookers['node_highlight_content_l']:
                 l_s, l_h = hooker(self)
                 left_extra_len += Vim.strwidth(l_s)
-                left_extra += c256(l_s, l_h, False)
+                left_extra += Vim.ColorMsg(l_s, l_h, False)
 
             right_extra = ''
             right_extra_len = 0
             for hooker in NETRApi.Hookers['node_highlight_content_r']:
                 r_s, r_h = hooker(self)
                 right_extra_len += Vim.strwidth(r_s)
-                right_extra += c256(r_s, r_h, False)
+                right_extra += Vim.ColorMsg(r_s, r_h, False)
 
             # Calling c and concatenation multiple times is rather expensive.
             # Hence we avoid it if possible.
@@ -1142,10 +1135,12 @@ class Netranger(object):
         """ Set the color table for nodes in a NetRangerBuf. """
         for name, color in Vim.Var('NETRColors').items():
             if name not in default.color:
-                Vim.ErrorMsg('netranger: {} is not a valid NETRColors key!')
+                Vim.ErrorMsg(
+                    f'netranger: {name} is not a valid NETRColors key!')
                 continue
             if type(color) is int and (color < 0 or color > 255):
-                Vim.ErrorMsg('netranger: Color value should be within 0~255')
+                Vim.ErrorMsg(
+                    f'netranger: {name}:{color} value is not within 0~255')
                 continue
             elif type(color) is str:
                 if color[0] == '#':
@@ -1162,8 +1157,37 @@ class Netranger(object):
         for key, value in default.color.items():
             if type(value) is str:
                 default.color[key] = colorname2ind[value]
+        Vim.SetVar(
+            '_NETRSavedColors',
+            {str(c): colorind2hexstr[c]
+             for c in default.color.values()})
 
-        Vim.SetVar('_NETRSavedColors', list(default.color.values()))
+        # True color support for gui/termguicolors
+        if Vim.gui_compaitable:
+
+            def hex_to_code(s):
+                s = s.lstrip('#')
+                return ';'.join(
+                    tuple(str(int(s[i:i + 2], 16)) for i in range(0, 6, 2)))
+
+            for name, color in Vim.Var('NETRGuiColors').items():
+                if name not in default.color:
+                    Vim.ErrorMsg(
+                        f'netranger: {name} is not a valid NETRGuiColors key!')
+                    continue
+                default.color[name] = color
+
+            for key, value in default.color.items():
+                if type(value) is int:
+                    default.color[key] = colorind2hexstr[value]
+
+            # c[1:] is to prevent :help W18
+            Vim.SetVar('_NETRSavedGuiColors',
+                       {c[1:]: hex_to_code(c)
+                        for c in default.color.values()})
+
+            for key, value in default.color.items():
+                default.color[key] = hex_to_code(value)
 
     def should_ignore(self, basename):
         """ Return True if basename should not be displayed in a NetRangerBuf. """

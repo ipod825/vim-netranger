@@ -78,6 +78,19 @@ color = {
     'file': 'white',
 }
 
+gui_color = {
+    'cwd': '#ffff00',
+    'footer': '#005f00',
+    'pick': '#ffff00',
+    'copy': '#ff00ff',
+    'cut': '#808080',
+    'exe': '#005f00',
+    'dir': '#005fd7',
+    'link': '#00ffff',
+    'brokenlink': '#ff0000',
+    'file': '#ffffff',
+}
+
 variables = {
     'NETRIgnore': ['.*'],
     'NETROpenCmd': 'NETRTabdrop',
@@ -95,6 +108,7 @@ variables = {
     'NETRPreviewSize': 1.3,
     'NETRParentPreviewSize': 0.3,
     'NETRColors': {},
+    'NETRGuiColors': {},
     'NETRRedrawDelay': 200,
     'NETRLazyLoadStat': False,
     'NETRPreviewDefaultOn': True,
@@ -102,5 +116,4 @@ variables = {
 
 internal_variables = {
     'NETRRegister': [],
-    '_NETRSavedColors': [],
 }

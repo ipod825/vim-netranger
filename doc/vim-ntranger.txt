@@ -438,6 +438,11 @@ g:NETRSplitOrientation  string (default "belowright")
 g:NETRColors            dict (default {})
     Colors for nodes in vim-netranger buffer. See |vim-netranger-colors|.
 
+                                        *g:NETRGuiColors*
+g:NETRGuiColors            dict (default {})
+    Colors for nodes in vim-netranger buffer in gui or when |termguicolors'| is
+    set. See |vim-netranger-colors|.
+
                                         *g:NETRPanelSize*
 g:NETRPanelSize         number (default 1.5)
     Controls the size of split in |vim-netranger-panel-mode|.
@@ -455,8 +460,12 @@ g:NETRPreviewDefaultOn  boolean (default on)
 -------------------------------------------------------------------------------
 COLORS                                  *vim-netranger-colors*
 
-Node colors in a vim-netrange buffer can be customized by setting |g:NETRColors|
-to a dictionary. Possible keys of |g:NETRColors| are:
+Node colors in a vim-netrange buffer can be customized by setting the two
+dictionaries |g:NETRColors| and |g:NETRGuiColors|. The former supports only 256
+colors while the latter supports true color but only takes effect when
+`:echo has('gui') || (has('termguicolors') && &termguicolors)` outputs 1.
+Possible keys for the two directories are:
+
 'cwd':        the first line
 'footer':     the last line
 'pick':       node color after triggering |NETRTogglePick|
@@ -468,18 +477,25 @@ to a dictionary. Possible keys of |g:NETRColors| are:
 'brokenlink': link node color
 'file':       file node color
 
-Possible values of |g:NETRColors| can be either string or integer between 0~255.
-For gui (e.g. gvim, oni, VimR), the value should be of the form #rrggbb
-corresponding to the 256 colors, for more information, please refer to
-https://jonasjacek.github.io/colors/.
+Possible values of |g:NETRColors| can be an integer between 0~255 or a string
+representing the name or the hex code of the corresponding color, which can be
+found in https://jonasjacek.github.io/colors/.
+
 For example: >
-    let g:NETRColors = {'pick': 'maroon', 'cut': 95, 'dir': '#5f5faf'}
+    let g:NETRColors = {'pick': 'red', 'cut': 95, 'dir': '#5f5faf'}
 
 To view the color in terminal, add the following snippet to your shell rc and
 run palette to see directly how the colors look in your terminal: >
 
     alias palette='for i in {0..255}; do\
     echo -e "\e[38;05;${i}m${i}"; done | column -c 180 -s "  "; echo -e "\e[m"'
+
+Possible values of |g:NETRGuiColors| can be the hex code from `#000000` to
+`#ffffff`.
+
+For exmaple:
+    >
+    let g:NETRGuiColors = {'pick': '#ff0000', 'cut': '#875f5f', 'dir': '#5f5faf'}
 
 -------------------------------------------------------------------------------
 AUTOCMD                                *NETRInit* *vim-netranger-customization-autocmd*

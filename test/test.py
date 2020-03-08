@@ -29,7 +29,8 @@ def assert_content(expected, level=None, ind=None, hi=None, hi_fg=False):
         ind += 1
         line = nvim.current.buffer[ind]
 
-    m = re.search(r'\[38;5;([0-9]+)(;7)?m( *)([^ ]+)', line)
+    m = re.search(r'\[([34])8;5;([0-9]+)?m( *)([^ ]+)', line)
+
     assert m.group(4) == expected, 'expected:"{}", real: "{}"'.format(
         expected, m.group(4))
     if level is not None:
@@ -39,18 +40,18 @@ def assert_content(expected, level=None, ind=None, hi=None, hi_fg=False):
 
     if hi is not None:
         expected_hi = color_str(hi)
-        assert m.group(1) == expected_hi, 'expected_hi: "{}", '
-        'real_hi: "{}"'.format(expected_hi, m.group(1))
+        assert m.group(2) == expected_hi, 'expected_hi: "{}", '
+        'real_hi: "{}"'.format(expected_hi, m.group(2))
 
         if hi_fg:
-            assert m.group(2) is not None, 'Expect a foreground highlight'
+            assert m.group(1) == '4', 'Expect a foreground highlight'
 
     cLineNo = nvim.eval("line('.')") - 1
     if ind is None or ind == cLineNo:
-        assert m.group(2) is not None, 'Background highlight mismatch. '
+        assert m.group(1) == '4', 'Background highlight mismatch. '
         'ind: {}, curLine: {}'.format(ind, cLineNo)
     else:
-        assert m.group(2) is None, 'Background highlight mismatch. '
+        assert m.group(1) == '3', 'Background highlight mismatch. '
         'ind: {}, curLine: {}'.format(ind, cLineNo)
 
 
@@ -398,7 +399,7 @@ def unlock_fs():
 
 def ensure_buf_no_expand():
     nvim.input('2G')
-    m2 = re.search(r'\[38;5;[0-9]+;7mdir.*', nvim.eval('getline(2)'))
+    m2 = re.search(r'\[48;5;[0-9]+mdir.*', nvim.eval('getline(2)'))
     assert m2, "Assumes line2 is dir"
 
     m3 = re.search(r'\[38;5;[0-9]+mdir2.*', nvim.eval('getline(3)'))
