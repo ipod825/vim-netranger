@@ -1157,10 +1157,8 @@ class Netranger(object):
         for key, value in default.color.items():
             if type(value) is str:
                 default.color[key] = colorname2ind[value]
-        Vim.SetVar(
-            '_NETRSavedColors',
-            {str(c): colorind2hexstr[c]
-             for c in default.color.values()})
+        Vim.SetVar('_NETRSavedColors', [(n, colorind2hexstr[c], c)
+                                        for n, c in default.color.items()])
 
         # True color support for gui/termguicolors
         if Vim.gui_compaitable:
@@ -1181,10 +1179,9 @@ class Netranger(object):
                 if type(value) is int:
                     default.color[key] = colorind2hexstr[value]
 
-            # c[1:] is to prevent :help W18
             Vim.SetVar('_NETRSavedGuiColors',
-                       {c[1:]: hex_to_code(c)
-                        for c in default.color.values()})
+                       [(n, c, hex_to_code(c))
+                        for n, c in default.color.items()])
 
             for key, value in default.color.items():
                 default.color[key] = hex_to_code(value)
