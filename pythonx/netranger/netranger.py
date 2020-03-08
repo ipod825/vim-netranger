@@ -1415,6 +1415,8 @@ class Netranger(object):
         @param bufnum: current buffer number
         """
         if not self._bufs[bufnum].is_editing:
+            if Vim.eval('mode()') == 'V':
+                return
             self._bufs[bufnum].on_cursormoved()
             Vim.Timer(Vim.Var('NETRRedrawDelay'), '_NETROnCursorMovedPost',
                       self.on_cursormoved_post, bufnum)
