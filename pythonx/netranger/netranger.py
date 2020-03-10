@@ -1399,7 +1399,7 @@ class Netranger(object):
         Vim.command('setlocal nospell')
         Vim.command('setlocal bufhidden=hide')
         Vim.command('setlocal conceallevel=3')
-        Vim.command('setlocal concealcursor=nv')
+        Vim.command('setlocal concealcursor=nvc')
         Vim.command('setlocal nocursorline')
         Vim.command('setlocal nolist')
 
