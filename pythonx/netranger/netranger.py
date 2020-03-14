@@ -1991,7 +1991,7 @@ class Netranger(object):
                 continue
             for window in tab.windows:
                 if window.buffer.name == path:
-                    Vim.command(f'tabnext {tab.number}')
+                    Vim.current.window = window
                     return
 
         Vim.command(f'tabedit {path}')
