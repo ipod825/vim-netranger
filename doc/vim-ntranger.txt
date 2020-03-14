@@ -290,7 +290,10 @@ COMMANDS                                *vim-netranger-commands*
 
                                         *NETRTabdrop*
 :NETRTabdrop [args] Opens the arguments in a new vim tab, if it is already
-                    opened in another tab, jump to that tab.
+                    opened in another tab, jump to that tab. This command is
+                    preview-mode-aware (vim-netranger-preview-mode) such that it
+                    will always leave the current tabpage of a vim-netranger
+                    buffer.
 
 -------------------------------------------------------------------------------
 FUNCTIONS                                *vim-netranger-functions*
@@ -402,7 +405,7 @@ g:NETRAutochdir         boolean (default on)
     with vim's `autochdir`. See |netrw-incompatible|.
 
                                         *g:NETROpenCmd*
-g:NETROpenCmd           string (default "NETROpen")
+g:NETROpenCmd           string (default "NETRTabdrop")
     Vim command to open files on |NETROpen| (when rifle is not available).
     When preview mode (see |NETRTogglePreview|) is on, setting |g:NETROpenCmd|
     to |edit|, |split|, |vsplit|, etc might not make much sense. In such case,
