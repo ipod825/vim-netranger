@@ -34,6 +34,11 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 
 2. `rclone`: v1.4.0(v1.3.9) or newer (1.4.0 not yet published, see [Known Issues](#known-issues)). `rclone` is needed if you use remote editing features. However, it will be installed automatically on the first time running `NETRemoteList` command.
 
+### Workflow preferences
+1. If you are more used to tabpages, and want to always keep a netranger buffer for the project folder. Have `let g:NETROpenCmd = 'NETRTabdrop'` in your vimrc.
+2. If you are more used to tabpages, but want to close the netranger when openning a file. Have `let g:NETROpenCmd = 'NETRNewTabdrop'` in your vimrc.
+3. If you are not used to tabpages, `let g:NETROpenCmd = 'NETRNewTabdrop'` is still a good option for you. Otherwise, customize it to your favorite command.
+
 ## Usage
 
 ```vim
