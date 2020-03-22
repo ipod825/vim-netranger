@@ -1995,6 +1995,15 @@ class Netranger(object):
 
         Vim.command(f'tabedit {path}')
 
+    def _newtabdrop(self, path):
+        num_tabpages = len(Vim.tabpages)
+        if num_tabpages > 1:
+            Vim.command('tabclose')
+            self._tabdrop(path)
+        else:
+            self._tabdrop(path)
+            Vim.command('tabclose 1')
+
     def NETRForceDelete(self):
         """ Force delete selected nodes. """
         self.NETRDelete(force=True)

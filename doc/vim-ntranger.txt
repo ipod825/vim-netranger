@@ -295,6 +295,10 @@ COMMANDS                                *vim-netranger-commands*
                     will always leave the current tabpage of a vim-netranger
                     buffer.
 
+                                        *NETRNewTabdrop*
+:NETRNewTabdrop [args] Like |NETRTabdrop|, except that the current netranger
+                       tabpage will always be closed afterwards.
+
 -------------------------------------------------------------------------------
 FUNCTIONS                                *vim-netranger-functions*
 
@@ -405,11 +409,15 @@ g:NETRAutochdir         boolean (default on)
     with vim's `autochdir`. See |netrw-incompatible|.
 
                                         *g:NETROpenCmd*
-g:NETROpenCmd           string (default "NETRTabdrop")
-    Vim command to open files on |NETROpen| (when rifle is not available).
-    When preview mode (see |NETRTogglePreview|) is on, setting |g:NETROpenCmd|
-    to |edit|, |split|, |vsplit|, etc might not make much sense. In such case,
-    please use |netranger#registerHookerVimFn| to register a `NETROpenCmd_end` hook:
+g:NETROpenCmd           string (default "|NETRTabdrop|")
+    Vim command to open files on |NETROpen| (when rifle is not available).  The
+    default command |NETRTabdrop| is like `tab drop` while being
+    preview-mode-aware. If you are not used to tabpages, setting this option to
+    |NETRNewTabdrop| might work better for you. Alternatively, you can set this
+    option to other commands like |edit|, |split|, |vsplit|. However, when
+    preview mode is on, these command might cause ugly layout. In such case,
+    please use |netranger#registerHookerVimFn| to register a `NETROpenCmd_end`
+    hook:
 
 >
     function! NETROpenCmd_end_hook()
