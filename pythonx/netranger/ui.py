@@ -178,7 +178,7 @@ class SortUI(UI):
     def __init__(self):
         UI.__init__(self)
         sort_opts = ['atime', 'ctime', 'default', 'extension', 'mtime', 'size']
-        content = ['{s[0]}  {s}' for s in sort_opts]
+        content = [f'{s[0]}  {s}' for s in sort_opts]
         content.insert(
             0, 'Type keys for sorting option. Use captial letter '
             'for reverse (small to large) order')
