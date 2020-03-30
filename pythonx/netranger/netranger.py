@@ -727,6 +727,10 @@ class NetRangerBuf(object):
                 or self.is_editing:
             return
 
+        # Only set preview for the most left window
+        if self._controler._is_previewing and Vim.current.window.number == 1:
+            self.preview_on()
+
         Vim.command("setlocal modifiable")
         self.set_header_content()
         self.set_footer_content()
@@ -736,10 +740,6 @@ class NetRangerBuf(object):
         self.vim_set_line(self.clineno,
                           self.nodes[self.clineno].highlight_content)
         Vim.command("setlocal nomodifiable")
-
-        # Only set preview for the most left window
-        if self._controler._is_previewing and Vim.current.window.number == 1:
-            self.preview_on()
 
         self.set_pedueo_header_footer()
 
