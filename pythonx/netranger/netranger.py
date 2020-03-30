@@ -394,13 +394,10 @@ class NetRangerBuf(object):
         sp = res.split('/')
         szm1 = len(sp) - 1
         total = 2 * (szm1) + len(sp[-1])
-        for i in range(szm1, -1, -1):
+        for i in range(szm1 - 1, -1, -1):
             if total + len(sp[i]) - 1 > width:
                 for j in range(i + 1):
-                    try:
-                        sp[j] = sp[j][0]
-                    except IndexError:
-                        pass
+                    sp[j] = sp[j][0]
                 return '/'.join(sp).ljust(width)
             else:
                 total += len(sp[i]) - 1

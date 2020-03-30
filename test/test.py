@@ -921,6 +921,9 @@ if __name__ == '__main__':
         # # add SORT test for broken link #issue 21
 
         # TODO
+        # test abbrev_cwd
+
+        # TODO
         # test toggle sudo
         nvim.close()
 
