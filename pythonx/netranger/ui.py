@@ -281,6 +281,7 @@ class BookMarkUI(UI):
     def edit(self):
         """ Show the buffer for editing the bookmark. """
         Vim.command(f'belowright split {Vim.Var("NETRBookmarkFile")}')
+        Vim.command('wincmd J')
         Vim.command('setlocal bufhidden=wipe')
         self.del_buf('set')
         self.del_buf('go')
