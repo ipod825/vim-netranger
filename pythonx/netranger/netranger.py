@@ -419,7 +419,6 @@ class NetRangerBuf(object):
     def set_pedueo_header_footer(self):
         # Recover content for the last line occupied by pseudo header/footer
         # ignore error when buffer no longer has the first/last line
-        Vim.command("setlocal modifiable")
         if self._pseudo_header_lineno is not None:
             try:
                 Vim.current.buffer[self._pseudo_header_lineno] = self.nodes[
@@ -462,7 +461,6 @@ class NetRangerBuf(object):
                 last_visible_line] = self._footer_node.highlight_content
         else:
             self._pseudo_footer_lineno = None
-        Vim.command("setlocal nomodifiable")
 
     def create_nodes(self, wd, level=0):
         nodes = self.create_nodes_with_file_names(self.fs.ls(wd), wd, level)
@@ -731,14 +729,13 @@ class NetRangerBuf(object):
         Vim.command("setlocal modifiable")
         self.set_header_content()
         self.set_footer_content()
+        self.set_pedueo_header_footer()
 
         # set_footer_content re_stat the node, now we refresh the current
         # node to update the size information
         self.vim_set_line(self.clineno,
                           self.nodes[self.clineno].highlight_content)
         Vim.command("setlocal nomodifiable")
-
-        self.set_pedueo_header_footer()
 
     def set_clineno_by_lineno(self, lineno):
         """ Set cursor line by number. """
@@ -803,9 +800,12 @@ class NetRangerBuf(object):
         if self.winwidth != winwidth:
             # print('hi', self.wd, 'real: ', winwidth, 'saved: ', self.winwidth)
             self.winwidth = winwidth
+
             Vim.command('setlocal modifiable')
+            self.set_header_content()
             for i, node in enumerate(self.nodes):
                 Vim.command(f'call setline({i+1},"{node.highlight_content}")')
+            self.set_pedueo_header_footer()
             Vim.command('setlocal nomodifiable')
 
     def reset_highlight(self, nodes):
