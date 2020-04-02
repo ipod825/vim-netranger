@@ -1286,6 +1286,7 @@ class Netranger(object):
         """
         if bufnum in self._bufs:
             self.refresh_curbuf()
+            self.cur_buf.refresh_highlight_if_winwidth_changed()
             if self._onuiquit is not None:
                 # If not enough arguments are passed, ignore the pending
                 # onuituit, e.g. quit the bookmark go ui without pressing
