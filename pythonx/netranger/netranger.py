@@ -1707,9 +1707,9 @@ class Netranger(object):
 
     def bookmarkgo_onuiquit(self, fullpath):
         """ The quit callback for the BookMarkUI/go. """
-        # The following ls ensure that the directory exists on some mounted
-        # file system
-        Shell.ls(fullpath)
+        if not os.path.isdir(fullpath):
+            Vim.ErrorMsg(f'No such directory: {fullpath}')
+            return
         with self.KeepPreviewState():
             Vim.command(f'silent edit {fullpath}')
             self._manual_on_bufenter()  # case 1
