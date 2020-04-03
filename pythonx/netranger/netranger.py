@@ -1595,6 +1595,8 @@ class Netranger(object):
         """
         cdir = self.cur_buf.wd
         pdir = LocalFS.parent_dir(cdir)
+        if pdir == cdir:
+            return
         with self.KeepPreviewState():
             Vim.command(f'silent edit {pdir}')
             self._manual_on_bufenter()  # case 2
