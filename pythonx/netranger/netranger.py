@@ -397,7 +397,9 @@ class NetRangerBuf(object):
         for i in range(szm1 - 1, -1, -1):
             if total + len(sp[i]) - 1 > width:
                 for j in range(i + 1):
-                    sp[j] = sp[j][0]
+                    # [:1] ensures that we get at most the first character of
+                    # sp[j] if it's not empty.
+                    sp[j] = sp[j][:1]
                 return '/'.join(sp).ljust(width)
             else:
                 total += len(sp[i]) - 1
