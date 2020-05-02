@@ -1780,6 +1780,9 @@ class Netranger(object):
             cur_buf = self.cur_buf
             if not cur_buf.fs_busy(echo=False):
                 cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
+                # If cursor changed, we need to reest the preview.
+                if self._is_previewing:
+                    cur_buf.preview_on()
 
     def _reset_pick_cut_copy(self):
         """
