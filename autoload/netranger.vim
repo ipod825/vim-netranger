@@ -22,6 +22,7 @@ function! netranger#asyncCallBack(job_id, data, event)
         else
             let data = escape(a:data, '"')
         endif
+        let data = substitute(data, '', '\\n', 'g')
         exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","'.data.'")'
    endif
 endfunction
