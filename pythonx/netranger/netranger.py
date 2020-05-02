@@ -15,6 +15,7 @@ from netranger.enum import Enum
 from netranger.fs import FSTarget, LocalFS, Rclone
 from netranger.rifle import Rifle
 from netranger.shell import Shell
+from netranger.thirdparty.pymagic import magic
 from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, SortUI
 
 if platform == "win32":
@@ -873,14 +874,27 @@ class NetRangerBuf(object):
                 with self.ManualRefreshOnWidthChange():
                     Vim.command(f'silent botright vsplit {cur_node.fullpath}')
         else:
-            with self.ManualRefreshOnWidthChange():
-                bak_shortmess = Vim.options['shortmess']
-                Vim.options['shortmess'] = 'A'
-                Vim.command(f'silent botright vsplit {cur_node.fullpath}')
-                Vim.options['shortmess'] = bak_shortmess
-                Vim.command('wincmd l')
-                Vim.current.window.options['foldenable'] = False
-                Vim.current.window.width = preview_width
+            guees_type = magic.from_file(cur_node.fullpath)
+
+            if re.search('text|data|empty', guees_type):
+                with self.ManualRefreshOnWidthChange():
+                    bak_shortmess = Vim.options['shortmess']
+                    Vim.options['shortmess'] = 'A'
+                    Vim.command(f'silent botright vsplit {cur_node.fullpath}')
+                    Vim.options['shortmess'] = bak_shortmess
+                    Vim.command('wincmd l')
+                    Vim.current.window.options['foldenable'] = False
+                    Vim.current.window.width = preview_width
+            else:
+                with self.ManualRefreshOnWidthChange():
+                    Vim.command('belowright vnew')
+                    Vim.command('setlocal buftype=nofile')
+                    Vim.command('setlocal noswapfile')
+                    Vim.command('setlocal nobuflisted')
+                    Vim.command('setlocal bufhidden=wipe')
+                    Vim.current.buffer[:] = [cur_node.fullpath, guees_type]
+                    Vim.command('setlocal nomodifiable')
+                    Vim.current.window.width = preview_width
 
         with self.ManualRefreshOnWidthChange():
             Vim.command('wincmd h')

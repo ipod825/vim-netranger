@@ -1,0 +1,3 @@
+[submodule "pythonx/netranger/thirdparty/pymagic"]
+	path = pythonx/netranger/thirdparty/pymagic
+	url = https://github.com/ahupp/python-magic.git
