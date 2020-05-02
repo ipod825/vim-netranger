@@ -762,6 +762,7 @@ class NetRangerBuf(object):
         # This is a work-abound for the fact that
         # nVim.current.buffer[i]=content
         # moves the cursor
+        content = content.replace('"', '\\"')
         Vim.command(f'call setline({i+1},"{content}")')
 
     def refresh_lines_highlight(self, linenos):
@@ -807,7 +808,7 @@ class NetRangerBuf(object):
             Vim.command('setlocal modifiable')
             self.set_header_content()
             for i, node in enumerate(self.nodes):
-                Vim.command(f'call setline({i+1},"{node.highlight_content}")')
+                self.vim_set_line(i, node.highlight_content)
             self.set_pedueo_header_footer()
             Vim.command('setlocal nomodifiable')
 
