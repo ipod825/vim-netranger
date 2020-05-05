@@ -15,7 +15,7 @@ endfunction
 
 function! netranger#asyncCallBack(job_id, data, event)
    if a:event == "exit"
-        exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","[]")'
+        exec g:_NETRPY.'netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","[]")'
     else
         if has("nvim")
             let data = escape(join(a:data,'\n'),'"')
@@ -23,7 +23,7 @@ function! netranger#asyncCallBack(job_id, data, event)
             let data = escape(a:data, '"')
         endif
         let data = substitute(data, '', '\\n', 'g')
-        exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","'.data.'")'
+        exec g:_NETRPY.'netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","'.data.'")'
    endif
 endfunction
 
@@ -33,15 +33,15 @@ function! netranger#termAsyncCallBack(job_id, data, event, cmd_win_id)
    if a:data==0
        wincmd c
    endif
-   exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","[]")'
+   exec g:_NETRPY.'netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","[]")'
 endfunction
 
 function! netranger#vimAsyncCallBack(job_id, data, event)
    if a:event == "exit"
-        exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","[]")'
+        exec g:_NETRPY.'netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","[]")'
     else
         let data = escape(a:data, '"')
-        exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","'.data.'")'
+        exec g:_NETRPY.'netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","'.data.'")'
    endif
 endfunction
 
@@ -53,7 +53,7 @@ function! netranger#AsyncDisplayCallBack(job_id, exit_code, event, ori_win_nr, c
   else
     call win_gotoid(a:ori_win_nr)
   endif
-  exec 'python3 netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","[]")'
+  exec g:_NETRPY.'netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","[]")'
 endfunction
 
 
