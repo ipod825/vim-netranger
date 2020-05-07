@@ -220,7 +220,8 @@ left panel. To directly enter the panel, use the |NETRBufPanelOpen| mapping
 (default `ep`). The size of the right panel can be customized by
 |g:NETRPreviewSize|, which is the ratio between the actual size of the right
 panel to half of the screen width (e.g.  setting it to 1 you'll get a equal
-split).
+split). The delay time of showing the right panel can be controled by
+|g:NETRPreviewDelay|.
 
 One who is used to nerdtree panel might want to have the following custom mapping:
 >
@@ -395,7 +396,6 @@ g:NETRemoteCacheDir     string (default "$HOME/.netranger/remote")
     Path to the remote cache directory. See |vim-netranger-rclone| for more
     information.
 
-
                                         *g:NETRemoteRoots*
 g:NETRemoteRoots        dictionary (default {})
     Mapping from remote to a directory name. This enables one to open the home
@@ -455,7 +455,7 @@ g:NETRGuiColors            dict (default {})
     set. See |vim-netranger-colors|.
 
                                         *g:NETRPanelSize*
-g:NETRPanelSize         number (default 1.5)
+g:NETRPanelSize         Float (default 1.5)
     Controls the size of split in |vim-netranger-panel-mode|.
 
                                         *g:NETRNETRLazyLoadStat*
@@ -468,6 +468,11 @@ g:NETRNETRLazyLoadStat  boolean (default off)
                                         *g:NETRPreviewDefaultOn*
 g:NETRPreviewDefaultOn  boolean (default on)
     Whether the preview window is on by default.
+
+                                        *g:NETRPreviewDelay*
+g:NETRPreviewDelay      Number (default 200)
+    Waiting time for showing the preview window in milliseconds. Setting it
+    too small may results in poor performance.
 -------------------------------------------------------------------------------
 COLORS                                  *vim-netranger-colors*
 
@@ -481,7 +486,7 @@ Possible keys for the two directories are:
 'footer':     the last line
 'pick':       node color after triggering |NETRTogglePick|
 'copy':       node color after triggering |NETRCopySingle|
-'cut':        node color after triggering |NETRDeleteSingle|
+'cut':        node color after triggering |NETRCutSingle|
 'exe':        executable file node color
 'dir':        directory node color
 'link':       link node color

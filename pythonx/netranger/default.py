@@ -109,7 +109,7 @@ variables = {
     'NETRParentPreviewSize': 0.3,
     'NETRColors': {},
     'NETRGuiColors': {},
-    'NETRRedrawDelay': 200,
+    'NETRPreviewDelay': 200,
     'NETRLazyLoadStat': False,
     'NETRPreviewDefaultOn': True,
 }
