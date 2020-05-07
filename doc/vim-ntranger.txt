@@ -97,7 +97,7 @@ ev         Open file in new vertical split buffer.
 es         Open file in new horizontal split buffer.
 
                                         *NETRBufPanelOpen* *g:NETRBufPanelOpen*
-ep         Open file in new vertical split buffer.
+<cr>       Open file in new vertical split buffer.
            See |vim-netranger-panel-mode|.
 
                                         *NETRAskOpen* *g:NETRAskOpen*
@@ -112,7 +112,7 @@ za         Toggle expand current directory under cursor. See |za|.
 zA         Recursively toggle expand current directory under cursor. See |zA|.
 
                                         *NETRVimCD* *g:NETRVimCD*
-<cr>       Changing vim's pwd to the directory of the entry under cursor
+L          Changing vim's pwd to the directory of the entry under cursor
 
                                         *NETRNew* *g:NETRNew*
 o          Create new directory/file, pending for ui selection.
@@ -180,7 +180,7 @@ S          Sort contnet in current directory, pending for ui selection
            See |vim-netranger-user-interface|.
 
                                         *NETRHelp* *g:NETRHelp*
-?          Show current mappings.
+<F1>       Show current mappings.
 
                                         *NETRefresh* *g:NETRefresh*
 r          Force refresh netranger buffer to be the same as the file system.

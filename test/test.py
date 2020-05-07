@@ -277,7 +277,7 @@ def test_NETRToggleExpandRec():
 
 
 def test_NETRVimCD():
-    nvim.input('<Cr>')
+    nvim.input('L')
     assert os.path.basename(
         nvim.command_output('pwd')) == 'dir', os.path.basename(
             nvim.command_output('pwd'))
@@ -481,7 +481,7 @@ def test_bookmark():
 
 
 def test_help():
-    nvim.input('?')
+    nvim.input('<F1>')
     nvim.command('quit')
 
 

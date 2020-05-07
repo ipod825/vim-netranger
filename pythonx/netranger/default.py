@@ -19,15 +19,14 @@ keymap = {
     'NETRBufVSplitOpen': (['ev'], 'Open file in new vertical split buffer.'),
     'NETRBufHSplitOpen': (['es'], 'Open file in new horizontal split buffer.'),
     'NETRBufPanelOpen':
-    (['ep'], 'Open file in new vertical split buffer (panel mode).'),
+    (['<cr>'], 'Open file in new vertical split buffer (panel mode).'),
     'NETRAskOpen': (['a'], 'Open file with rifle. Ask for command'),
     'NETRToggleExpand': (['za'],
                          "Toggle expand current directory under cursor"),
     'NETRToggleExpandRec':
     (['zA'], "Recursively toggle expand current directory under cursor"),
     'NETRVimCD':
-    (['<cr>'],
-     "Changing vim's pwd to the directory of the entry under cursor"),
+    (['L'], "Changing vim's pwd to the directory of the entry under cursor"),
     'NETRNew': (['o'], 'Create new directory/file, pending for ui selection'),
     'NETREdit':
     (['i'],
@@ -53,7 +52,7 @@ keymap = {
     'NETRBookmarkEdit': (["em"], "Open bookmark file to edit"),
     'NETRSort':
     (['S'], 'Sort contnet in current directory, pending for ui selection.'),
-    'NETRHelp': (['?'], "Show help message"),
+    'NETRHelp': (['<F1>'], "Show help message"),
     'NETRefresh':
     (['r'],
      "Force refresh netranger buffer to be the same as the file system"),
