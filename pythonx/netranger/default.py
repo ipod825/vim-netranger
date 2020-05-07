@@ -93,7 +93,7 @@ gui_color = {
 
 variables = {
     'NETRIgnore': ['.*'],
-    'NETROpenCmd': 'NETRTabdrop',
+    'NETROpenCmd': 'NETRNewTabdrop',
     'NETRAutochdir': True,
     'NETRDefaultMapSkip': [],
     'NETRDefaultVisualMapSkip': [],

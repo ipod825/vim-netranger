@@ -4,7 +4,9 @@ vim-netranger
 ![Screenshot](https://user-images.githubusercontent.com/1246394/43560750-3c559f28-95d1-11e8-85e4-a05d6f44e97e.png)
 
 
-**New: preview window is on now by default. To turn it off, set `g:NETRPreviewDefaultOn=v:false`.**
+## Recent Update
+** The setting `g:NETROpenCmd` is now set to `NETRNewTabdrop`, which close the netranger buffer. If you prefer the old behavior, you can have `let g:NETROpenCmd=NETRNewTabdrop`.
+** Preview window is on now by default. To turn it off, set `g:NETRPreviewDefaultOn=v:false`.**
 
 Vim-netranger is a ranger-like system/cloud storage explorer for Vim/Neovim. It brings together the best of Vim, [ranger](https://github.com/ranger/ranger), and [rclone](https://rclone.org/):
 
