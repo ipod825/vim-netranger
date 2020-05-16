@@ -875,7 +875,11 @@ class NetRangerBuf(object):
                 with self.ManualRefreshOnWidthChange():
                     Vim.command(f'silent botright vsplit {cur_node.fullpath}')
         else:
-            guees_type = magic.from_file(cur_node.fullpath)
+            try:
+                guees_type = magic.from_file(cur_node.fullpath)
+            except Exception as e:
+                Vim.WarningMsg(str(e))
+                guees_type = ''
 
             if re.search('text|data|empty', guees_type):
                 with self.ManualRefreshOnWidthChange():
