@@ -881,7 +881,7 @@ class NetRangerBuf(object):
                 Vim.WarningMsg(str(e))
                 guees_type = ''
 
-            if re.search('text|data|empty', guees_type):
+            if re.search('text|data$|empty', guees_type):
                 with self.ManualRefreshOnWidthChange():
                     bak_shortmess = Vim.options['shortmess']
                     Vim.options['shortmess'] = 'A'
