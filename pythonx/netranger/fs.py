@@ -164,6 +164,12 @@ class LocalFS(object):
 
     @classmethod
     def exec_server_cmd(self, cmd, on_exit, arguments, sudo=False):
+        def on_stderr(job_id, err_msg):
+            ind = err_msg.rfind('FSServerException: ')
+            if ind > 0:
+                err_msg = err_msg[ind + 19:]
+            Vim.ErrorMsg(err_msg)
+
         fname = tempfile.mkstemp()[1]
         with open(fname, 'ab') as f:
             pickle.dump(arguments, f)
@@ -174,9 +180,10 @@ class LocalFS(object):
                          on_exit=on_exit,
                          term=True)
         else:
-            Shell.run_async('{} {} {} {}'.format(sys.executable,
-                                                 self.ServerCmd, cmd, fname),
-                            on_exit=on_exit)
+            Vim.AsyncRun('{} {} {} {}'.format(sys.executable, self.ServerCmd,
+                                              cmd, fname),
+                         on_stderr=on_stderr,
+                         on_exit=on_exit)
 
     @classmethod
     def mv(self, src_arr, dst, sudo=False, on_exit=None):
@@ -310,6 +317,7 @@ class Rclone(LocalFS):
                     Shell.touch(os.path.join(dirname, name))
 
             for name in local_files.difference(remote_files):
+                # TODO use Vim.AsyncRun instead
                 Shell.run_async(
                     'rclone {self._flags} copyto --tpslimit=10 "{}" "{}"'.
                     format(os.path.join(dirname, name),
