@@ -1674,10 +1674,14 @@ class Netranger(object):
 
     def NETREdit(self):
         """ Enter edit mode. """
-        if self.cur_buf.fs_busy():
+        cur_buf = self.cur_buf
+        if not os.access(cur_buf.wd, os.W_OK):
+            Vim.ErrorMsg('Permission Denied')
+            return
+        if cur_buf.fs_busy():
             return
         self.unmap_keys()
-        self.cur_buf.edit()
+        cur_buf.edit()
 
     def NETRSave(self):
         """ Save from edit mode. """
