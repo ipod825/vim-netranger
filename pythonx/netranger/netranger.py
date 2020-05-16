@@ -1681,8 +1681,12 @@ class Netranger(object):
 
     def NETRSave(self):
         """ Save from edit mode. """
-        if self.cur_buf.save():
+        cur_buf = self.cur_buf
+        ori_line = Vim.eval('line(".")')
+        if cur_buf.save():
             self.map_keys()
+            if self._is_previewing and Vim.eval('line(".")') == ori_line:
+                cur_buf.preview_on()
 
     def NETRToggleShowHidden(self):
         """
