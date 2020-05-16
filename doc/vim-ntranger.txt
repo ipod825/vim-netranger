@@ -387,6 +387,10 @@ g:NETRRootDir           string (default "$HOME/.netranger/")
 g:NETRRifleFile         string (default "$HOME/.netranger/rifle.conf")
     Path to the rifle setting file. See |vim-netranger-rifle|.
 
+                                        *g:NETRRifleDisplayError*
+g:NETRRifleDisplayError boolean (default on)
+    Whether to display rifle command error message.
+
                                         *g:NETRBookmarkFile*
 g:NETRBookmarkFile      string (default "$HOME/.netranger/bookmark")
     Path to the bookmark file.

@@ -1462,6 +1462,10 @@ class Netranger(object):
         self._onuiquit = fn
         self._onuiquit_num_args = num_args
 
+    def _rifle_print_error(self, job_id, err_msg):
+        if Vim.Var('NETRRifleDisplayError'):
+            Vim.ErrorMsg(err_msg)
+
     def NETROpen(self, open_cmd=None, rifle_cmd=None, use_rifle=True):
         """The real work for opening directories is handled in on_bufenter.
 
@@ -1484,7 +1488,8 @@ class Netranger(object):
                 Vim.ErrorMsg(f'Permission Denied: {cur_node.name}')
                 return
             if use_rifle and rifle_cmd is not None:
-                Shell.run_async(rifle_cmd.format(f'"{fullpath}"'))
+                Vim.AsyncRun(rifle_cmd.format(f'"{fullpath}"'),
+                             on_stderr=self._rifle_print_error)
             else:
                 with self.KeepPreviewState():
                     Vim.command(f'silent {open_cmd} {fullpath}')
@@ -1497,7 +1502,8 @@ class Netranger(object):
                 rifle_cmd = self._rifle.decide_open_cmd(fullpath)
 
             if use_rifle and rifle_cmd is not None:
-                Shell.run_async(rifle_cmd.format(f'"{fullpath}"'))
+                Vim.AsyncRun(rifle_cmd.format(f'"{fullpath}"'),
+                             on_stderr=self._rifle_print_error)
             else:
                 try:
                     Vim.command(f'{open_cmd} {fullpath}')

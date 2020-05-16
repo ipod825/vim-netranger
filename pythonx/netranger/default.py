@@ -99,6 +99,7 @@ variables = {
     'NETRRootDir': root_dir,
     'NETRBookmarkFile': root_dir + 'bookmark',
     'NETRRifleFile': root_dir + 'rifle.conf',
+    'NETRRifleDisplayError': True,
     'NETRemoteCacheDir': remote_cache_dir,
     'NETRemoteRoots': {
         test_remote_name: test_remote_dir
