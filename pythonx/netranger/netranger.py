@@ -878,7 +878,6 @@ class NetRangerBuf(object):
             try:
                 guees_type = magic.from_file(cur_node.fullpath)
             except Exception as e:
-                Vim.WarningMsg(str(e))
                 guees_type = ''
 
             if re.search('text|data$|empty', guees_type):
