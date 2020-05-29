@@ -1016,7 +1016,7 @@ class NetRangerBuf(object):
         self._render()
         self.set_clineno_by_node(ori_node)
         Vim.command('setlocal nomodifiable')
-        Vim.command('setlocal buftype=nowrite')
+        Vim.command('setlocal buftype=nofile')
         return True
 
     def cut(self, nodes):
@@ -1405,7 +1405,7 @@ class Netranger(object):
 
     def set_buf_option(self):
         """ Set common option for the current buffer. """
-        Vim.command('setlocal buftype=nowrite')
+        Vim.command('setlocal buftype=nofile')
         Vim.command('setlocal filetype=netranger')
         Vim.command('setlocal encoding=utf-8')
         Vim.command('setlocal noswapfile')
