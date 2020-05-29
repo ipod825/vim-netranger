@@ -1016,7 +1016,7 @@ class NetRangerBuf(object):
         self._render()
         self.set_clineno_by_node(ori_node)
         Vim.command('setlocal nomodifiable')
-        Vim.command('setlocal buftype=nofile')
+        Vim.command('setlocal buftype=nowrite')
         return True
 
     def cut(self, nodes):
@@ -1378,7 +1378,9 @@ class Netranger(object):
                 return
             self._bufs[bufnum] = NetRangerBuf(self, os.path.abspath(bufname),
                                               LocalFS)
-        Vim.command(f'silent file N:{bufname}')
+        # This shouldn't be necessary. However, without this, there is a bug in
+        # neovim with preview
+        Vim.command(f'silent file {bufname}')
 
         self.map_keys()
         self._wd2bufnum[bufname] = bufnum
@@ -1403,7 +1405,7 @@ class Netranger(object):
 
     def set_buf_option(self):
         """ Set common option for the current buffer. """
-        Vim.command('setlocal buftype=nofile')
+        Vim.command('setlocal buftype=nowrite')
         Vim.command('setlocal filetype=netranger')
         Vim.command('setlocal encoding=utf-8')
         Vim.command('setlocal noswapfile')
@@ -1411,7 +1413,7 @@ class Netranger(object):
         Vim.command('setlocal foldmethod=manual')
         Vim.command('setlocal foldcolumn=0')
         Vim.command('setlocal nofoldenable')
-        Vim.command('setlocal nobuflisted')
+        # Vim.command('setlocal nobuflisted')
         Vim.command('setlocal nospell')
         Vim.command('setlocal bufhidden=hide')
         Vim.command('setlocal conceallevel=3')

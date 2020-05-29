@@ -78,6 +78,7 @@ __Note__: Other explorer plugins (e.g. [NERDTree](https://github.com/scrooloose/
 ## Known Issues
 1. When remote directory is empty, it will not be copied to remote. It is an rclone [bug] (https://github.com/ncw/rclone/issues/1837), which is expected to be fixed in next release.
 2. In some cases when `listchars` is set, `vim-netranger` buffer does not display correctly. For possible solutions, see the comment in this [issue](https://github.com/ipod825/vim-netranger/issues/14).
+3. taboo.vim [incompatibility](https://github.com/gcmt/taboo.vim/pull/34).
 
 
 
