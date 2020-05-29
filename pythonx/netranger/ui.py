@@ -271,12 +271,16 @@ class BookMarkUI(UI):
         """ Show the buffer for going to bookmark. """
         if not self.buf_valid('go'):
             self.create_buf(
-                mappings=self.mark_dict.items(),
-                map_cr=True,
                 content=[f'{k}:{p}' for k, p in self.mark_dict.items()],
                 name='go')
         self.show('go')
-        self.netranger.pend_onuiquit(self.netranger.bookmarkgo_onuiquit, 1)
+        for mark, path in self.mark_dict.items():
+            Vim.command(
+                f'nnoremap <silent> {mark} :call netranger#ui#bookmarkgo("{path}")<cr>'
+            )
+        Vim.command(
+            f'nnoremap <silent> <cr> :call netranger#ui#bookmarkgo(getline(".")[2:])<cr>'
+        )
 
     def edit(self):
         """ Show the buffer for editing the bookmark. """

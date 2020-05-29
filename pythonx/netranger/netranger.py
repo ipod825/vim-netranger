@@ -1280,11 +1280,10 @@ class Netranger(object):
         Usage case 1:
             Vim's autocmd does not nested by default and the ++nestd option has
             bugs on some old vim version. Since sometimes when ranger is
-            handling a BufEnter command, it calls :edit (for e.g., in
-            ranger.bookmarkgo_onuiquit), triggering another (nested) BufEnter
-            event that will not trigger ranger.on_bufenter due to the
-            aformentioned reason. In such case, we call ranger on_bufenter
-            manually.
+            handling a BufEnter command, it calls :edit , triggering another
+            (nested) BufEnter event that will not trigger ranger.on_bufenter
+            due to the aformentioned reason. In such case, we call ranger
+            on_bufenter manually.
         Usage case 2:
             In some old vim/python version (see issue #6), due to some unknown
             bug, :edit does not trigger range.on_bufenter. In such case, we
@@ -1738,15 +1737,6 @@ class Netranger(object):
         """ Show the BookMarkUI to go. """
         self.init_bookmark_ui()
         self._bookmarkUI.go()
-
-    def bookmarkgo_onuiquit(self, fullpath):
-        """ The quit callback for the BookMarkUI/go. """
-        if not os.path.isdir(fullpath):
-            Vim.ErrorMsg(f'No such directory: {fullpath}')
-            return
-        with self.KeepPreviewState():
-            Vim.command(f'silent edit {fullpath}')
-            self._manual_on_bufenter()  # case 1
 
     def NETRBookmarkEdit(self):
         """ Show the BookMarkUI for editting. """
