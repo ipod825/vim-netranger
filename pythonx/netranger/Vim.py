@@ -164,6 +164,12 @@ def Var(name, default=None):
     return walk(decode_if_bytes, vim.vars[name])
 
 
+def WindowVar(name, default=None):
+    if name not in vim.current.window.vars:
+        return default
+    return walk(decode_if_bytes, vim.current.window.vars[name])
+
+
 def SetVar(name, value):
     vim.vars[name] = value
 

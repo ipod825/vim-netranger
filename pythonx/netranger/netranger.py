@@ -726,7 +726,7 @@ class NetRangerBuf(object):
             return
 
         # Only set preview for the most left window
-        if self._controler._is_previewing and Vim.current.window.number == 1:
+        if self._controler._is_previewing:
             self.preview_on()
 
         Vim.command("setlocal modifiable")
@@ -850,7 +850,9 @@ class NetRangerBuf(object):
 
     def preview_on(self):
         """ Turn preview panel on. """
-        # prev_is_previewing = self.is_editing == True
+        if Vim.WindowVar('is_netranger_previewee', False):
+            return
+
         cur_node = self.cur_node
 
         with self.ManualRefreshOnWidthChange():
@@ -874,6 +876,7 @@ class NetRangerBuf(object):
             with self._controler.OpenBufWithWidth(preview_width):
                 with self.ManualRefreshOnWidthChange():
                     Vim.command(f'silent botright vsplit {cur_node.fullpath}')
+                    Vim.current.window.vars['is_netranger_previewee'] = True
         else:
             try:
                 guees_type = magic.from_file(cur_node.fullpath)
@@ -904,10 +907,6 @@ class NetRangerBuf(object):
             Vim.command('wincmd h')
 
         self.refresh_highlight_if_winwidth_changed()
-        # # Adjust the width if previewing is off previously as the adjustment is
-        # # disabled by the previous ManualRefreshOnWidthChange.
-        # if not prev_is_previewing:
-        #     self.refresh_highlight_if_winwidth_changed()
 
     def preview_off(self):
         """ Turn preview panel off. """
