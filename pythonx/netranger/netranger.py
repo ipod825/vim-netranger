@@ -876,7 +876,10 @@ class NetRangerBuf(object):
             with self._controler.OpenBufWithWidth(preview_width):
                 with self.ManualRefreshOnWidthChange():
                     Vim.command(f'silent botright vsplit {cur_node.fullpath}')
-                    Vim.current.window.vars['is_netranger_previewee'] = True
+                    # In case previous split failed
+                    if Vim.current.window.number != 1:
+                        Vim.current.window.vars[
+                            'is_netranger_previewee'] = True
         else:
             try:
                 guees_type = magic.from_file(cur_node.fullpath)
