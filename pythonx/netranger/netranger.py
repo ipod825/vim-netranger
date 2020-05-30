@@ -209,12 +209,15 @@ class EntryNode(Node):
     def re_stat(self, lazy=False):
         self.linkto = None
         if os.path.islink(self.fullpath):
-            self.linkto = os.readlink(self.fullpath)
+            try:
+                self.linkto = os.readlink(self.fullpath)
+            except (OSError, FileNotFoundError, PermissionError):
+                pass
 
         if not lazy:
             try:
                 self.stat = os.stat(self.fullpath)
-            except FileNotFoundError:
+            except (OSError, FileNotFoundError, PermissionError):
                 self.stat = None
         else:
             self.stat = None
@@ -222,7 +225,7 @@ class EntryNode(Node):
         if self.stat:
             try:
                 self.size = LocalFS.size_str(self.fullpath, self.stat)
-            except PermissionError:
+            except (OSError, FileNotFoundError, PermissionError):
                 self.size = '?'
 
             self.acl = LocalFS.acl_str(self.stat)
