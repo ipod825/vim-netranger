@@ -164,15 +164,10 @@ zh         Toggle Show hidden files.
 zs         Toggle sudo privilege for paste/rm operations.
 
                                         *NETRBookmarkSet* *g:NETRBookmarkSet*
-m          Bookmark current directory, pending for ui selection.
-           See |vim-netranger-user-interface|.
-
                                         *NETRBookmarkGo* *g:NETRBookmarkGo*
-'          Jump to bookmark, pending for ui selection.
-           See |vim-netranger-user-interface|.
-
                                         *NETRBookmarkEdit* *g:NETRBookmarkEdit*
-em         Open bookmark file to edit.
+Bookmark functiontinalities are deprecated. Please use a thirdparty plugin
+such as https://github.com/ipod825/vim-bookmark.
 
                                         *NETRSort* *g:NETRSort*
 S          Sort contnet in current directory, pending for ui selection
@@ -349,11 +344,11 @@ MAPPING                                 *vim-netranger-customization-mapping*
 
 Change the default mappings by assigning a list to each mapping in your `vimrc`.
 Assign a list to |g:NETRDefaultMapSkip| to ignore default mappings. For example,
-if you want to switch the mappings for |NETRBookmarkSet|, |NETRBookmarkGo|,
+if you want to switch the mappings for |NETROpen|, |NETRParentDir|,
 you need to put the following in your vimrc: >
-    let g:NETRDefaultMapSkip = ['m',"'"]
-    let g:NETRBookmarkSet = ["'"]
-    let g:NETRBookmarkGo = ["m"]
+    let g:NETRDefaultMapSkip = ['h',"l"]
+    let g:NETROpen = ["h"]
+    let g:NETRParentDir = ["l"]
 
 To achieve operations not provided by vim-netranger, for e.g. duplicate a file
 under cursor or to remap j to 2j, users can add mapping on |NETRInit| autocmd: >
@@ -380,7 +375,7 @@ g:NETRIgnore            list (default [])
 
                                         *g:NETRRootDir*
 g:NETRRootDir           string (default "$HOME/.netranger/")
-    Directory for storing remote cache and bookmark file
+    Directory for storing remote cache.
 
                                         *g:NETRRifleFile*
 g:NETRRifleFile         string (default "$HOME/.netranger/rifle.conf")
@@ -389,10 +384,6 @@ g:NETRRifleFile         string (default "$HOME/.netranger/rifle.conf")
                                         *g:NETRRifleDisplayError*
 g:NETRRifleDisplayError boolean (default on)
     Whether to display rifle command error message.
-
-                                        *g:NETRBookmarkFile*
-g:NETRBookmarkFile      string (default "$HOME/.netranger/bookmark")
-    Path to the bookmark file.
 
                                         *g:NETRemoteCacheDir*
 g:NETRemoteCacheDir     string (default "$HOME/.netranger/remote")

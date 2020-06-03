@@ -16,7 +16,7 @@ from netranger.fs import FSTarget, LocalFS, Rclone
 from netranger.rifle import Rifle
 from netranger.shell import Shell
 from netranger.thirdparty.pymagic import magic
-from netranger.ui import AskUI, BookMarkUI, HelpUI, NewUI, SortUI
+from netranger.ui import AskUI, HelpUI, NewUI, SortUI
 
 if platform == "win32":
     from os import getenv
@@ -1116,7 +1116,6 @@ class Netranger(object):
         self._picked_nodes = defaultdict(set)
         self._cut_nodes = defaultdict(set)
         self._copied_nodes = defaultdict(set)
-        self._bookmarkUI = None
         self._helpUI = None
         self._sortUI = None
         self._askUI = None
@@ -1313,8 +1312,8 @@ class Netranger(object):
             self.cur_buf.refresh_highlight_if_winwidth_changed()
             if self._onuiquit is not None:
                 # If not enough arguments are passed, ignore the pending
-                # onuituit, e.g. quit the bookmark go ui without pressing
-                # key to specify where to go.
+                # onuituit, e.g. quit the sort go ui without pressing key to
+                # specify sort criterian.
                 if len(Vim.Var('NETRRegister')) == self._onuiquit_num_args:
                     self._onuiquit(*Vim.Var('NETRRegister'))
                 self._onuiquit = None
@@ -1462,7 +1461,7 @@ class Netranger(object):
         @param num_args: number of args expected to see in g:'NETRRegister'.
         When exectuing fn, if num_args do not match, fn will not be executed
         which deals with the case for e.g., when user press no keys in
-        BookMarkGo UI but simply quit the UI)
+        Sort UI but simply quit the UI)
         """
         self._onuiquit = fn
         self._onuiquit_num_args = num_args
@@ -1730,25 +1729,6 @@ class Netranger(object):
     def invoke_map(self, fn):
         if hasattr(self, fn):
             getattr(self, fn)()
-
-    def init_bookmark_ui(self):
-        if self._bookmarkUI is None:
-            self._bookmarkUI = BookMarkUI(self)
-
-    def NETRBookmarkSet(self):
-        """ Show the BookMarkUI to mark. """
-        self.init_bookmark_ui()
-        self._bookmarkUI.set(self.cwd)
-
-    def NETRBookmarkGo(self):
-        """ Show the BookMarkUI to go. """
-        self.init_bookmark_ui()
-        self._bookmarkUI.go()
-
-    def NETRBookmarkEdit(self):
-        """ Show the BookMarkUI for editting. """
-        self.init_bookmark_ui()
-        self._bookmarkUI.edit()
 
     def NETRSort(self):
         """ Show the SortUI. """

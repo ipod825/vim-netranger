@@ -46,10 +46,6 @@ keymap = {
     'NETRToggleShowHidden': (['zh'], "(Toggle) Show hidden files"),
     'NETRToggleSudo': (['zs'],
                        "Toggle sudo privilege for paste/rm operations."),
-    'NETRBookmarkSet':
-    (['m'], "Bookmark current directory, pending for ui selection"),
-    'NETRBookmarkGo': (["'"], "Jump to bookmark, pending for ui selection"),
-    'NETRBookmarkEdit': (["em"], "Open bookmark file to edit"),
     'NETRSort':
     (['S'], 'Sort contnet in current directory, pending for ui selection.'),
     'NETRHelp': (['<F1>'], "Show help message"),
@@ -97,7 +93,6 @@ variables = {
     'NETRDefaultMapSkip': [],
     'NETRDefaultVisualMapSkip': [],
     'NETRRootDir': root_dir,
-    'NETRBookmarkFile': root_dir + 'bookmark',
     'NETRRifleFile': root_dir + 'rifle.conf',
     'NETRRifleDisplayError': True,
     'NETRemoteCacheDir': remote_cache_dir,

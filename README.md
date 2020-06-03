@@ -5,6 +5,7 @@ vim-netranger
 
 
 ## Recent Update
+** Bookmark functions are deprecated. Please use thirdparty plugins such as [ipod825/vim-bookmark](https://github.com/ipod825/vim-netranger/issues/40).
 ** The setting `g:NETROpenCmd` is now set to `NETRNewTabdrop`, which close the netranger buffer. If you prefer the old behavior, you can have `let g:NETROpenCmd=NETRNewTabdrop`.
 ** Preview window is on now by default. To turn it off, set `g:NETRPreviewDefaultOn=v:false`.**
 

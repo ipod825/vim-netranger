@@ -466,20 +466,6 @@ def test_force_delete_single_fail_if_fs_lock():
     unlock_fs()
 
 
-def test_bookmark():
-    Shell.run('rm -f {}'.format(nvim.vars['NETRBookmarkFile']))
-
-    nvim.input('mal')
-    nvim.input("'a")
-    assert_content('dir')
-
-    nvim.input('lemjrb')
-    nvim.command('exit')
-    time.sleep(0.5)
-    nvim.input("'b")
-    assert_content('dir')
-
-
 def test_help():
     nvim.input('<F1>')
     nvim.command('quit')
@@ -882,7 +868,6 @@ if __name__ == '__main__':
             do_test(fn_remote=test_NETRPaste_by_copy_remote2remote)
 
         def do_test_UI():
-            do_test(test_bookmark)
             do_test(test_help)
 
         def do_test_api():
