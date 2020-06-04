@@ -5,9 +5,9 @@ vim-netranger
 
 
 ## Recent Update
-** Bookmark functions are deprecated. Please use thirdparty plugins such as [ipod825/vim-bookmark](https://github.com/ipod825/vim-netranger/issues/40).
-** The setting `g:NETROpenCmd` is now set to `NETRNewTabdrop`, which close the netranger buffer. If you prefer the old behavior, you can have `let g:NETROpenCmd=NETRNewTabdrop`.
-** Preview window is on now by default. To turn it off, set `g:NETRPreviewDefaultOn=v:false`.**
+* Bookmark functions are deprecated. Please use thirdparty plugins such as [ipod825/vim-bookmark](https://github.com/ipod825/vim-bookmark).
+* The setting `g:NETROpenCmd` is now set to `NETRNewTabdrop`, which close the netranger buffer. If you prefer the old behavior, you can have `let g:NETROpenCmd=NETRNewTabdrop`.
+* Preview window is on now by default. To turn it off, set `g:NETRPreviewDefaultOn=v:false`.**
 
 Vim-netranger is a ranger-like system/cloud storage explorer for Vim/Neovim. It brings together the best of Vim, [ranger](https://github.com/ranger/ranger), and [rclone](https://rclone.org/):
 
