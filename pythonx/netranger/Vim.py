@@ -208,14 +208,13 @@ def UserInput(hint, default=''):
 
 def CurWinWidth():
     # This function takes gutter into consideration.
-    global lastWidth
     ve = vim.options['virtualedit']
     vim.options['virtualedit'] = 'all'
     vim.command('norm! g$')
-    lastWidth = int(vim.eval('virtcol(".")'))
+    res = int(vim.eval('virtcol(".")'))
     vim.command('norm! g0')
     vim.options['virtualedit'] = ve
-    return lastWidth
+    return res
 
 
 class pbar(object):
