@@ -806,7 +806,7 @@ class NetRangerBuf(object):
         if self.is_editing or NetRangerBuf._manual_refresh_on_width_change:
             return
 
-        winwidth = Vim.current.window.width
+        winwidth = Vim.CurWinWidth()
         if self.winwidth != winwidth:
             # print('hi', self.wd, 'real: ', winwidth, 'saved: ', self.winwidth)
             self.winwidth = winwidth
@@ -863,7 +863,7 @@ class NetRangerBuf(object):
 
         with self.ManualRefreshOnWidthChange():
             Vim.command('silent wincmd o')
-            total_width = Vim.current.window.width
+            total_width = Vim.CurWinWidth()
             preview_width = int(total_width * Vim.Var('NETRPreviewSize') / 2)
 
             # # parent panel needs more design. Specifically, the cwd is too

@@ -206,6 +206,18 @@ def UserInput(hint, default=''):
     return decode_if_bytes(vim.vars['NETRRegister'])
 
 
+def CurWinWidth():
+    # This function takes gutter into consideration.
+    global lastWidth
+    ve = vim.options['virtualedit']
+    vim.options['virtualedit'] = 'all'
+    vim.command('norm! g$')
+    lastWidth = int(vim.eval('virtcol(".")'))
+    vim.command('norm! g0')
+    vim.options['virtualedit'] = ve
+    return lastWidth
+
+
 class pbar(object):
     def __init__(self, objects, total=None, chunkSize=100):
         self.objects = iter(objects)
