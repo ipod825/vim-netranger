@@ -42,7 +42,8 @@ class Node(object):
         self.is_cursor_on = False
 
     def set_highlight(self, highlight):
-        self.highlight = highlight
+        self.vim_hi_group = 'NETR' + highlight
+        self.highlight = default.color[highlight]
 
     @property
     def highlight_content(self):
@@ -71,7 +72,7 @@ class Node(object):
 
 class FooterNode(Node):
     def __init__(self):
-        super(FooterNode, self).__init__("", "", default.color['footer'])
+        super(FooterNode, self).__init__("", "", 'footer')
 
     @property
     def is_INFO(self):
@@ -82,7 +83,7 @@ class HeaderNode(Node):
     def __init__(self, fullpath):
         super(HeaderNode, self).__init__(fullpath,
                                          Shell.abbrevuser(fullpath),
-                                         default.color['cwd'],
+                                         'cwd',
                                          level=0)
         self.re_stat()
 
@@ -248,15 +249,15 @@ class EntryNode(Node):
     def decide_hi(self):
         if self.linkto is not None:
             if os.path.exists(self.fullpath):
-                return default.color['link']
+                return 'link'
             else:
-                return default.color['brokenlink']
+                return 'brokenlink'
         elif self.is_DIR:
-            return default.color['dir']
+            return 'dir'
         elif os.access(self.fullpath, os.X_OK):
-            return default.color['exe']
+            return 'exe'
         else:
-            return default.color['file']
+            return 'file'
 
     def rename(self, name):
         ori = self.fullpath
@@ -272,7 +273,7 @@ class EntryNode(Node):
     def toggle_pick(self):
         if self.state == Node.State.NORMAL:
             self.state = Node.State.PICKED
-            self.set_highlight(default.color['pick'])
+            self.set_highlight('pick')
             return Node.ToggleOpRes.ON
         elif self.state == Node.State.PICKED:
             self.state = Node.State.NORMAL
@@ -285,13 +286,13 @@ class EntryNode(Node):
         if self.state == Node.State.UNDEROP:
             return
         self.state = Node.State.UNDEROP
-        self.set_highlight(default.color['cut'])
+        self.set_highlight('cut')
 
     def copy(self):
         if self.state == Node.State.UNDEROP:
             return
         self.state = Node.State.UNDEROP
-        self.set_highlight(default.color['copy'])
+        self.set_highlight('copy')
 
     def reset_highlight(self):
         self.state = Node.State.NORMAL
@@ -667,6 +668,8 @@ class NetRangerBuf(object):
         self._vim_buf_handle.options['modifiable'] = True
         if plain:
             self._vim_buf_handle[:] = self.plain_content
+            # for i in range(1, len(self.nodes)-1):
+            #     Vim.command(f'call matchaddpos("{self.nodes[i]}", {})')
         else:
             self._vim_buf_handle[:] = self.highlight_content
         self._vim_buf_handle.options['modifiable'] = False
@@ -971,6 +974,8 @@ class NetRangerBuf(object):
         """ Enter edit mode. """
         self.is_editing = True
         self._render(plain=True)
+        for i, node in enumerate(self.nodes):
+            Vim.command(f'call matchaddpos("{node.vim_hi_group}", [{i+1}])')
         Vim.command('setlocal buftype=acwrite')
         Vim.command('setlocal modifiable')
         Vim.command('let old_undolevels = &undolevels')
@@ -988,6 +993,8 @@ class NetRangerBuf(object):
         if not self.is_editing:
             return False
         self.is_editing = False
+
+        Vim.command(f'call clearmatches()')
 
         vim_buf = Vim.current.buffer
         if len(self.nodes) != len(vim_buf):
