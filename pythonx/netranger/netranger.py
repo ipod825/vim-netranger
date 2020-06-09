@@ -854,15 +854,42 @@ class NetRangerBuf(object):
         Vim.command(f'silent lcd {target_dir}')
         self.last_vim_pwd = target_dir
 
+    def _record_previewee(self, bufnr, winid):
+        Vim.current.window.vars['netranger_last_previewee'] = [
+            self.cur_node.is_DIR, bufnr, winid
+        ]
+
+    def _close_last_previewee(self):
+        info = Vim.WindowVar('netranger_last_previewee', [])
+        if len(info) == 0:
+            return
+
+        is_DIR, bufnr, winid = info
+        win_nr = int(Vim.eval(f'win_id2win({winid})'))
+        if win_nr == 0:
+            return
+
+        if is_DIR:
+            Vim.command(f'{win_nr}hide')
+        else:
+            if Vim.eval(f'getbufvar({bufnr}, "&modified")') == '1':
+                Vim.command(f'{win_nr}hide')
+            elif len(Vim.eval(f'win_findbuf({bufnr})')) > 1:
+                Vim.command(f'{win_nr}hide')
+            else:
+                Vim.command(f'bwipeout {bufnr}')
+
     def preview_on(self):
         """ Turn preview panel on. """
-        if Vim.WindowVar('is_netranger_previewee', False):
+        if Vim.WindowVar('netranger_is_previewee', False):
             return
+
+        previewer_win = Vim.current.window
+        self._close_last_previewee()
 
         cur_node = self.cur_node
 
         with self.ManualRefreshOnWidthChange():
-            Vim.command('silent wincmd o')
             total_width = Vim.CurWinWidth()
             preview_width = int(total_width * Vim.Var('NETRPreviewSize') / 2)
 
@@ -872,22 +899,20 @@ class NetRangerBuf(object):
         elif cur_node.is_DIR:
             with self._controler.OpenBufWithWidth(preview_width):
                 with self.ManualRefreshOnWidthChange():
-                    Vim.command(f'silent botright vsplit {cur_node.fullpath}')
-                    # In case previous split failed
-                    if Vim.current.window.number != 1:
-                        Vim.current.window.vars[
-                            'is_netranger_previewee'] = True
+                    Vim.command(
+                        f'silent rightbelow vsplit {cur_node.fullpath}')
         else:
             try:
                 guees_type = magic.from_file(cur_node.fullpath)
-            except Exception as e:
+            except Exception:
                 guees_type = ''
 
             if re.search('text|data$|empty', guees_type):
                 with self.ManualRefreshOnWidthChange():
                     bak_shortmess = Vim.options['shortmess']
                     Vim.options['shortmess'] = 'A'
-                    Vim.command(f'silent botright vsplit {cur_node.fullpath}')
+                    Vim.command(
+                        f'silent rightbelow vsplit {cur_node.fullpath}')
                     Vim.options['shortmess'] = bak_shortmess
                     Vim.command('wincmd l')
                     Vim.current.window.options['foldenable'] = False
@@ -904,13 +929,18 @@ class NetRangerBuf(object):
                     Vim.current.window.width = preview_width
 
         with self.ManualRefreshOnWidthChange():
-            Vim.command('wincmd h')
+            Vim.current.window.vars['netranger_is_previewee'] = True
+            previewee_bufnr = Vim.eval('bufnr()')
+            previewee_winid = Vim.eval('win_getid()')
+
+            Vim.current.window = previewer_win
+            self._record_previewee(previewee_bufnr, previewee_winid)
 
         self.refresh_highlight_if_winwidth_changed()
 
     def preview_off(self):
         """ Turn preview panel off. """
-        Vim.command('wincmd o')
+        self._close_last_previewee()
         self.refresh_highlight_if_winwidth_changed()
 
     def toggle_expand(self, rec=False):
@@ -1415,7 +1445,7 @@ class Netranger(object):
         Vim.command('setlocal foldmethod=manual')
         Vim.command('setlocal foldcolumn=0')
         Vim.command('setlocal nofoldenable')
-        # Vim.command('setlocal nobuflisted')
+        Vim.command('setlocal nobuflisted')
         Vim.command('setlocal nospell')
         Vim.command('setlocal bufhidden=hide')
         Vim.command('setlocal conceallevel=3')
