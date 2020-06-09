@@ -866,15 +866,6 @@ class NetRangerBuf(object):
             total_width = Vim.CurWinWidth()
             preview_width = int(total_width * Vim.Var('NETRPreviewSize') / 2)
 
-            # # parent panel needs more design. Specifically, the cwd is too
-            # short # when 3 vertical splits exists. Besides, it seems too slow
-            # that is not competitive to ranger.
-            # parent_width = int(total_width * Vim.Var('NETRParentPreviewSize') /
-            #                    2)
-            # Vim.command(f'topleft vertical vsplit {os.path.dirname(self.wd)}')
-            # Vim.current.window.width = parent_width
-            # Vim.command('wincmd l')
-
         if cur_node.is_INFO:
             self.refresh_highlight_if_winwidth_changed()
             return
