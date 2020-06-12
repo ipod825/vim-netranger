@@ -889,9 +889,8 @@ class NetRangerBuf(object):
 
         cur_node = self.cur_node
 
-        with self.ManualRefreshOnWidthChange():
-            total_width = Vim.CurWinWidth()
-            preview_width = int(total_width * Vim.Var('NETRPreviewSize') / 2)
+        total_width = Vim.CurWinWidth()
+        preview_width = int(total_width * Vim.Var('NETRPreviewSize') / 2)
 
         if cur_node.is_INFO:
             self.refresh_highlight_if_winwidth_changed()
@@ -936,6 +935,9 @@ class NetRangerBuf(object):
             Vim.current.window = previewer_win
             self._record_previewee(previewee_bufnr, previewee_winid)
 
+        # Update the previewer window width. Note that it is not done above as
+        # ManualRefreshOnWidthChange prevent this from happening through
+        # autocmd.
         self.refresh_highlight_if_winwidth_changed()
 
     def preview_off(self):
