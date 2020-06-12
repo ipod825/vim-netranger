@@ -210,9 +210,9 @@ def CurWinWidth():
     # This function takes gutter into consideration.
     ve = vim.options['virtualedit']
     vim.options['virtualedit'] = 'all'
-    vim.command('norm! g$')
+    vim.command('noautocmd norm! g$')
     res = int(vim.eval('virtcol(".")'))
-    vim.command('norm! g0')
+    vim.command('noautocmd norm! g0')
     vim.options['virtualedit'] = ve
     return res
 
