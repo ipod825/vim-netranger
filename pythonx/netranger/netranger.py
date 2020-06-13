@@ -885,6 +885,7 @@ class NetRangerBuf(object):
             return
 
         previewer_win = Vim.current.window
+        Vim.current.window.vars['netranger_is_previewer'] = True
         self._close_last_previewee()
 
         cur_node = self.cur_node
@@ -939,6 +940,10 @@ class NetRangerBuf(object):
         # ManualRefreshOnWidthChange prevent this from happening through
         # autocmd.
         self.refresh_highlight_if_winwidth_changed()
+        cur_width = Vim.current.window.width
+        for w in Vim.current.tabpage.windows:
+            if 'netranger_is_previewer' in w.vars:
+                w.width = cur_width
 
     def preview_off(self):
         """ Turn preview panel off. """
