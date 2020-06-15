@@ -122,9 +122,9 @@ class AskUI(UI):
         content.append(f'{chr(ind)}. vim')
 
         buf = self.bufs['default']
-        buf.api.set_option('modifiable', True)
+        buf.options['modifiable'] = True
         buf[:] = content
-        buf.api.set_option('modifiable', False)
+        buf.options['modifiable'] = False
         self.netranger.pend_onuiquit(self._ask, 1)
 
     def _ask(self, char):
