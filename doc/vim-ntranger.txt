@@ -206,24 +206,27 @@ for e.g.  by pressing ':w', ':x', or ':wq'.
 -------------------------------------------------------------------------------
 PREVIEW MODE                              *vim-netranger-preview-mode*
 
-nerdtree enables users to have a single panel on the left side that always open
-files on the right side when pressing enter. vim-netranger provides a similar
-functionality. In a vim-netranger buffer, on |NETRTogglePreview| mapping
-(default `p`) to preview the file under cursor. The cursor will remain on the
-left panel. To directly enter the panel, use the |NETRBufPanelOpen| mapping
-(default `ep`). The size of the right panel can be customized by
-|g:NETRPreviewSize|, which is the ratio between the actual size of the right
-panel to half of the screen width (e.g.  setting it to 1 you'll get a equal
-split). The delay time of showing the right panel can be controled by
-|g:NETRPreviewDelay|.
+By default, netranger previews the file under the cursor. One could disable
+preview by default by setting |g:NETRPreviewDefaultOn| to |v:false|. To turn
+preview on/off on the fly, use |NETRTogglePreview| mapping (default `P`).
 
-One who is used to nerdtree panel might want to have the following custom mapping:
+To jump to the previewed file, the default mapping is |NETRBufPanelOpen|
+(default `<cr>`). I personally find it useful to have `<cr>` mapped to window
+switching:
 >
-    let g:NETRDefaultMapSkip = ['l']
-    let g:NETRBufPanelOpen = ['l']
+    nnoremap <cr> <c-w>w
 
-This makes the |NETROpen| mapping mapped to |NETRBufPanelOpen|.
+This way, you can swith back and forth between netranger and the previewed
+file by pressing only `<cr>`.
 
+The preview mode is quite flexxible. In a single tabpage, users can actually
+have multiple preview panels, each corresponding to a previewee panel. Also,
+users can control when not to trigger the preview using |g:NETRCustomNopreview|.
+
+The size of the right panel can be customized by |g:NETRPreviewSize|, which is
+the ratio between the actual size of the right panel to half of the screen width
+(e.g.  setting it to 1 you'll get a equal split). The delay time of showing the
+right panel can be controled by |g:NETRPreviewDelay|.
 
 -------------------------------------------------------------------------------
 PANEL MODE                              *vim-netranger-panel-mode*
@@ -467,6 +470,13 @@ g:NETRPreviewDefaultOn  boolean (default on)
 g:NETRPreviewDelay      Number (default 200)
     Waiting time for showing the preview window in milliseconds. Setting it
     too small may results in poor performance.
+
+                                        *g:NETRCustomNopreview*
+g:NETRCustomNopreview   |Function| (default `{->0}`)
+    A |Function| taking no argument and returns either 0 or 1, indicating
+    whether a netranger buffer should serve as a previewer. Example:
+>
+    let g:NETRCustomNopreview={->winnr()==2 && winnr('$')==2}
 -------------------------------------------------------------------------------
 COLORS                                  *vim-netranger-colors*
 

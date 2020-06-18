@@ -884,6 +884,9 @@ class NetRangerBuf(object):
         if Vim.WindowVar('netranger_is_previewee', False):
             return
 
+        if Vim.eval('get(g:, "NETRCustomNopreview",{->0})()') != '0':
+            return
+
         previewer_win = Vim.current.window
         Vim.current.window.vars['netranger_is_previewer'] = True
         self._close_last_previewee()
