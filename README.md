@@ -1,7 +1,7 @@
 vim-netranger
 =============
 [![Build Status](https://travis-ci.org/ipod825/vim-netranger.svg?branch=master)](https://travis-ci.org/ipod825/vim-netranger)
-![Screenshot](https://user-images.githubusercontent.com/1246394/43560750-3c559f28-95d1-11e8-85e4-a05d6f44e97e.png)
+![Screenshot](https://user-images.githubusercontent.com/1246394/85212602-44e29900-b309-11ea-870a-3106db4ec222.png)
 
 
 ## Recent Update
