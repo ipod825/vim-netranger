@@ -1874,6 +1874,8 @@ class Netranger(object):
         end = Vim.current.range.end + 1
         for i in range(beg, end):
             node = cur_buf.nodes[i]
+            if node.is_INFO:
+                continue
             res = node.toggle_pick()
             if res == Node.ToggleOpRes.ON:
                 self._picked_nodes[cur_buf].add(node)
