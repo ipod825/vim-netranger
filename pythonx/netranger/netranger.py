@@ -205,7 +205,7 @@ class EntryNode(Node):
         self.re_stat(lazy=Vim.Var('NETRLazyLoadStat'))
         highlight = self.decide_hi()
         super(EntryNode, self).__init__(fullpath, name, highlight, level=level)
-        self.ori_highlight = self.highlight
+        self.ori_highlight = highlight
 
     def re_stat(self, lazy=False):
         self.linkto = None
@@ -277,7 +277,7 @@ class EntryNode(Node):
             return Node.ToggleOpRes.ON
         elif self.state == Node.State.PICKED:
             self.state = Node.State.NORMAL
-            self.highlight = self.ori_highlight
+            self.set_highlight(self.ori_highlight)
             return Node.ToggleOpRes.OFF
         else:
             return Node.ToggleOpRes.INVALID
@@ -296,7 +296,7 @@ class EntryNode(Node):
 
     def reset_highlight(self):
         self.state = Node.State.NORMAL
-        self.highlight = self.ori_highlight
+        self.set_highlight(self.ori_highlight)
 
 
 class DirNode(EntryNode):
