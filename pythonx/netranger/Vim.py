@@ -168,6 +168,7 @@ def AsyncRun(cmd,
         'stderr': on_stderr,
         'exit': on_exit
     }
+    return job_id
 
 
 def Var(name, default=None):

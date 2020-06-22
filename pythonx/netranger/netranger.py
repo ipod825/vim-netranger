@@ -4,10 +4,11 @@ import datetime
 import fnmatch
 import os
 import re
+import sys
 from collections import defaultdict
 from sys import platform
 
-from netranger import Vim, default
+from netranger import Vim, default, util
 from netranger.api import NETRApi
 from netranger.colortbl import colorhexstr2ind, colorind2hexstr, colorname2ind
 from netranger.config import file_sz_display_wid
@@ -877,7 +878,7 @@ class NetRangerBuf(object):
             elif len(Vim.eval(f'win_findbuf({bufnr})')) > 1:
                 Vim.command(f'{win_nr}hide')
             else:
-                Vim.command(f'bwipeout {bufnr}')
+                Vim.command(f'bwipeout! {bufnr}')
 
     def preview_on(self):
         """ Turn preview panel on. """
@@ -910,7 +911,14 @@ class NetRangerBuf(object):
             except Exception:
                 guees_type = ''
 
-            if re.search('text|data$|empty', guees_type):
+            if re.search('image', guees_type):
+                Vim.AsyncRun(
+                    f'{util.GenNetRangerScriptCmd("image_preview")}\
+                    {cur_node.fullpath} {total_width} {preview_width}',
+                    term=True,
+                    termopencmd=f'rightbelow vert {preview_width} new')
+                Vim.command('setlocal nocursorline')
+            elif re.search('text|data$|empty', guees_type):
                 with self.ManualRefreshOnWidthChange():
                     bak_shortmess = Vim.options['shortmess']
                     Vim.options['shortmess'] = 'A'

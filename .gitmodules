@@ -1,3 +1,6 @@
 [submodule "pythonx/netranger/thirdparty/pymagic"]
 	path = pythonx/netranger/thirdparty/pymagic
 	url = https://github.com/ahupp/python-magic.git
+[submodule "pythonx/netranger/thirdparty/ueberzug"]
+	path = pythonx/netranger/thirdparty/ueberzug
+	url = https://github.com/seebye/ueberzug.git
