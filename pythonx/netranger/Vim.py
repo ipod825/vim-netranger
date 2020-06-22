@@ -105,7 +105,7 @@ def do_nothing():
 
 if _hasnvim:
 
-    def JobStart(cmd, term=False):
+    def JobStart(cmd, term=False, termopencmd=''):
         if not term:
             vim.command(f'let g:NETRJobId = jobstart(\'{cmd}\',\
                     {{"detach":1,\
@@ -113,7 +113,7 @@ if _hasnvim:
                       "on_stderr":function("netranger#asyncCallBack"),\
                       "on_exit":function("netranger#asyncCallBack")}})')
         else:
-            vim.command('10 new')
+            vim.command(termopencmd)
             cmd_win_id = vim.eval('win_getid()')
             vim.command('let g:NETRJobId = termopen(\'{}\',\
                         {{"on_exit":{{j,d,e -> function("netranger#termAsyncCallBack")(j,d,e, {})}} }})'
@@ -122,7 +122,7 @@ if _hasnvim:
 
 else:
 
-    def JobStart(cmd, term=False):
+    def JobStart(cmd, term=False, termopencmd=''):
         cur_time = str(time.time())
         if not term:
             vim.command(f'call job_start(\'{cmd}\', {{\
@@ -132,7 +132,7 @@ else:
                       "exit_cb":{{j,s-> netranger#asyncCallBack("{cur_time}",s,"exit")}}\
                                                    }})')
         else:
-            vim.command('10 new')
+            vim.command(termopencmd)
             vim.command('startinsert')
             cmd_win_id = vim.eval('win_getid()')
             vim.command('call term_start(\'{}\', {{\
@@ -143,7 +143,12 @@ else:
         return cur_time
 
 
-def AsyncRun(cmd, on_stdout=None, on_stderr=None, on_exit=None, term=False):
+def AsyncRun(cmd,
+             on_stdout=None,
+             on_stderr=None,
+             on_exit=None,
+             term=False,
+             termopencmd=''):
 
     if on_stdout is None:
         on_stdout = do_nothing_with_args
@@ -152,7 +157,12 @@ def AsyncRun(cmd, on_stdout=None, on_stderr=None, on_exit=None, term=False):
     if on_exit is None:
         on_exit = do_nothing
 
-    job_id = JobStart(cmd, term=term)
+    if term and termopencmd == '':
+        termopencmd = '10 new | wincmd J | startinsert'
+    elif termopencmd != '':
+        term = True
+
+    job_id = JobStart(cmd, term=term, termopencmd=termopencmd)
     _NETRcbks[job_id] = {
         'stdout': on_stdout,
         'stderr': on_stderr,
