@@ -9,7 +9,7 @@ import sys
 import tempfile
 import time
 
-from netranger import Vim
+from netranger import Vim, util
 from netranger.config import file_sz_display_wid, rclone_rcd_port
 from netranger.enum import Enum
 from netranger.shell import Shell
@@ -99,8 +99,7 @@ class FSTarget(object):
 class LocalFS(object):
     # Putting fs_server.py in the pythonx directory fail to import shutil
     # so put it in the upper directory
-    ServerCmd = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                             '../fs_server.py')
+    ServerCmd = util.GenNetRangerScriptCmd('fs_server')
 
     acl_tbl = {
         '7': ['r', 'w', 'x'],
@@ -175,13 +174,11 @@ class LocalFS(object):
             pickle.dump(arguments, f)
 
         if sudo:
-            Vim.AsyncRun('sudo {} {} {} {}'.format(sys.executable,
-                                                   self.ServerCmd, cmd, fname),
+            Vim.AsyncRun('sudo {} {} {}'.format(self.ServerCmd, cmd, fname),
                          on_exit=on_exit,
                          term=True)
         else:
-            Vim.AsyncRun('{} {} {} {}'.format(sys.executable, self.ServerCmd,
-                                              cmd, fname),
+            Vim.AsyncRun('{} {} {}'.format(self.ServerCmd, cmd, fname),
                          on_stderr=on_stderr,
                          on_exit=on_exit)
 
@@ -252,8 +249,7 @@ class LocalFS(object):
 
 
 class Rclone(LocalFS):
-    ServerCmd = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                             '../rclone_server.py')
+    ServerCmd = util.GenNetRangerScriptCmd('rclone_server')
     SyncDirection = Enum('SyncDirection', 'DOWN, UP')
 
     @classmethod
