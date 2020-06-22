@@ -4,7 +4,6 @@ import datetime
 import fnmatch
 import os
 import re
-import sys
 from collections import defaultdict
 from sys import platform
 
@@ -912,12 +911,25 @@ class NetRangerBuf(object):
                 guees_type = ''
 
             if re.search('image', guees_type):
-                Vim.AsyncRun(
-                    f'{util.GenNetRangerScriptCmd("image_preview")}\
-                    {cur_node.fullpath} {total_width} {preview_width}',
-                    term=True,
-                    termopencmd=f'rightbelow vert {preview_width} new')
-                Vim.command('setlocal nocursorline')
+                try:
+                    import ueberzug
+                    Vim.AsyncRun(
+                        f'{util.GenNetRangerScriptCmd("image_preview")}\
+                        {cur_node.fullpath} {total_width} {preview_width}',
+                        term=True,
+                        termopencmd=f'rightbelow vert {preview_width} new')
+                    Vim.command('setlocal nocursorline')
+                except Exception:
+                    Vim.ErrorMsg('To preview image, run: pip install ueberzug')
+                    with self.ManualRefreshOnWidthChange():
+                        Vim.command('belowright vnew')
+                        Vim.command('setlocal buftype=nofile')
+                        Vim.command('setlocal noswapfile')
+                        Vim.command('setlocal nobuflisted')
+                        Vim.command('setlocal bufhidden=wipe')
+                        Vim.current.buffer[:] = [cur_node.fullpath, guees_type]
+                        Vim.command('setlocal nomodifiable')
+                        Vim.current.window.width = preview_width
             elif re.search('text|data$|empty', guees_type):
                 with self.ManualRefreshOnWidthChange():
                     bak_shortmess = Vim.options['shortmess']
