@@ -5,6 +5,7 @@ vim-netranger
 
 
 ## Recent Update
+* Image preview is supported (Linux, X11). Please install ueberzug: `pip install ueberzug`
 * Bookmark functions are deprecated. Please use thirdparty plugins such as [ipod825/vim-bookmark](https://github.com/ipod825/vim-bookmark).
 * The setting `g:NETROpenCmd` is now set to `NETRNewTabdrop`, which close the netranger buffer. If you prefer the old behavior, you can have `let g:NETROpenCmd=NETRTabdrop`.
 * Preview window is on now by default. To turn it off, set `g:NETRPreviewDefaultOn=v:false`.**

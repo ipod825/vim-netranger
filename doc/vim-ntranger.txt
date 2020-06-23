@@ -228,6 +228,17 @@ the ratio between the actual size of the right panel to half of the screen width
 (e.g.  setting it to 1 you'll get a equal split). The delay time of showing the
 right panel can be controled by |g:NETRPreviewDelay|.
 
+Netranger will try to recognize the file type of the preview file. If it is
+not plain text file, such as .mp4, .pdf, .jpg, etc. It will not be displayed
+as plain text. Instead, some handlers will be used to preview it. If no
+handler is implemented, the default handler display the file path and its mime
+type. Current the supported handlers are:
+
+File Type   | Dependency
+Image       | pip install ueberzug
+
+
+
 -------------------------------------------------------------------------------
 PANEL MODE                              *vim-netranger-panel-mode*
 
