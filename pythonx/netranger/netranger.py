@@ -929,7 +929,7 @@ class NetRangerBuf(object):
                             )
                 Vim.command('augroup END')
             else:
-                Vim.command('augroup NETRPREVIEW | autocmd! | augroup END')
+                Vim.command('silent! autocmd! NETRPREVIEW TabLeave <buffer>')
             self._record_previewee(previewee_bufnr, previewee_winid)
 
         # Update the previewer window width. Note that it is not done above as
