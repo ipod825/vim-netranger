@@ -26,7 +26,7 @@ class view(object):
     def view_plaintext(self):
         bak_shortmess = Vim.options['shortmess']
         Vim.options['shortmess'] = 'A'
-        Vim.command(f'edit {self.path}')
+        Vim.command(f'silent edit {self.path}')
         Vim.options['shortmess'] = bak_shortmess
         Vim.current.window.options['foldenable'] = False
 
