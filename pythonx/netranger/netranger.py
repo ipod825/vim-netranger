@@ -7,7 +7,7 @@ import re
 from collections import defaultdict
 from sys import platform
 
-from netranger import Vim, default, util
+from netranger import Vim, default, preview, util
 from netranger.api import NETRApi
 from netranger.colortbl import colorhexstr2ind, colorind2hexstr, colorname2ind
 from netranger.config import file_sz_display_wid
@@ -914,35 +914,12 @@ class NetRangerBuf(object):
             with self.ManualRefreshOnWidthChange():
                 Vim.command(f'rightbelow vert {preview_width} new')
             if re.search('image', guees_type):
-                try:
-                    Vim.AsyncRun(
-                        f'{util.GenNetRangerScriptCmd("image_preview")}\
-                        {cur_node.fullpath} {total_width} {preview_width}',
-                        term=True,
-                        termopencmd='')
-                    Vim.command('setlocal nocursorline')
-                except Exception:
-                    Vim.ErrorMsg('To preview image, run: pip install ueberzug')
-                    Vim.command('setlocal buftype=nofile')
-                    Vim.command('setlocal noswapfile')
-                    Vim.command('setlocal nobuflisted')
-                    Vim.command('setlocal bufhidden=wipe')
-                    Vim.current.buffer[:] = [cur_node.fullpath, guees_type]
-                    Vim.command('setlocal nomodifiable')
+                preview.image(cur_node.fullpath, guees_type, total_width,
+                              preview_width)
             elif re.search('text|data$|empty', guees_type):
-                bak_shortmess = Vim.options['shortmess']
-                Vim.options['shortmess'] = 'A'
-                Vim.command(f'edit {cur_node.fullpath}')
-                Vim.options['shortmess'] = bak_shortmess
-                Vim.command('wincmd l')
-                Vim.current.window.options['foldenable'] = False
+                preview.plaintext(cur_node.fullpath)
             else:
-                Vim.command('setlocal buftype=nofile')
-                Vim.command('setlocal noswapfile')
-                Vim.command('setlocal nobuflisted')
-                Vim.command('setlocal bufhidden=wipe')
-                Vim.current.buffer[:] = [cur_node.fullpath, guees_type]
-                Vim.command('setlocal nomodifiable')
+                preview.mime(cur_node.fullpath, guees_type)
 
         with self.ManualRefreshOnWidthChange():
             Vim.current.window.vars['netranger_is_previewee'] = True
