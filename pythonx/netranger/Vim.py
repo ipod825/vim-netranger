@@ -133,10 +133,10 @@ else:
                                                    }})')
         else:
             vim.command(termopencmd)
-            vim.command('startinsert')
             cmd_win_id = vim.eval('win_getid()')
             vim.command('call term_start(\'{}\', {{\
                         "curwin":v:true,\
+                        "term_kill":"9",\
                         "exit_cb":{{j,s-> netranger#termAsyncCallBack("{}",s,"exit",{})}}\
                                                  }})'.format(
                 cmd, cur_time, cmd_win_id))

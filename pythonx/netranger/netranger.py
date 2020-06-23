@@ -872,7 +872,9 @@ class NetRangerBuf(object):
         if is_DIR:
             Vim.command(f'{win_nr}hide')
         else:
-            if Vim.eval(f'getbufvar({bufnr}, "&modified")') == '1':
+            if Vim.eval(f'getbufvar({bufnr}, "&buftype")') == 'terminal':
+                Vim.command(f'bwipeout! {bufnr}')
+            elif Vim.eval(f'getbufvar({bufnr}, "&modified")') == '1':
                 Vim.command(f'{win_nr}hide')
             elif len(Vim.eval(f'win_findbuf({bufnr})')) > 1:
                 Vim.command(f'{win_nr}hide')
