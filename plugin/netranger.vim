@@ -29,15 +29,6 @@ function NetrangerInit()
     exec g:_NETRPY.'from netranger.api import NETRApi'
     exec g:_NETRPY.'NETRApi.init(ranger)'
 
-    augroup NETRANGER
-        autocmd!
-        autocmd BufEnter * exec g:_NETRPY.'ranger.on_bufenter('.expand("<abuf>").')'
-        autocmd Filetype netranger autocmd WinEnter <buffer> exec g:_NETRPY.'ranger.on_winenter('.expand("<abuf>").')'
-        autocmd Filetype netranger autocmd CursorMoved <buffer> exec g:_NETRPY.'ranger.on_cursormoved('.expand("<abuf>").')'
-        autocmd Filetype netranger autocmd BufWriteCmd <buffer> exec g:_NETRPY.'ranger.NETRSave()'
-    augroup END
-
-
     func! _NETROnCursorMovedPost(bufnum, timerid)
         exec g:_NETRPY.'ranger.on_cursormoved_post('.a:bufnum.')'
     endfunc
@@ -48,6 +39,14 @@ function NetrangerInit()
     command! -nargs=1 -complete=file NETRTabdrop exec g:_NETRPY.'ranger._tabdrop("'.<q-args>.'")'
     command! -nargs=1 -complete=file NETRNewTabdrop exec g:_NETRPY.'ranger._newtabdrop("'.<q-args>.'")'
 
+    augroup NETRANGER
+        autocmd!
+        autocmd BufEnter * exec g:_NETRPY.'ranger.on_bufenter('.expand("<abuf>").')'
+        autocmd Filetype netranger autocmd WinEnter <buffer> exec g:_NETRPY.'ranger.on_winenter('.expand("<abuf>").')'
+        autocmd Filetype netranger autocmd CursorMoved <buffer> exec g:_NETRPY.'ranger.on_cursormoved('.expand("<abuf>").')'
+        autocmd Filetype netranger autocmd BufWriteCmd <buffer> exec g:_NETRPY.'ranger.NETRSave()'
+        autocmd ColorScheme * call netranger#syntax#define()
+    augroup END
     silent doautocmd USER NETRInit
 endfunction
 
