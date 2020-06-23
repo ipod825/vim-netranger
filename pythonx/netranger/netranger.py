@@ -914,7 +914,6 @@ class NetRangerBuf(object):
 
             if re.search('image', guees_type):
                 try:
-                    import ueberzug
                     Vim.AsyncRun(
                         f'{util.GenNetRangerScriptCmd("image_preview")}\
                         {cur_node.fullpath} {total_width} {preview_width}',
