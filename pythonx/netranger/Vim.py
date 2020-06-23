@@ -148,7 +148,7 @@ def AsyncRun(cmd,
              on_stderr=None,
              on_exit=None,
              term=False,
-             termopencmd=''):
+             termopencmd='10 new | wincmd J | startinsert'):
 
     if on_stdout is None:
         on_stdout = do_nothing_with_args
@@ -156,11 +156,6 @@ def AsyncRun(cmd,
         on_stderr = do_nothing_with_args
     if on_exit is None:
         on_exit = do_nothing
-
-    if term and termopencmd == '':
-        termopencmd = '10 new | wincmd J | startinsert'
-    elif termopencmd != '':
-        term = True
 
     job_id = JobStart(cmd, term=term, termopencmd=termopencmd)
     _NETRcbks[job_id] = {

@@ -911,46 +911,38 @@ class NetRangerBuf(object):
                 guees_type = magic.from_file(cur_node.fullpath)
             except Exception:
                 guees_type = ''
-
+            with self.ManualRefreshOnWidthChange():
+                Vim.command(f'rightbelow vert {preview_width} new')
             if re.search('image', guees_type):
                 try:
                     Vim.AsyncRun(
                         f'{util.GenNetRangerScriptCmd("image_preview")}\
                         {cur_node.fullpath} {total_width} {preview_width}',
                         term=True,
-                        termopencmd=f'rightbelow vert {preview_width} new')
+                        termopencmd='')
                     Vim.command('setlocal nocursorline')
                 except Exception:
                     Vim.ErrorMsg('To preview image, run: pip install ueberzug')
-                    with self.ManualRefreshOnWidthChange():
-                        Vim.command('belowright vnew')
-                        Vim.command('setlocal buftype=nofile')
-                        Vim.command('setlocal noswapfile')
-                        Vim.command('setlocal nobuflisted')
-                        Vim.command('setlocal bufhidden=wipe')
-                        Vim.current.buffer[:] = [cur_node.fullpath, guees_type]
-                        Vim.command('setlocal nomodifiable')
-                        Vim.current.window.width = preview_width
-            elif re.search('text|data$|empty', guees_type):
-                with self.ManualRefreshOnWidthChange():
-                    bak_shortmess = Vim.options['shortmess']
-                    Vim.options['shortmess'] = 'A'
-                    Vim.command(
-                        f'silent rightbelow vsplit {cur_node.fullpath}')
-                    Vim.options['shortmess'] = bak_shortmess
-                    Vim.command('wincmd l')
-                    Vim.current.window.options['foldenable'] = False
-                    Vim.current.window.width = preview_width
-            else:
-                with self.ManualRefreshOnWidthChange():
-                    Vim.command('belowright vnew')
                     Vim.command('setlocal buftype=nofile')
                     Vim.command('setlocal noswapfile')
                     Vim.command('setlocal nobuflisted')
                     Vim.command('setlocal bufhidden=wipe')
                     Vim.current.buffer[:] = [cur_node.fullpath, guees_type]
                     Vim.command('setlocal nomodifiable')
-                    Vim.current.window.width = preview_width
+            elif re.search('text|data$|empty', guees_type):
+                bak_shortmess = Vim.options['shortmess']
+                Vim.options['shortmess'] = 'A'
+                Vim.command(f'edit {cur_node.fullpath}')
+                Vim.options['shortmess'] = bak_shortmess
+                Vim.command('wincmd l')
+                Vim.current.window.options['foldenable'] = False
+            else:
+                Vim.command('setlocal buftype=nofile')
+                Vim.command('setlocal noswapfile')
+                Vim.command('setlocal nobuflisted')
+                Vim.command('setlocal bufhidden=wipe')
+                Vim.current.buffer[:] = [cur_node.fullpath, guees_type]
+                Vim.command('setlocal nomodifiable')
 
         with self.ManualRefreshOnWidthChange():
             Vim.current.window.vars['netranger_is_previewee'] = True
