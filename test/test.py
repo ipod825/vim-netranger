@@ -708,17 +708,17 @@ def test_NETRPaste_by_copy_remote2remote():
 
 
 def test_api_cur_node_name():
-    assert nvim.call('netranger#cur_node_name') == 'dir'
+    assert nvim.call('netranger#api#cur_node_name') == 'dir'
 
 
 def test_api_cur_node_path():
-    assert nvim.call('netranger#cur_node_path') == os.path.abspath('dir')
+    assert nvim.call('netranger#api#cur_node_path') == os.path.abspath('dir')
 
 
 def test_api_cp():
     nvim.input('za')
-    nvim.call('netranger#cp', 'dir/subdir', './')
-    nvim.call('netranger#cp', 'dir/a', './')
+    nvim.call('netranger#api#cp', 'dir/subdir', './')
+    nvim.call('netranger#api#cp', 'dir/a', './')
     wait_for_fs_free()
     assert_content('subdir', ind=5, hi='dir')
     assert_content('a', ind=6, hi='file')
@@ -728,8 +728,8 @@ def test_api_cp():
 def test_api_cp_remote():
     nvim.input('za')
     vimcwd = nvim.call('getcwd')
-    nvim.call('netranger#cp', f'{vimcwd}/dir/subdir', vimcwd)
-    nvim.call('netranger#cp', f'{vimcwd}/dir/a', vimcwd)
+    nvim.call('netranger#api#cp', f'{vimcwd}/dir/subdir', vimcwd)
+    nvim.call('netranger#api#cp', f'{vimcwd}/dir/a', vimcwd)
     wait_for_fs_free()
     assert_content('subdir', ind=5, hi='dir')
     assert_content('a', ind=6, hi='file')
@@ -739,8 +739,8 @@ def test_api_cp_remote():
 
 def test_api_mv():
     nvim.input('za')
-    nvim.call('netranger#mv', 'dir/subdir', './')
-    nvim.call('netranger#mv', 'dir/a', './')
+    nvim.call('netranger#api#mv', 'dir/subdir', './')
+    nvim.call('netranger#api#mv', 'dir/a', './')
     wait_for_fs_free()
     assert_content('subdir', ind=3, hi='dir')
     assert_content('a', ind=4, hi='file')
@@ -751,8 +751,8 @@ def test_api_mv():
 def test_api_mv_remote():
     nvim.input('za')
     vimcwd = nvim.call('getcwd')
-    nvim.call('netranger#mv', f'{vimcwd}/dir/subdir', vimcwd)
-    nvim.call('netranger#mv', f'{vimcwd}/dir/a', vimcwd)
+    nvim.call('netranger#api#mv', f'{vimcwd}/dir/subdir', vimcwd)
+    nvim.call('netranger#api#mv', f'{vimcwd}/dir/a', vimcwd)
     wait_for_fs_free()
     assert_content('subdir', ind=3, hi='dir')
     assert_content('a', ind=4, hi='file')
@@ -764,8 +764,8 @@ def test_api_mv_remote():
 
 def test_api_rm():
     nvim.input('za')
-    nvim.call('netranger#rm', 'dir/subdir')
-    nvim.call('netranger#rm', 'dir/a')
+    nvim.call('netranger#api#rm', 'dir/subdir')
+    nvim.call('netranger#api#rm', 'dir/a')
     wait_for_fs_free()
     assert_content('subdir2', ind=1, hi='dir', level=1)
     assert_content('dir2', ind=2, hi='dir')
@@ -775,8 +775,8 @@ def test_api_rm():
 def test_api_rm_remote():
     nvim.input('za')
     vimcwd = nvim.call('getcwd')
-    nvim.call('netranger#rm', f'{vimcwd}/dir/subdir')
-    nvim.call('netranger#rm', f'{vimcwd}/dir/a')
+    nvim.call('netranger#api#rm', f'{vimcwd}/dir/subdir')
+    nvim.call('netranger#api#rm', f'{vimcwd}/dir/a')
     wait_for_fs_free()
     assert_content('subdir2', ind=1, hi='dir', level=1)
     assert_content('dir2', ind=2, hi='dir')

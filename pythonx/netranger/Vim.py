@@ -109,14 +109,14 @@ if _hasnvim:
         if not term:
             vim.command(f'let g:NETRJobId = jobstart(\'{cmd}\',\
                     {{"detach":1,\
-                      "on_stdout":function("netranger#asyncCallBack"),\
-                      "on_stderr":function("netranger#asyncCallBack"),\
-                      "on_exit":function("netranger#asyncCallBack")}})')
+                      "on_stdout":function("netranger#async#callback"),\
+                      "on_stderr":function("netranger#async#callback"),\
+                      "on_exit":function("netranger#async#callback")}})')
         else:
             vim.command(termopencmd)
             cmd_win_id = vim.eval('win_getid()')
             vim.command('let g:NETRJobId = termopen(\'{}\',\
-                        {{"on_exit":{{j,d,e -> function("netranger#termAsyncCallBack")(j,d,e, {})}} }})'
+                        {{"on_exit":{{j,d,e -> function("netranger#async#term_callback")(j,d,e, {})}} }})'
                         .format(cmd, cmd_win_id))
         return str(vim.vars['NETRJobId'])
 
@@ -127,9 +127,9 @@ else:
         if not term:
             vim.command(f'call job_start(\'{cmd}\', {{\
                     "stoponexit": "",\
-                    "out_cb":{{j,d-> netranger#asyncCallBack("{cur_time}",d,"stdout")}},\
-                      "err_cb":{{j,d-> netranger#asyncCallBack("{cur_time}",d,"stderr")}},\
-                      "exit_cb":{{j,s-> netranger#asyncCallBack("{cur_time}",s,"exit")}}\
+                    "out_cb":{{j,d-> netranger#async#callback("{cur_time}",d,"stdout")}},\
+                      "err_cb":{{j,d-> netranger#async#callback("{cur_time}",d,"stderr")}},\
+                      "exit_cb":{{j,s-> netranger#async#callback("{cur_time}",s,"exit")}}\
                                                    }})')
         else:
             vim.command(termopencmd)
@@ -137,7 +137,7 @@ else:
             vim.command('call term_start(\'{}\', {{\
                         "curwin":v:true,\
                         "term_kill":"9",\
-                        "exit_cb":{{j,s-> netranger#termAsyncCallBack("{}",s,"exit",{})}}\
+                        "exit_cb":{{j,s-> netranger#async#term_callback("{}",s,"exit",{})}}\
                                                  }})'.format(
                 cmd, cur_time, cmd_win_id))
         return cur_time
