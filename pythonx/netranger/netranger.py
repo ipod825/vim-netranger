@@ -7,7 +7,7 @@ import re
 from collections import defaultdict
 from sys import platform
 
-from netranger import Vim, default, preview, util
+from netranger import Vim, default, preview
 from netranger.api import NETRApi
 from netranger.colortbl import colorhexstr2ind, colorind2hexstr, colorname2ind
 from netranger.config import file_sz_display_wid
@@ -15,7 +15,6 @@ from netranger.enum import Enum
 from netranger.fs import FSTarget, LocalFS, Rclone
 from netranger.rifle import Rifle
 from netranger.shell import Shell
-from netranger.thirdparty.pymagic import magic
 from netranger.ui import AskUI, HelpUI, NewUI, SortUI
 
 if platform == "win32":
@@ -910,19 +909,9 @@ class NetRangerBuf(object):
             self._controler.cur_buf.refresh_highlight_if_winwidth_changed(
                 force=True)
         else:
-            try:
-                guees_type = magic.from_file(cur_node.fullpath)
-            except Exception:
-                guees_type = ''
             with self.ManualRefreshOnWidthChange():
                 Vim.command(f'rightbelow vert {preview_width} new')
-            if re.search('image', guees_type):
-                preview.image(cur_node.fullpath, guees_type, total_width,
-                              preview_width)
-            elif re.search('text|data$|empty', guees_type):
-                preview.plaintext(cur_node.fullpath)
-            else:
-                preview.mime(cur_node.fullpath, guees_type)
+            preview.view(cur_node.fullpath, total_width, preview_width)
 
         with self.ManualRefreshOnWidthChange():
             Vim.current.window.vars['netranger_is_previewee'] = True
