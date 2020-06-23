@@ -897,6 +897,7 @@ class NetRangerBuf(object):
 
         total_width = Vim.CurWinWidth()
         preview_width = int(total_width * Vim.Var('NETRPreviewSize') / 2)
+        preview_close_on_tableave = False
 
         if cur_node.is_INFO:
             self.refresh_highlight_if_winwidth_changed()
@@ -911,7 +912,9 @@ class NetRangerBuf(object):
         else:
             with self.ManualRefreshOnWidthChange():
                 Vim.command(f'rightbelow vert {preview_width} new')
-            preview.view(cur_node.fullpath, total_width, preview_width)
+            view = preview.view(cur_node.fullpath, total_width, preview_width)
+
+            preview_close_on_tableave = view.preview_close_on_tableave
 
         with self.ManualRefreshOnWidthChange():
             Vim.current.window.vars['netranger_is_previewee'] = True
@@ -919,6 +922,14 @@ class NetRangerBuf(object):
             previewee_winid = Vim.eval('win_getid()')
 
             Vim.current.window = previewer_win
+            if preview_close_on_tableave:
+                Vim.command('augroup NETRPREVIEW')
+                Vim.command(f'autocmd TabLeave <buffer> ++once \
+                    py3 ranger._bufs[{self._vim_buf_handle.number}]._close_last_previewee()'
+                            )
+                Vim.command('augroup END')
+            else:
+                Vim.command('augroup NETRPREVIEW | autocmd! | augroup END')
             self._record_previewee(previewee_bufnr, previewee_winid)
 
         # Update the previewer window width. Note that it is not done above as

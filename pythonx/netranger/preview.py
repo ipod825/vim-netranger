@@ -9,12 +9,15 @@ class view(object):
         self.path = path
         self.total_width = total_width
         self.preview_width = preview_width
+        self.preview_close_on_tableave = False
+
         try:
             self.mime_type = magic.from_file(path)
         except Exception:
             self.mime_type = ''
         if re.search('image', self.mime_type):
             self.view_image()
+            self.preview_close_on_tableave = True
         elif re.search('text|data$|empty', self.mime_type):
             self.view_plaintext()
         else:
