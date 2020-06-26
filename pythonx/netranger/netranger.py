@@ -912,9 +912,8 @@ class NetRangerBuf(object):
         else:
             with self.ManualRefreshOnWidthChange():
                 Vim.command(f'rightbelow vert {preview_width} new')
-            view = preview.view(cur_node.fullpath, total_width, preview_width)
-
-            preview_close_on_tableave = view.preview_close_on_tableave
+            preview_close_on_tableave = self._controler.preview(
+                cur_node.fullpath, total_width, preview_width)
 
         with self.ManualRefreshOnWidthChange():
             Vim.current.window.vars['netranger_is_previewee'] = True
@@ -1144,6 +1143,7 @@ class Netranger(object):
         self._onuiquit_num_args = 0
         self._NetRangerBuf_init_winwidth = -1
         self._is_previewing = Vim.Var("NETRPreviewDefaultOn")
+        self.preview = preview.view()
 
         Rclone.init(Vim.Var('NETRemoteCacheDir'), Vim.Var('NETRemoteRoots'))
         Shell.mkdir(default.variables['NETRRootDir'])

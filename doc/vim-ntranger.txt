@@ -235,9 +235,11 @@ handler is implemented, the default handler display the file path and its mime
 type. Current the supported handlers are:
 
 File Type   | Dependency
-Image       | pip install ueberzug
+Image       | ueberzug[1]
+Pdf         | ueberzug[1], pdftoppm[2]
 
-
+[1] https://github.com/seebye/ueberzug
+[2] https://linux.die.net/man/1/pdftoppm
 
 -------------------------------------------------------------------------------
 PANEL MODE                              *vim-netranger-panel-mode*
