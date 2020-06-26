@@ -904,6 +904,9 @@ class NetRangerBuf(object):
             return
         elif cur_node.is_DIR:
             with self.ManualRefreshOnWidthChange():
+                if not os.access(cur_node.fullpath, os.X_OK):
+                    Vim.ErrorMsg(f'Permission Denied: {cur_node.name}')
+                    return
                 Vim.command(
                     f'rightbelow vert {preview_width} vsplit {cur_node.fullpath}'
                 )
