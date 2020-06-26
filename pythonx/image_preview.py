@@ -1,3 +1,6 @@
+import glob
+import itertools
+import os
 import sys
 import time
 
@@ -18,8 +21,13 @@ if __name__ == '__main__':
                                     y=0,
                                     width=width,
                                     scaler=ueberzug.ScalerOption.CONTAIN.value)
-        canvas.path = path
-
-        canvas.visibility = ueberzug.Visibility.VISIBLE
-        while True:
-            time.sleep(3600)
+        if os.path.isdir(path):
+            for i in itertools.cycle(sorted(glob.glob(f'{path}/*'))):
+                canvas.path = i
+                canvas.visibility = ueberzug.Visibility.VISIBLE
+                time.sleep(0.2)
+        else:
+            canvas.path = path
+            canvas.visibility = ueberzug.Visibility.VISIBLE
+            while True:
+                time.sleep(3600)

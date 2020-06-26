@@ -1,13 +1,12 @@
 import re
 import tempfile
-from pathlib import Path
 
 from netranger import Vim, util
 from netranger.shell import Shell
 from netranger.thirdparty.pymagic import magic
 
 
-class view(object):
+class Previewer(object):
     def __init__(self):
         self.tempfile_cache = {}
 
@@ -51,13 +50,25 @@ class view(object):
 
     def view_image(self):
         try:
-            Vim.AsyncRun(f'{util.GenNetRangerScriptCmd("image_preview")}\
-                            {self.path} {self.total_width} {self.preview_width}',
-                         term=True,
-                         termopencmd='')
-            Vim.command('setlocal nocursorline')
-        except Exception:
+            import ueberzug
+        except ModuleNotFoundError:
+            Vim.ErrorMsg('Please install ueberzug for image preview')
             self.view_mime()
+            return
+        path = self.path
+        if self.path.endswith('gif') and Shell.isinPATH('convert'):
+            if self.path not in self.tempfile_cache:
+                dir = tempfile.TemporaryDirectory().name
+                Shell.mkdir(dir)
+                self.tempfile_cache[self.path] = dir
+            dir = self.tempfile_cache[self.path]
+            path = dir
+            Shell.run(f'convert -deconstruct  {self.path} {dir}/a.png')
+        Vim.AsyncRun(f'{util.GenNetRangerScriptCmd("image_preview")}\
+                        {path} {self.total_width} {self.preview_width}',
+                     term=True,
+                     termopencmd='')
+        Vim.command('setlocal nocursorline')
 
     def view_pdf(self):
         if not Shell.isinPATH('pdftoppm'):
@@ -67,7 +78,7 @@ class view(object):
                 fname = tempfile.mkstemp()[1]
                 Shell.touch(fname)
                 self.tempfile_cache[self.path] = fname
-                Shell.run(
-                    f'pdftoppm -png -f 1 -singlefile {self.path} {fname}')
+            fname = self.tempfile_cache[self.path]
+            Shell.run(f'pdftoppm -png -f 1 -singlefile {self.path} {fname}')
             self.path = self.tempfile_cache[self.path] + '.png'
             self.view_image()

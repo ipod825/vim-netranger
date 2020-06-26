@@ -1143,7 +1143,7 @@ class Netranger(object):
         self._onuiquit_num_args = 0
         self._NetRangerBuf_init_winwidth = -1
         self._is_previewing = Vim.Var("NETRPreviewDefaultOn")
-        self.preview = preview.view()
+        self.preview = preview.Previewer()
 
         Rclone.init(Vim.Var('NETRemoteCacheDir'), Vim.Var('NETRemoteRoots'))
         Shell.mkdir(default.variables['NETRRootDir'])

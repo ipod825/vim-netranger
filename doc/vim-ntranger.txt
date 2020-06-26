@@ -232,14 +232,16 @@ Netranger will try to recognize the file type of the preview file. If it is
 not plain text file, such as .mp4, .pdf, .jpg, etc. It will not be displayed
 as plain text. Instead, some handlers will be used to preview it. If no
 handler is implemented, the default handler display the file path and its mime
-type. Current the supported handlers are:
+type. Current supported filetypes are:
 
 File Type   | Dependency
-Image       | ueberzug[1]
-Pdf         | ueberzug[1], pdftoppm[2]
+image       | ueberzug[1]
+gif         | ueberzug[1], convert[2]
+pdf         | ueberzug[1], pdftoppm[3]
 
 [1] https://github.com/seebye/ueberzug
-[2] https://linux.die.net/man/1/pdftoppm
+[2] https://linux.die.net/man/1/convert
+[3] https://linux.die.net/man/1/pdftoppm
 
 -------------------------------------------------------------------------------
 PANEL MODE                              *vim-netranger-panel-mode*
