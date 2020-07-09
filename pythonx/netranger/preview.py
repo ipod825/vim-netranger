@@ -63,7 +63,7 @@ class Previewer(object):
                 self.tempfile_cache[self.path] = dir
             dir = self.tempfile_cache[self.path]
             path = dir
-            Shell.run(f'convert -deconstruct  {self.path} {dir}/a.png')
+            Shell.run(f'convert -deconstruct  "{self.path}" {dir}/a.png')
         Vim.AsyncRun(f'{util.GenNetRangerScriptCmd("image_preview")}\
                         {path} {self.total_width} {self.preview_width}',
                      term=True,
@@ -79,6 +79,6 @@ class Previewer(object):
                 Shell.touch(fname)
                 self.tempfile_cache[self.path] = fname
             fname = self.tempfile_cache[self.path]
-            Shell.run(f'pdftoppm -png -f 1 -singlefile {self.path} {fname}')
+            Shell.run(f'pdftoppm -png -f 1 -singlefile "{self.path}" {fname}')
             self.path = self.tempfile_cache[self.path] + '.png'
             self.view_image()
