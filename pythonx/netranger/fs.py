@@ -5,7 +5,6 @@ import os
 import pickle
 import re
 import shutil
-import sys
 import tempfile
 import time
 
