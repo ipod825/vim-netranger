@@ -107,7 +107,7 @@ if _hasnvim:
 
     def JobStart(cmd, term=False, termopencmd=''):
         if not term:
-            vim.command(f'let g:NETRJobId = jobstart(\'{cmd}\',\
+            vim.command(f'let g:NETRJobId = jobstart("{cmd}",\
                     {{"detach":1,\
                       "on_stdout":function("netranger#async#callback"),\
                       "on_stderr":function("netranger#async#callback"),\
@@ -115,7 +115,7 @@ if _hasnvim:
         else:
             vim.command(termopencmd)
             cmd_win_id = vim.eval('win_getid()')
-            vim.command('let g:NETRJobId = termopen(\'{}\',\
+            vim.command('let g:NETRJobId = termopen("{}",\
                         {{"on_exit":{{j,d,e -> function("netranger#async#term_callback")(j,d,e, {})}} }})'
                         .format(cmd, cmd_win_id))
         return str(vim.vars['NETRJobId'])
@@ -125,7 +125,7 @@ else:
     def JobStart(cmd, term=False, termopencmd=''):
         cur_time = str(time.time())
         if not term:
-            vim.command(f'call job_start(\'{cmd}\', {{\
+            vim.command(f'call job_start("{cmd}", {{\
                     "stoponexit": "",\
                     "out_cb":{{j,d-> netranger#async#callback("{cur_time}",d,"stdout")}},\
                       "err_cb":{{j,d-> netranger#async#callback("{cur_time}",d,"stderr")}},\
@@ -134,7 +134,7 @@ else:
         else:
             vim.command(termopencmd)
             cmd_win_id = vim.eval('win_getid()')
-            vim.command('call term_start(\'{}\', {{\
+            vim.command('call term_start("{}", {{\
                         "curwin":v:true,\
                         "term_kill":"9",\
                         "exit_cb":{{j,s-> netranger#async#term_callback("{}",s,"exit",{})}}\
@@ -157,7 +157,9 @@ def AsyncRun(cmd,
     if on_exit is None:
         on_exit = do_nothing
 
-    job_id = JobStart(cmd, term=term, termopencmd=termopencmd)
+    job_id = JobStart(cmd.replace('"', '\\"'),
+                      term=term,
+                      termopencmd=termopencmd)
     _NETRcbks[job_id] = {
         'stdout': on_stdout,
         'stderr': on_stderr,

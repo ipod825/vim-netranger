@@ -65,7 +65,7 @@ class Previewer(object):
             path = dir
             Shell.run(f'convert -deconstruct  "{self.path}" {dir}/a.png')
         Vim.AsyncRun(f'{util.GenNetRangerScriptCmd("image_preview")}\
-                        {path} {self.total_width} {self.preview_width}',
+                        "{path}" {self.total_width} {self.preview_width}',
                      term=True,
                      termopencmd='')
         Vim.command('setlocal nocursorline')
