@@ -125,10 +125,14 @@ class AskUI(UI):
         buf.options['modifiable'] = True
         buf[:] = content
         buf.options['modifiable'] = False
-        self.netranger.pend_onuiquit(self._ask, 1)
+        self.netranger.pend_onuiquit(self._ask, num_args=1)
 
     def _ask(self, char):
-        cmd = self.options[ord(char) - 97]
+        ind = ord(char) - 97
+        # Sanity check avoiding the case such as users maps q to :quit
+        if ind > len(self.options):
+            return
+        cmd = self.options[ind]
         if cmd == 'vim':
             self.netranger.NETROpen(use_rifle=False)
         else:
