@@ -394,6 +394,9 @@ def lock_fs():
 
 
 def unlock_fs():
+    # nvim.input is asynchronous, we need make sure there's enough time for it
+    # to take effects.
+    time.sleep(0.05)
     nvim.command('python3 ranger.cur_buf._num_fs_op=0')
 
 
@@ -834,11 +837,10 @@ if __name__ == '__main__':
             do_test(test_NETRForceDelete)
             do_test(test_NETRForceDeleteSingle)
 
-            # # Can't pass on travis, don't know why
-            # do_test(test_delete_fail_if_fs_lock)
-            # do_test(test_delete_single_fail_if_fs_lock)
-            # do_test(test_force_delete_fail_if_fs_lock)
-            # do_test(test_force_delete_single_fail_if_fs_lock)
+            do_test(test_delete_fail_if_fs_lock)
+            do_test(test_delete_single_fail_if_fs_lock)
+            do_test(test_force_delete_fail_if_fs_lock)
+            do_test(test_force_delete_single_fail_if_fs_lock)
 
         def do_test_pickCopyCutPaste():
             do_test(test_NETRTogglePick)
