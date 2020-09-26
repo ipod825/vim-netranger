@@ -313,10 +313,9 @@ class Rclone(LocalFS):
 
             for name in local_files.difference(remote_files):
                 # TODO use Vim.AsyncRun instead
-                Shell.run_async(
-                    'rclone {self._flags} copyto --tpslimit=10 "{}" "{}"'.
-                    format(os.path.join(dirname, name),
-                           os.path.join(self.rpath(dirname), name)))
+                Shell.run_async(f'rclone {self._flags} copyto --tpslimit=10 \
+                                "{os.path.join(dirname, name)}" \
+                                "{os.path.join(self.rpath(dirname), name)}"')
         return super(Rclone, self).ls(dirname)
 
     @classmethod
@@ -367,9 +366,6 @@ class Rclone(LocalFS):
     @classmethod
     def touch(self, name):
         Shell.touch(name)
-        Shell.run(
-            f'rclone {self._flags} copyto "{name}"'
-            f'"{os.path.join(self.rpath(name), os.path.basename(name))}"')
 
     @classmethod
     def mkdir(self, name):

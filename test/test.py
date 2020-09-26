@@ -84,6 +84,8 @@ def assert_fs(d, expected, root=None):
     Test whether 'expected' exists in directory cwd/d, where
     cwd is /tmp/netrtest/local when testing local functions and
     cwd is /tmp/netrtest/remote when testing remote functions.
+    However, do not use this method directly when testing remote functions for
+    consistency, use assert_fs_remote instead.
     """
 
     if root:
@@ -104,14 +106,27 @@ def assert_fs(d, expected, root=None):
 
 
 def assert_fs_cache(d, expected):
+    """ Test whether 'expected' exists in directory cwd/d, where cwd is
+    test_remote_cache_dir.
+    """
     assert_fs(d, expected, root=test_remote_cache_dir)
 
 
 def assert_fs_local(d, expected):
+    """ Test whether 'expected' exists in directory cwd/d, where cwd is
+    test_local_dir. Use this only when testing remote functions that involves
+    bidirectional operations between test_remote_dir and test_local_dir. When
+    testing remote functions that involves only test_remote_cache_dir and
+    test_remote_dir, use assert_fs_cache instead. When testing local functions,
+    use assert_fs directly for brevity. 
+    """
     assert_fs(d, expected, root=test_local_dir)
 
 
 def assert_fs_remote(d, expected):
+    """ Test whether 'expected' exists in directory cwd/d, where cwd is
+    test_remote_dir.
+    """
     assert_fs(d, expected, root=test_remote_dir)
 
 
@@ -152,28 +167,22 @@ def do_test(fn=None, fn_remote=None):
     if fn is not None:
         nvim.command('silent tabe {}'.format(test_local_dir))
         ensure_buf_no_expand()
+        print('== {} '.format(str(fn.__name__)), end='')
         fn()
-        print('== {} success =='.format(str(fn.__name__)))
+        print('success ==')
 
     prepare_test_dir(test_remote_dir)
     Shell.run('rm -rf {}/*'.format(test_remote_cache_dir))
     if fn_remote is not None:
         nvim.command('NETRemoteList')
-        found_remote = False
-        for i, line in enumerate(nvim.current.buffer):
-            if re.findall('.+(netrtest)', line):
-                nvim.command('call cursor({}, 1)'.format(i + 1))
-                found_remote = True
-                break
-
-        assert found_remote, 'You must set up an rclone remote named "{}" \
-            to test remote function'.format(test_remote_name)
+        # There is only one remote configure by netrtest_rclone.conf
         nvim.input('l')
         nvim.command('NETRemotePull')
         nvim.command('call cursor(2, 1)')
         ensure_buf_no_expand()
+        print('== {} '.format(str(fn_remote.__name__)), end='')
         fn_remote()
-        print('== {} success =='.format(str(fn_remote.__name__)))
+        print('success ==')
 
     while nvim.eval('&ft') == 'netranger':
         nvim.command('bwipeout')
@@ -619,8 +628,20 @@ def test_rifle():
 def test_NETRDelete_remote():
     nvim.input('zajvjjvD')
     wait_for_fs_free()
-    assert_fs('dir', ['subdir2'])
     assert_fs_cache('dir', ['subdir2'])
+    assert_fs_remote('dir', ['subdir2'])
+    assert_content('dir', ind=0, hi='dir')
+    assert_content('subdir2', ind=1, level=1, hi='dir')
+    assert_content('dir2', ind=2, hi='dir', hi_fg=True)
+
+
+def test_NETRNew_remote():
+    # Currently only touching remote file is supported
+    # See https://github.com/rclone/rclone/issues/2629
+    nvim.input('ofzf<CR>')
+    assert_fs_cache('', ['dir', 'dir2', 'zf'])
+    assert_fs_remote('', ['dir', 'dir2', 'zf'])
+    assert_content('zf', ind=2, hi='file', level=0)
 
 
 def test_NETRPaste_by_cut_remote2local():
@@ -857,9 +878,6 @@ if __name__ == '__main__':
             do_test(test_NETRPaste_by_copy)
             do_test(test_NETRPaste_sided_by_side)
 
-        def do_test_delete_remote():
-            do_test(fn_remote=test_NETRDelete_remote)
-
         def do_test_pickCopyCutPaste_remote():
             do_test(fn_remote=test_NETRPaste_by_cut_local2remote)
             do_test(fn_remote=test_NETRPaste_by_cut_remote2local)
@@ -898,7 +916,8 @@ if __name__ == '__main__':
         do_test(test_opt_Autochdir)
         do_test_UI()
 
-        do_test_delete_remote()
+        do_test(fn_remote=test_NETRDelete_remote)
+        do_test(fn_remote=test_NETRNew_remote)
         do_test_pickCopyCutPaste_remote()
 
         do_test(test_rifle)
