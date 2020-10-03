@@ -363,7 +363,7 @@ class NetRangerBuf(object):
         self._pseudo_header_lineno = None
         self._pseudo_footer_lineno = None
 
-        self.winwidth = Vim.current.window.width
+        self.winwidth = Vim.CurWinWidth()
         self.is_editing = False
         self._vim_buf_handle = Vim.current.buffer
         self._render()
@@ -667,8 +667,6 @@ class NetRangerBuf(object):
         self._vim_buf_handle.options['modifiable'] = True
         if plain:
             self._vim_buf_handle[:] = self.plain_content
-            # for i in range(1, len(self.nodes)-1):
-            #     Vim.command(f'call matchaddpos("{self.nodes[i]}", {})')
         else:
             self._vim_buf_handle[:] = self.highlight_content
         self._vim_buf_handle.options['modifiable'] = False
@@ -938,7 +936,7 @@ class NetRangerBuf(object):
         # ManualRefreshOnWidthChange prevent this from happening through
         # autocmd.
         self.refresh_highlight_if_winwidth_changed()
-        cur_width = Vim.current.window.width
+        cur_width = Vim.CurWinWidth()
         for w in Vim.current.tabpage.windows:
             if 'netranger_is_previewer' in w.vars:
                 w.width = cur_width
