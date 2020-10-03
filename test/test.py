@@ -22,7 +22,7 @@ def color_str(hi_key):
     return str(hi)
 
 
-def EditableWinWidth():
+def editable_win_width():
     # This function takes gutter into consideration.
     ve = nvim.options['virtualedit']
     nvim.options['virtualedit'] = 'all'
@@ -35,7 +35,8 @@ def EditableWinWidth():
 
 class LineComponent(object):
     def __init__(self, line):
-        m = re.search(r'\[([34])8;5;([0-9]+)?m( *)([^ ]+)[ ]*([^]*)', line)
+        m = re.search(r'\[([34])8;5;([0-9]+)?m( *)([^ ]+)([ ]*)([^]*)',
+                      line)
         self.is_foreground = True
         if m.group(1) == '3':
             self.is_foreground = False
@@ -43,15 +44,16 @@ class LineComponent(object):
             assert False, f"Bg/Fg should use 3/4. Got {m.group(1)}"
         self.hi = m.group(2)
         self.level = len(m.group(3)) // len('  ')
-        self.visible_text = m.group(4)
-        self.size_str = m.group(5)
+        self.file_name = m.group(4)
+        self.size_str = m.group(6)
+        self.visible_text = f'{self.file_name}{m.group(5)}{self.size_str}'
 
 
 def clineinfo():
     return LineComponent(nvim.current.line)
 
 
-def assert_content(expected, level=None, ind=None, hi=None):
+def assert_content(expect, level=None, ind=None, hi=None):
     if ind is None:
         line = nvim.current.line
     else:
@@ -60,13 +62,13 @@ def assert_content(expected, level=None, ind=None, hi=None):
 
     lc = LineComponent(line)
 
-    assert expected == lc.visible_text, f'expected:"{expected}", real: "{lc.visible_text}"'
+    assert expect == lc.file_name, f'expect:"{expect}", real: "{lc.file_name}"'
     if level is not None:
-        assert lc.level == level, f"level mismatch: expected: {level}, real:{lc.level}"
+        assert lc.level == level, f"level mismatch: expect: {level}, real:{lc.level}"
 
     if hi is not None:
-        expected_hi = color_str(hi)
-        assert expected_hi == lc.hi, f'expected_hi: "{expected_hi}", real_hi: "{lc.hi}"'
+        expect_hi = color_str(hi)
+        assert expect_hi == lc.hi, f'expect_hi: "{expect_hi}", real_hi: "{lc.hi}"'
 
     cLineNo = nvim.eval("line('.')") - 1
     if ind is None or ind == cLineNo:
@@ -78,15 +80,15 @@ def assert_content(expected, level=None, ind=None, hi=None):
 
 
 def assert_num_content_line(numLine):
-    assert numLine == len(nvim.current.buffer
-                          ) - 2, 'expected line #: {}, real line #: {}'.format(
-                              numLine,
-                              len(nvim.current.buffer) - 1)
+    assert numLine == len(
+        nvim.current.buffer) - 2, 'expect line #: {}, real line #: {}'.format(
+            numLine,
+            len(nvim.current.buffer) - 1)
 
 
-def assert_fs(d, expected, root=None):
+def assert_fs(d, expect, root=None):
     """
-    Test whether 'expected' exists in directory cwd/d, where
+    Test whether 'expect' exists in directory cwd/d, where
     cwd is /tmp/netrtest/local when testing local functions and
     cwd is /tmp/netrtest/remote when testing remote functions.
     However, do not use this method directly when testing remote functions for
@@ -100,39 +102,39 @@ def assert_fs(d, expected, root=None):
     real = None
     for i in range(10):
         real = Shell.run('ls --group-directories-first ' + d).split()
-        if real == expected:
+        if real == expect:
             return
         time.sleep(0.05)
 
-    assert real == expected, 'expected: {}, real: {}'.format(expected, real)
+    assert real == expect, 'expect: {}, real: {}'.format(expect, real)
 
     if root:
         os.chdir(old_cwd)
 
 
-def assert_fs_cache(d, expected):
-    """ Test whether 'expected' exists in directory cwd/d, where cwd is
+def assert_fs_cache(d, expect):
+    """ Test whether 'expect' exists in directory cwd/d, where cwd is
     test_remote_cache_dir.
     """
-    assert_fs(d, expected, root=test_remote_cache_dir)
+    assert_fs(d, expect, root=test_remote_cache_dir)
 
 
-def assert_fs_local(d, expected):
-    """ Test whether 'expected' exists in directory cwd/d, where cwd is
+def assert_fs_local(d, expect):
+    """ Test whether 'expect' exists in directory cwd/d, where cwd is
     test_local_dir. Use this only when testing remote functions that involves
     bidirectional operations between test_remote_dir and test_local_dir. When
     testing remote functions that involves only test_remote_cache_dir and
     test_remote_dir, use assert_fs_cache instead. When testing local functions,
     use assert_fs directly for brevity. 
     """
-    assert_fs(d, expected, root=test_local_dir)
+    assert_fs(d, expect, root=test_local_dir)
 
 
-def assert_fs_remote(d, expected):
-    """ Test whether 'expected' exists in directory cwd/d, where cwd is
+def assert_fs_remote(d, expect):
+    """ Test whether 'expect' exists in directory cwd/d, where cwd is
     test_remote_dir.
     """
-    assert_fs(d, expected, root=test_remote_dir)
+    assert_fs(d, expect, root=test_remote_dir)
 
 
 def do_test(fn=None, fn_remote=None):
@@ -496,6 +498,10 @@ def test_NETRTogglePreview():
     pass
 
 
+def test_fit_winwidth_display():
+    pass
+
+
 def test_size_display():
     Shell.run('echo {} > {}'.format('a' * 1035, 'a'))
     Shell.run('echo {} > {}'.format('b' * 1024, 'b'))
@@ -504,12 +510,12 @@ def test_size_display():
     nvim.input('Gk')
 
     assert clineinfo().size_str == '1.01 K',\
-        f'Size display mismatch: expected:\
+        f'Size display mismatch: expect:\
             "1.01 K", real: {clineinfo().size_str}'
 
     nvim.input('j')
     assert clineinfo().size_str == '1 K',\
-        f'Size display mismatch: expected:\
+        f'Size display mismatch: expect:\
             "1 K", real: {clineinfo().size_str}'
 
 
@@ -523,8 +529,8 @@ def test_abbrev_display():
         nvim.command(f'vertical resize {exact_width+offset}')
         nvim.input('rG')
         assert clineinfo(
-        ).visible_text == expect,\
-            f"Abbrev display fail: name: {name}, offset: {offset}, expect: {expect}, real: {clineinfo().visible_text}"
+        ).file_name == expect,\
+            f"Abbrev display fail: name: {name}, offset: {offset}, expect: {expect}, real: {clineinfo().file_name}"
         Shell.rm(name)
 
     doit('測試', 0, '測試')
@@ -532,6 +538,8 @@ def test_abbrev_display():
 
     doit('測試a', 0, '測試a')
     doit('測試a', -1, '測' + elipsis_note + elipsis_note)
+    # TODO
+    # test abbrev_cwd
 
 
 def test_sort():
@@ -830,7 +838,6 @@ if __name__ == '__main__':
             do_test(test_NETROpen)
             do_test(test_NETRParent)
             do_test(test_NETRGoPrevSibling)
-            do_test(test_on_bufenter_cursor_stay_the_same_pos)
             do_test(test_on_bufenter_content_stay_the_same)
             do_test(test_on_bufenter_fs_change)
             do_test(test_NETRToggleExpand)
@@ -887,34 +894,31 @@ if __name__ == '__main__':
             do_test(fn_remote=test_api_mv_remote)
             do_test(fn_remote=test_api_rm_remote)
 
+        def do_test_display():
+            do_test(test_fit_winwidth_display)
+            do_test(test_on_bufenter_cursor_stay_the_same_pos)
+            do_test(test_size_display)
+            do_test(test_abbrev_display)
+
         do_test_api()
-        do_test(test_NETRTogglePreview)
+        do_test_display()
         do_test_navigation()
-        do_test(test_NETREdit)
-        do_test(test_NETRNew)
         do_test_delete()
         do_test_pickCopyCutPaste()
+        do_test_pickCopyCutPaste_remote()
+        do_test_UI()
+        do_test(test_NETRTogglePreview)
+        do_test(test_NETREdit)
+        do_test(test_NETRNew)
         do_test(test_NETRToggleShowHidden)
-        do_test(test_size_display)
-
-        do_test(test_abbrev_display)
         do_test(test_sort)
         do_test(test_opt_Autochdir)
-        do_test_UI()
-
         do_test(fn_remote=test_NETRDelete_remote)
         do_test(fn_remote=test_NETRNew_remote)
-        do_test_pickCopyCutPaste_remote()
-
         do_test(test_rifle)
-
         # do_test(fn_remote=test_edit_remote)
         # # TODO
         # # add SORT test for broken link #issue 21
-
-        # TODO
-        # test abbrev_cwd
-
         # TODO
         # test toggle sudo
         nvim.close()
