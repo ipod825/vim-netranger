@@ -9,7 +9,8 @@ from neovim import attach
 
 from netranger import default
 from netranger.colortbl import colorname2ind
-from netranger.config import (rclone_rcd_port, test_dir, test_local_dir,
+from netranger.config import (elipsis_note, file_sz_display_wid,
+                              rclone_rcd_port, test_dir, test_local_dir,
                               test_remote_cache_dir, test_remote_dir)
 from tshell import Shell
 
@@ -21,9 +22,20 @@ def color_str(hi_key):
     return str(hi)
 
 
+def EditableWinWidth():
+    # This function takes gutter into consideration.
+    ve = nvim.options['virtualedit']
+    nvim.options['virtualedit'] = 'all'
+    nvim.command('noautocmd norm! g$')
+    res = int(nvim.eval('virtcol(".")'))
+    nvim.command('noautocmd norm! g0')
+    nvim.options['virtualedit'] = ve
+    return res
+
+
 class LineComponent(object):
     def __init__(self, line):
-        m = re.search(r'\[([34])8;5;([0-9]+)?m( *)([^ ]+)', line)
+        m = re.search(r'\[([34])8;5;([0-9]+)?m( *)([^ ]+)[ ]*([^]*)', line)
         self.is_foreground = True
         if m.group(1) == '3':
             self.is_foreground = False
@@ -32,6 +44,11 @@ class LineComponent(object):
         self.hi = m.group(2)
         self.level = len(m.group(3)) // len('  ')
         self.visible_text = m.group(4)
+        self.size_str = m.group(5)
+
+
+def clineinfo():
+    return LineComponent(nvim.current.line)
 
 
 def assert_content(expected, level=None, ind=None, hi=None):
@@ -479,58 +496,42 @@ def test_NETRTogglePreview():
     pass
 
 
-def cLine_ends_with(s):
-    return nvim.current.line[:-4].endswith(s)
-
-
 def test_size_display():
-    # This vsplit is a rather ad-hoc work around in case of the screen is too
-    # wide such that the following echo command failed because of too long
-    # file name
-    nvim.command('vsplit')
-
-    width = nvim.current.window.width
-
-    Shell.run('echo {} > {}'.format('a' * 1035, 'a' * width + '.pdf'))
-    Shell.run('echo {} > {}'.format('b' * 1024, 'b' * width))
+    Shell.run('echo {} > {}'.format('a' * 1035, 'a'))
+    Shell.run('echo {} > {}'.format('b' * 1024, 'b'))
 
     nvim.command('edit .')
     nvim.input('Gk')
-    assert cLine_ends_with(
-        '~.pdf 1.01 K'), 'size display abbreviation fail: a~.pdf {}'.format(
-            nvim.current.line[-10:])
+
+    assert clineinfo().size_str == '1.01 K',\
+        f'Size display mismatch: expected:\
+            "1.01 K", real: {clineinfo().size_str}'
+
     nvim.input('j')
-    assert cLine_ends_with(
-        'b~    1 K'), 'size display abbreviation fail: b~ {}'.format(
-            nvim.current.line[-10:])
-
-    # close the vsplit
-    nvim.command('quit')
+    assert clineinfo().size_str == '1 K',\
+        f'Size display mismatch: expected:\
+            "1 K", real: {clineinfo().size_str}'
 
 
-def test_size_wide_char_display():
-    # This vsplit is a rather ad-hoc work around in case of the screen is too
-    # wide such that the following echo command failed because of too long
-    # file name
+def test_abbrev_display():
     nvim.command('vsplit')
 
-    width = nvim.current.window.width
+    def doit(name, offset, expect):
+        Shell.touch(name)
+        exact_width = nvim.strwidth(name) + file_sz_display_wid + 1
+        assert exact_width + offset > 0, "Not reasonable to test width <= 0"
+        nvim.command(f'vertical resize {exact_width+offset}')
+        nvim.input('rG')
+        assert clineinfo(
+        ).visible_text == expect,\
+            f"Abbrev display fail: name: {name}, offset: {offset}, expect: {expect}, real: {clineinfo().visible_text}"
+        Shell.rm(name)
 
-    Shell.run('echo {} > {}'.format('a' * 1035, '測' * width + '.pdf'))
-    Shell.run('echo {} > {}'.format('b' * 1024, '試' * width))
+    doit('測試', 0, '測試')
+    doit('測試', -1, '測' + elipsis_note)
 
-    nvim.command('edit .')
-    nvim.input('Gk')
-    assert cLine_ends_with(
-        '~.pdf 1.01 K'), 'size display abbreviation fail: a~.pdf {}'.format(
-            nvim.current.line[-10:])
-    nvim.input('j')
-    assert cLine_ends_with(
-        '試~    1 K'), 'size display abbreviation fail: b~ {}'.format(
-            nvim.current.line[-10:])
-
-    # close the vsplit
-    nvim.command('quit')
+    doit('測試a', 0, '測試a')
+    doit('測試a', -1, '測' + elipsis_note + elipsis_note)
 
 
 def test_sort():
@@ -895,7 +896,8 @@ if __name__ == '__main__':
         do_test_pickCopyCutPaste()
         do_test(test_NETRToggleShowHidden)
         do_test(test_size_display)
-        do_test(test_size_wide_char_display)
+
+        do_test(test_abbrev_display)
         do_test(test_sort)
         do_test(test_opt_Autochdir)
         do_test_UI()

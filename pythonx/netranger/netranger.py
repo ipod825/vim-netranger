@@ -10,7 +10,7 @@ from sys import platform
 from netranger import Vim, default, preview
 from netranger.api import NETRApi
 from netranger.colortbl import colorhexstr2ind, colorind2hexstr, colorname2ind
-from netranger.config import file_sz_display_wid
+from netranger.config import elipsis_note, file_sz_display_wid
 from netranger.enum import Enum
 from netranger.fs import FSTarget, LocalFS, Rclone
 from netranger.rifle import Rifle
@@ -119,10 +119,10 @@ class EntryNode(Node):
         else:
             ext_beg = name.rfind('.')
             if ext_beg > 0:
-                name, ext = name[:ext_beg], '~' + name[ext_beg:]
+                name, ext = name[:ext_beg], elipsis_note + name[ext_beg:]
                 sz = Vim.strwidth(name)
             else:
-                ext = '~'
+                ext = elipsis_note
 
             if sz == len(name):
                 abbrev_name = name[:width - len(ext)]
@@ -138,18 +138,23 @@ class EntryNode(Node):
         """
         from itertools import accumulate
         length = list(accumulate([Vim.strwidth(c) for c in s]))
+        if w < length[0]:
+            return elipsis_note * w
+
         left = 0
         right = len(s) - 1
         while left < right:
             middle = left + (right - left) // 2 + 1
             if length[middle] == w:
-                return s[:middle]
+                # Partial s is of lenth w, return such substring
+                return s[:middle + 1]
             elif length[middle] > w:
                 right = middle - 1
             else:
                 left = middle
-        # The result needs to include the left'th character.
-        return s[:left + 1]
+
+        # No substring of s is of exactly width w, pad left spaces with elipsis_note
+        return s[:left + 1] + elipsis_note * (w - length[left])
 
     @property
     def highlight_content(self):
@@ -1544,6 +1549,7 @@ class Netranger(object):
         """ Force refreshing the current buffer. """
         cur_buf = self.cur_buf
         cur_buf.refresh_nodes(force_refreh=True)
+        cur_buf.refresh_highlight_if_winwidth_changed()
 
     def NETRTabOpen(self):
         """ Open the current node in a new tab """
