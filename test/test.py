@@ -10,8 +10,7 @@ from neovim import attach
 from netranger import default
 from netranger.colortbl import colorname2ind
 from netranger.config import (rclone_rcd_port, test_dir, test_local_dir,
-                              test_remote_cache_dir, test_remote_dir,
-                              test_remote_name)
+                              test_remote_cache_dir, test_remote_dir)
 from tshell import Shell
 
 
@@ -122,16 +121,12 @@ def assert_fs_remote(d, expected):
 def do_test(fn=None, fn_remote=None):
     """
     Note on the mecahnism of testing rclone on localhost:
-    1. Tester run rclone to create a "local" remote named netrtest (must be
-       exact this name)
-    2. In default.py, the vim variable 'NETRemoteRoots' is set to
-       {test_remote_name: test_remote_dir}, which defaults to
-       {'netrtest', '/tmp/netrtest/remote'}.
+    1. Test vimr rc (test_init.vim) set g:_NETRRcloneFlags so that there's a
+       "local filesystem" remote named "netrtest".
+    2. In default.py, the vim variable 'NETRemoteRoots' is set to 
+       {'netrtest': '/tmp/netrtest/remote'}
     3. 'NETRemoteRoots' is passed to Rclone constructor, so that the rpath
        of the netrtest remote is mapped to '/tmp/netrtest/remote'.
-    4. This just works in netranger. In cmd line, running
-       'rclone lsl netrtest:/' still shows you the content of the root
-       directory of the localhost.
     """
     old_cwd = os.getcwd()
     Shell.run('rm -rf {}'.format(test_dir))
