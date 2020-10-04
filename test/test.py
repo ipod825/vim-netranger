@@ -448,11 +448,9 @@ class TestBuilitInFunctions(NetrangerLocalTest):
 
 
 class TestDisplay(NetrangerLocalTest):
-    # TODO
-    # test abbrev_cwd
     def test_fit_winwidth_display(self):
-        # TODO
-        pass
+        self.assertEqual(nvim.current.window.width,
+                         len(self.clineinfo.visible_text))
 
     def test_size_display(self):
         Shell.run('echo {} > {}'.format('a' * 1035, 'a'))
@@ -466,9 +464,23 @@ class TestDisplay(NetrangerLocalTest):
         nvim.input('j')
         self.assertEqual('1 K', self.clineinfo.size_str)
 
-    def test_abbrev_display(self):
-        nvim.command('vsplit')
+    def test_abbrev_cwd(self):
 
+        cwd = os.getcwd()
+        nvim.command('vsplit')
+        nvim.input('gg')
+
+        self.assertEqual(len(cwd), nvim.strwidth(self.clineinfo.visible_text),
+                         f'[{cwd}] [{self.clineinfo.visible_text}]')
+
+        nvim.command(f'vertical resize {len(cwd)-1}')
+        nvim.input('r')
+        self.assertEqual(
+            len(cwd) - len(cwd.split('/')[1]) + 1,
+            nvim.strwidth(self.clineinfo.visible_text),
+            f'[{cwd}] [{self.clineinfo.visible_text}]')
+
+    def test_abbrev_visible_text(self):
         def doit(name, offset):
             Shell.touch(name)
             exact_width = nvim.strwidth(name) + file_sz_display_wid + 1
@@ -479,6 +491,7 @@ class TestDisplay(NetrangerLocalTest):
                              nvim.strwidth(self.clineinfo.visible_text),
                              self.clineinfo.visible_text)
 
+        nvim.command('vsplit')
         doit('測試', 0)
         doit('測試', -1)
         doit('測試', -2)
@@ -601,6 +614,12 @@ class TestAutoCmd(NetrangerLocalTest):
         self.assert_content('subdir', ind=0, hi='dir')
         self.assert_content('subdir2', ind=1, hi='dir')
 
+    def test_on_winenter_adjust_visible_text_width(self):
+        nvim.command('vsplit')
+        nvim.command('wincmd w')
+        self.assertEqual(nvim.current.window.width,
+                         len(self.clineinfo.visible_text))
+
 
 class TestSetOption(NetrangerLocalTest):
     def test_opt_Autochdir(self):
@@ -620,7 +639,24 @@ class TestSetOption(NetrangerLocalTest):
 
 
 class TestBuilitInFunctionsRemote(NetrangerRemoteTest):
-    # TODO test_edit_remote
+    def test_NETREdit_remote(self):
+        nvim.input('za')
+        nvim.input('iiz<Left><Down>')
+        nvim.input('y<Left><Down>')
+        nvim.input('x<Left><Down>')
+        nvim.input('w')
+        nvim.input('<esc>:w<cr>')
+        self.assert_content('dir2', ind=0, hi='dir')
+        self.assert_content('zdir', ind=1, hi='dir')
+        self.assert_content('xsubdir2', ind=2, level=1, hi='dir')
+        self.assert_content('ysubdir', ind=3, level=1, hi='dir')
+        self.assert_content('wa', ind=4, level=1, hi='file')
+
+        self.assert_fs_cache('', ['dir2', 'zdir'])
+        self.assert_fs_remote('', ['dir2', 'zdir'])
+        self.assert_fs_cache('zdir', ['xsubdir2', 'ysubdir', 'wa'])
+        self.assert_fs_remote('zdir', ['xsubdir2', 'ysubdir', 'wa'])
+
     def test_NETRPaste_by_cut_remote2local(self):
         nvim.input('zajvjjvd')
         nvim.command('vsplit {}'.format(test_local_dir))
