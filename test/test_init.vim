@@ -8,3 +8,4 @@ set winwidth=1
 set winheight=1
 set winminwidth=1
 set winminheight=1
+set noswapfile

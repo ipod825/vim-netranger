@@ -33,7 +33,6 @@ function NetrangerInit()
         exec g:_NETRPY.'ranger.on_cursormoved_post('.a:bufnum.')'
     endfunc
 
-    command! NETRemoteList exec g:_NETRPY.'ranger.NETRemoteList()'
     command! NETRemotePull exec g:_NETRPY.'ranger.NETRemotePull()'
     command! NETRemotePush exec g:_NETRPY.'ranger.NETRemotePush()'
     command! -nargs=1 -complete=file NETRTabdrop exec g:_NETRPY.'ranger._tabdrop("'.<q-args>.'")'
@@ -50,7 +49,6 @@ function NetrangerInit()
     silent doautocmd USER NETRInit
 endfunction
 
-
 augroup NETRANGER_LAZY_INIT
     autocmd!
     autocmd BufEnter * if isdirectory(bufname('%')) |
@@ -58,6 +56,8 @@ augroup NETRANGER_LAZY_INIT
                 \exec g:_NETRPY.'ranger.on_bufenter('.expand("<abuf>").')' |
                 \endif
 augroup END
+
+command! NETRemoteList call NetrangerInit() | exec g:_NETRPY.'ranger.NETRemoteList()'
 
 
 
