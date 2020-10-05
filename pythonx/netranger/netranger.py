@@ -1248,7 +1248,7 @@ class Netranger(object):
         self.visual_key2fn = {}
         skip = []
         for k in Vim.Var('NETRDefaultMapSkip'):
-            skip.append(k.lower())
+            skip.append(k)
         for fn, (keys, desc) in default.keymap.items():
             user_keys = Vim.Var(fn, [])
             user_keys += [k for k in keys if k not in skip]
@@ -1258,7 +1258,7 @@ class Netranger(object):
 
         skip = []
         for k in Vim.Var('NETRDefaultVisualMapSkip'):
-            skip.append(k.lower())
+            skip.append(k)
         for fn, (keys, desc) in default.visual_keymap.items():
             user_keys = Vim.Var(fn, [])
             user_keys += [k for k in keys if k not in skip]
