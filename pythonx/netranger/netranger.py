@@ -415,7 +415,7 @@ class NetRangerBuf(object):
 
     def set_header_content(self):
         self._header_node.name = self.abbrev_cwd(self.winwidth).strip()
-        Vim.current.buffer[0] = self._header_node.highlight_content
+        self._vim_buf_handle[0] = self._header_node.highlight_content
 
     def set_footer_content(self):
         """ Set the buffer's last line to the footer node's content. """
@@ -425,21 +425,21 @@ class NetRangerBuf(object):
             cur_node.re_stat()
             meta = f' {cur_node.acl} {cur_node.user} {cur_node.group} {cur_node.mtime}'
         self._footer_node.name = meta.strip()
-        Vim.current.buffer[-1] = self._footer_node.highlight_content
+        self._vim_buf_handle[-1] = self._footer_node.highlight_content
 
     def set_pedueo_header_footer(self):
         # Recover content for the last line occupied by pseudo header/footer
         # ignore error when buffer no longer has the first/last line
         if self._pseudo_header_lineno is not None:
             try:
-                Vim.current.buffer[self._pseudo_header_lineno] = self.nodes[
+                self._vim_buf_handle[self._pseudo_header_lineno] = self.nodes[
                     self._pseudo_header_lineno].highlight_content
             except IndexError:
                 pass
 
         if self._pseudo_footer_lineno is not None:
             try:
-                Vim.current.buffer[self._pseudo_footer_lineno] = self.nodes[
+                self._vim_buf_handle[self._pseudo_footer_lineno] = self.nodes[
                     self._pseudo_footer_lineno].highlight_content
             except IndexError:
                 pass
@@ -461,14 +461,14 @@ class NetRangerBuf(object):
         # Set the pseudo header/footer
         if first_visible_line > 0:
             self._pseudo_header_lineno = first_visible_line
-            Vim.current.buffer[
+            self._vim_buf_handle[
                 first_visible_line] = self._header_node.highlight_content
         else:
             self._pseudo_header_lineno = None
 
         if last_visible_line < len(self._vim_buf_handle) - 1:
             self._pseudo_footer_lineno = last_visible_line
-            Vim.current.buffer[
+            self._vim_buf_handle[
                 last_visible_line] = self._footer_node.highlight_content
         else:
             self._pseudo_footer_lineno = None
@@ -669,13 +669,12 @@ class NetRangerBuf(object):
         for hooker in NETRApi.Hookers['render_begin']:
             hooker(self)
 
-        self._vim_buf_handle.options['modifiable'] = True
-        if plain:
-            self._vim_buf_handle[:] = self.plain_content
-        else:
-            self._vim_buf_handle[:] = self.highlight_content
-        self._vim_buf_handle.options['modifiable'] = False
-        if Vim.current.buffer.number is self._vim_buf_handle.number:
+        with self.SetBufferApiGuard():
+            if plain:
+                self._vim_buf_handle[:] = self.plain_content
+            else:
+                self._vim_buf_handle[:] = self.highlight_content
+        if self._vim_buf_handle.number is self._vim_buf_handle.number:
             self._move_vim_cursor(self.clineno)
 
         for hooker in NETRApi.Hookers['render_end']:
@@ -728,25 +727,24 @@ class NetRangerBuf(object):
             return
         self._last_on_curosormoved_lineno = self.clineno
 
-        # Avoid rerender if this buffer is not the current vim buffer.
-        if self._vim_buf_handle.number != Vim.current.buffer.number\
+        # Avoid rerender if the current vim buffer is not the same as
+        # self._vim_buf_handle.
+        if self._vim_buf_handle.number != self._vim_buf_handle.number\
                 or self.is_editing:
             return
 
-        # Only set preview for the most left window
         if self._controler._is_previewing:
             self.preview_on()
 
-        Vim.command("setlocal modifiable")
-        self.set_header_content()
-        self.set_footer_content()
-        self.set_pedueo_header_footer()
+        with self.SetBufferApiGuard():
+            self.set_header_content()
+            self.set_footer_content()
+            self.set_pedueo_header_footer()
 
-        # set_footer_content re_stat the node, now we refresh the current
-        # node to update the size information
-        self.vim_set_line(self.clineno,
-                          self.nodes[self.clineno].highlight_content)
-        Vim.command("setlocal nomodifiable")
+            # set_footer_content re_stat the node, now we refresh the current
+            # node to update the size information
+            self._vim_buf_handle[self.clineno] = self.nodes[
+                self.clineno].highlight_content
 
     def set_clineno_by_lineno(self, lineno):
         """ Set cursor line by number. """
@@ -766,22 +764,37 @@ class NetRangerBuf(object):
         else:
             self._move_vim_cursor(ori_clineno)
 
-    def vim_set_line(self, i, content):
-        # This is a work-abound for the fact that
-        # nVim.current.buffer[i]=content
-        # moves the cursor
-        content = content.replace('"', '\\"')
-        Vim.command(f'call setline({i+1},"{content}")')
+    def SetBufferApiGuard(self):
+        """ Context for setting buffer content.
+        1. Set/restore modifiable
+        2. vim.buffer[...] = ... api might moves cursor of all windows
+           displaying the buffer. We prevent this by save/restore all the
+           window cursor position.
+        """
+        class G(object):
+            def __enter__(g):
+                self._vim_buf_handle.options['modifiable'] = True
+                g.win_cursor = []
+                for w in Vim.windows:
+                    if w.buffer == self._vim_buf_handle:
+                        g.win_cursor.append((w, w.cursor))
+                return g
+
+            def __exit__(g, type, value, traceback):
+                for w, c in g.win_cursor:
+                    w.cursor = c
+                self._vim_buf_handle.options['modifiable'] = False
+
+        return G()
 
     def refresh_lines_highlight(self, linenos):
         """ Refresh the highlight of nodes by line numbers. """
-        Vim.command('setlocal modifiable')
+        sz = min(len(self.nodes), len(self._vim_buf_handle))
 
-        sz = min(len(self.nodes), len(Vim.current.buffer))
-        for i in linenos:
-            if i < sz:
-                self.vim_set_line(i, self.nodes[i].highlight_content)
-        Vim.command('setlocal nomodifiable')
+        with self.SetBufferApiGuard():
+            for i in linenos:
+                if i < sz:
+                    self._vim_buf_handle[i] = self.nodes[i].highlight_content
 
     @classmethod
     def ManualRefreshOnWidthChange(cls):
@@ -814,12 +827,11 @@ class NetRangerBuf(object):
             # print('hi', self.wd, 'real: ', winwidth, 'saved: ', self.winwidth)
             self.winwidth = winwidth
 
-            Vim.command('setlocal modifiable')
-            self.set_header_content()
-            for i, node in enumerate(self.nodes):
-                self.vim_set_line(i, node.highlight_content)
-            self.set_pedueo_header_footer()
-            Vim.command('setlocal nomodifiable')
+            with self.SetBufferApiGuard():
+                self.set_header_content()
+                for i, node in enumerate(self.nodes):
+                    self._vim_buf_handle[i] = node.highlight_content
+                self.set_pedueo_header_footer()
 
     def reset_highlight(self, nodes):
         """ Reset the highlight of the nodes and add them to
@@ -1025,7 +1037,7 @@ class NetRangerBuf(object):
 
         Vim.command(f'call clearmatches()')
 
-        vim_buf = Vim.current.buffer
+        vim_buf = self._vim_buf_handle
         if len(self.nodes) != len(vim_buf):
             Vim.ErrorMsg('Edit mode can not add/delete files!')
             self._render()
