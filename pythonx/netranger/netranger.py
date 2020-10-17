@@ -332,10 +332,6 @@ class NetRangerBuf(object):
     def cur_node(self):
         return self.nodes[self.clineno]
 
-    @property
-    def highlight_outdated(self):
-        return 0 < len(self._highlight_outdated_nodes)
-
     def nodes_plus_header_footer(self, nodes):
         return [self._header_node] + nodes + [self._footer_node]
 
@@ -349,7 +345,7 @@ class NetRangerBuf(object):
         self._last_on_curosormoved_lineno = -1
 
         self.content_outdated = False
-        self._highlight_outdated_nodes = set()
+        self._highlight_outdated = False
         self._sort_outdated = False
 
         if Vim.Var('NETRAutochdir'):
@@ -361,7 +357,7 @@ class NetRangerBuf(object):
 
         self.clineno = 1
         self.nodes[self.clineno].cursor_on()
-        # In refresh_nodes we need to check the mtime of all expanded nodes to
+        # In update_nodes_and_redraw we need to check the mtime of all expanded nodes to
         # see if any content in the buffer is changed. Adding the header_node
         # simply means we check the mtime of the wd everytime.
         self._expanded_nodes = set([self._header_node])
@@ -371,7 +367,7 @@ class NetRangerBuf(object):
         self.winwidth = Vim.CurWinWidth()
         self.is_editing = False
         self._vim_buf_handle = Vim.current.buffer
-        self._render()
+        self._redraw()
 
     def fs_busy(self, echo=True):
         """
@@ -413,11 +409,11 @@ class NetRangerBuf(object):
             else:
                 total += len(sp[i]) - 1
 
-    def set_header_content(self):
+    def redraw_header_content(self):
         self._header_node.name = self.abbrev_cwd(self.winwidth).strip()
         self._vim_buf_handle[0] = self._header_node.highlight_content
 
-    def set_footer_content(self):
+    def redraw_footer_content(self):
         """ Set the buffer's last line to the footer node's content. """
         meta = ''
         cur_node = self.cur_node
@@ -427,7 +423,7 @@ class NetRangerBuf(object):
         self._footer_node.name = meta.strip()
         self._vim_buf_handle[-1] = self._footer_node.highlight_content
 
-    def set_pedueo_header_footer(self):
+    def redraw_pedueo_header_footer(self):
         # Recover content for the last line occupied by pseudo header/footer
         # ignore error when buffer no longer has the first/last line
         if self._pseudo_header_lineno is not None:
@@ -504,9 +500,10 @@ class NetRangerBuf(object):
         return self.create_nodes_with_file_names(file_names, dirpath,
                                                  level + 1)
 
-    def refresh_nodes(self, force_refreh=False, cheap_remote_ls=False):
-        """ Update the nodes to reflect the filesystem change and then rerender
-        the buffer.
+    def update_nodes_and_redraw(self,
+                                force_redraw=False,
+                                cheap_remote_ls=False):
+        """ Update the nodes to reflect the filesystem change.
 
         1. Check the mtime of wd or any expanded subdir changed. If so, set
            content_outdated true, which could also be set manually (e.g.
@@ -527,7 +524,7 @@ class NetRangerBuf(object):
                 if new_mtime > ori_mtime:
                     self.content_outdated = True
 
-        if not self.content_outdated and not force_refreh:
+        if not self.content_outdated and not force_redraw:
             return
 
         self.content_outdated = False
@@ -577,7 +574,7 @@ class NetRangerBuf(object):
         ori_node = self.cur_node
         ori_clineno = self.clineno
         self.nodes = self.nodes_plus_header_footer(self.sort_nodes(new_nodes))
-        self._render()
+        self._redraw()
         self.set_clineno_by_node(ori_node, ori_clineno)
 
     def reverse_sorted_nodes(self, nodes):
@@ -613,7 +610,7 @@ class NetRangerBuf(object):
         for node in self.nodes:
             node.re_stat()
         self.nodes = self.nodes_plus_header_footer(self.sort_nodes(self.nodes))
-        self._render()
+        self._redraw()
         self.set_clineno_by_node(self._last_node_id)
 
     def sort_nodes(self, nodes):
@@ -661,7 +658,7 @@ class NetRangerBuf(object):
 
         return sorted_nodes
 
-    def _render(self, plain=False):
+    def _redraw(self, plain=False):
         """ Redraw the buffer.
         Note that we delegate the job for rendering the forground highlight of
         the cursor line to on_cursormoved by calling _move_vim_cursor.
@@ -702,14 +699,14 @@ class NetRangerBuf(object):
 
         if new_lineno == self.clineno:
             self.nodes[new_lineno].cursor_on()
-            self.refresh_lines_highlight([new_lineno])
+            self.redraw_lines([new_lineno])
         else:
             oc = self.clineno
             self.clineno = new_lineno
             if oc < len(self.nodes):
                 self.nodes[oc].cursor_off()
             self.nodes[new_lineno].cursor_on()
-            self.refresh_lines_highlight([oc, new_lineno])
+            self.redraw_lines([oc, new_lineno])
         self._pending_on_cursormoved_post += 1
 
     def on_cursormoved_post(self):
@@ -737,12 +734,9 @@ class NetRangerBuf(object):
             self.preview_on()
 
         with self.SetBufferApiGuard():
-            self.set_header_content()
-            self.set_footer_content()
-            self.set_pedueo_header_footer()
-
-            # set_footer_content re_stat the node, now we refresh the current
-            # node to update the size information
+            self.redraw_header_content()
+            self.redraw_footer_content()
+            self.redraw_pedueo_header_footer()
             self._vim_buf_handle[self.clineno] = self.nodes[
                 self.clineno].highlight_content
 
@@ -787,8 +781,8 @@ class NetRangerBuf(object):
 
         return G()
 
-    def refresh_lines_highlight(self, linenos):
-        """ Refresh the highlight of nodes by line numbers. """
+    def redraw_lines(self, linenos):
+        """ Redraw the highlight of nodes by line numbers. """
         sz = min(len(self.nodes), len(self._vim_buf_handle))
 
         with self.SetBufferApiGuard():
@@ -797,29 +791,29 @@ class NetRangerBuf(object):
                     self._vim_buf_handle[i] = self.nodes[i].highlight_content
 
     @classmethod
-    def ManualRefreshOnWidthChange(cls):
-        """ Context for disabling hghlight refresh on WinEnter event.
-        Useful to save unnecessary refresh_highlight_if_winwidth_changed call.
+    def ManualRedrawOnWidthChange(cls):
+        """ Context for disabling redraw on WinEnter event.
+        Useful to save unnecessary redraw_if_winwidth_changed call.
         """
         class C(object):
             def __enter__(self):
-                cls._manual_refresh_on_width_change = True
+                cls._manual_redraw_on_width_change = True
                 return self
 
             def __exit__(self, type, value, traceback):
-                cls._manual_refresh_on_width_change = False
+                cls._manual_redraw_on_width_change = False
 
         return C()
 
     @classmethod
     def init_class_variables(cls):
-        cls._manual_refresh_on_width_change = False
+        cls._manual_redraw_on_width_change = False
 
-    def refresh_highlight_if_winwidth_changed(self, force=False):
-        """ Refresh the buffer highlight if the window widhth changed. """
+    def redraw_if_winwidth_changed(self, force=False):
+        """ Redraw the buffer highlight if the window widhth changed. """
 
         if not force and (self.is_editing
-                          or NetRangerBuf._manual_refresh_on_width_change):
+                          or NetRangerBuf._manual_redraw_on_width_change):
             return
 
         winwidth = Vim.CurWinWidth()
@@ -828,10 +822,10 @@ class NetRangerBuf(object):
             self.winwidth = winwidth
 
             with self.SetBufferApiGuard():
-                self.set_header_content()
+                self.redraw_header_content()
                 for i, node in enumerate(self.nodes):
                     self._vim_buf_handle[i] = node.highlight_content
-                self.set_pedueo_header_footer()
+                self.redraw_pedueo_header_footer()
 
     def reset_highlight(self, nodes):
         """ Reset the highlight of the nodes and add them to
@@ -839,27 +833,19 @@ class NetRangerBuf(object):
         """
         for node in nodes:
             node.reset_highlight()
-        self._highlight_outdated_nodes.update(nodes)
+        self._highlight_outdated = True
 
-    def refresh_outdated_highlight(self):
-        """ Refresh the highlight of nodes in highlight_outdated_nodes.
-
-        Rather expensive, so consider use refresh_lines_highlight or
-        refresh_cur_line_highlight if possible.
+    def redraw_if_highlight_outdated(self):
+        """ Redraw the highlight of nodes in highlight_outdated_nodes.
         """
-        if not self.highlight_outdated:
-            return
-        lines = []
-        # TODO This is expensive but called frequently, can we do better?
-        for i, node in enumerate(self.nodes):
-            if node in self._highlight_outdated_nodes:
-                lines.append(i)
-        self.refresh_lines_highlight(lines)
-        self._highlight_outdated_nodes.clear()
+        if self._highlight_outdated:
+            with self.SetBufferApiGuard():
+                self._vim_buf_handle[:] = self.highlight_content
+            self._highlight_outdated = False
 
-    def refresh_cur_line_hi(self):
-        """ Refresh the highlight of the current node. """
-        self.refresh_lines_highlight([self.clineno])
+    def redraw_cur_line(self):
+        """ Redraw the highlight of the current node. """
+        self.redraw_lines([self.clineno])
 
     def VimCD(self):
         """ Perform :cd. """
@@ -915,25 +901,24 @@ class NetRangerBuf(object):
         preview_close_on_tableave = False
 
         if cur_node.is_INFO:
-            self.refresh_highlight_if_winwidth_changed()
+            self.redraw_if_winwidth_changed()
             return
         elif cur_node.is_DIR:
-            with self.ManualRefreshOnWidthChange():
+            with self.ManualRedrawOnWidthChange():
                 if not os.access(cur_node.fullpath, os.X_OK):
                     Vim.ErrorMsg(f'Permission Denied: {cur_node.name}')
                     return
                 Vim.command(
                     f'rightbelow vert {preview_width} vsplit {cur_node.fullpath}'
                 )
-            self._controler.cur_buf.refresh_highlight_if_winwidth_changed(
-                force=True)
+            self._controler.cur_buf.redraw_if_winwidth_changed(force=True)
         else:
-            with self.ManualRefreshOnWidthChange():
+            with self.ManualRedrawOnWidthChange():
                 Vim.command(f'rightbelow vert {preview_width} new')
             preview_close_on_tableave = self._controler.preview(
                 cur_node.fullpath, total_width, preview_width)
 
-        with self.ManualRefreshOnWidthChange():
+        with self.ManualRedrawOnWidthChange():
             Vim.current.window.vars['netranger_is_previewee'] = True
             previewee_bufnr = Vim.eval('bufnr()')
             previewee_winid = Vim.eval('win_getid()')
@@ -950,9 +935,9 @@ class NetRangerBuf(object):
             self._record_previewee(previewee_bufnr, previewee_winid)
 
         # Update the previewer window width. Note that it is not done above as
-        # ManualRefreshOnWidthChange prevent this from happening through
+        # ManualRedrawOnWidthChange prevent this from happening through
         # autocmd.
-        self.refresh_highlight_if_winwidth_changed()
+        self.redraw_if_winwidth_changed()
         cur_width = Vim.CurWinWidth()
         for w in Vim.current.tabpage.windows:
             if 'netranger_is_previewer' in w.vars:
@@ -961,14 +946,13 @@ class NetRangerBuf(object):
     def preview_off(self):
         """ Turn preview panel off. """
         self._close_last_previewee()
-        self.refresh_highlight_if_winwidth_changed()
+        self.redraw_if_winwidth_changed()
 
     def toggle_expand(self, rec=False):
         """Create subnodes for the target directory.
 
         Also record the mtime of the target directory so that we can
-        refresh the buffer content (refresh_nodes) if the subdirectory
-        is changed.
+        redraw in update_nodes_and_redraw if the subdirectory is changed.
         """
         cur_node = self.cur_node
         if not cur_node.is_DIR:
@@ -1009,12 +993,12 @@ class NetRangerBuf(object):
 
             if len(new_nodes) > 0:
                 self.nodes[self.clineno + 1:self.clineno + 1] = new_nodes
-        self._render()
+        self._redraw()
 
     def edit(self):
         """ Enter edit mode. """
         self.is_editing = True
-        self._render(plain=True)
+        self._redraw(plain=True)
         for i, node in enumerate(self.nodes):
             Vim.command(f'call matchaddpos("{node.vim_hi_group}", [{i+1}])')
         Vim.command('setlocal buftype=acwrite')
@@ -1040,7 +1024,7 @@ class NetRangerBuf(object):
         vim_buf = self._vim_buf_handle
         if len(self.nodes) != len(vim_buf):
             Vim.ErrorMsg('Edit mode can not add/delete files!')
-            self._render()
+            self._redraw()
             return True
 
         ori_node = self.cur_node
@@ -1066,7 +1050,7 @@ class NetRangerBuf(object):
             self.fs.rename(oripath, fullpath)
 
         self.nodes = self.nodes_plus_header_footer(self.sort_nodes(self.nodes))
-        self._render()
+        self._redraw()
         self.set_clineno_by_node(ori_node)
         Vim.command('setlocal nomodifiable')
         Vim.command('setlocal buftype=nofile')
@@ -1076,13 +1060,13 @@ class NetRangerBuf(object):
         """ Update the highlight of picked nodes to cut. """
         for node in nodes:
             node.cut()
-        self._highlight_outdated_nodes.update(nodes)
+        self._highlight_outdated = True
 
     def copy(self, nodes):
         """ Update the highlight of picked nodes to copy. """
         for node in nodes:
             node.copy()
-        self._highlight_outdated_nodes.update(nodes)
+        self._highlight_outdated = True
 
     def find_next_ind(self, nodes, ind, pred):
         """ Return the index of first next node that satisfies pred. """
@@ -1315,7 +1299,7 @@ class Netranger(object):
 
         if bufnum in self._bufs:
 
-            self.cur_buf.refresh_highlight_if_winwidth_changed()
+            self.cur_buf.redraw_if_winwidth_changed()
 
     def _manual_on_bufenter(self):
         """ Calls on_bufenter manually.
@@ -1339,15 +1323,15 @@ class Netranger(object):
 
         Two possible cases:
         1. The buffer is an existing netranger buffer (but not wiped out):
-        refresh buffer content (e.g. directory content changed else where) and
+        redraw buffer content (e.g. directory content changed else where) and
         call any pending onuiquit functions.
         2. The buffer is a [No Name] temporary buffer and the buffer name is a
            directory. Then we either create a new netranger buffer or bring up
            an existing netranger buffer (which was wiped out).
         """
         if bufnum in self._bufs:
-            self.refresh_curbuf()
-            self.cur_buf.refresh_highlight_if_winwidth_changed()
+            self.update_curbuf()
+            self.cur_buf.redraw_if_winwidth_changed()
             if self._onuiquit is not None:
                 # If not enough arguments are passed, ignore the pending
                 # onuituit, e.g. quit the sort go ui without pressing key to
@@ -1373,16 +1357,16 @@ class Netranger(object):
             else:
                 self.gen_new_buf(bufname)
 
-    def refresh_curbuf(self):
+    def update_curbuf(self):
         """ Update an existing NetRangerBuf's nodes and highlight. """
         cur_buf = self.cur_buf
 
         # deal with content changed, e.g., file operation outside
-        cur_buf.refresh_nodes()
+        cur_buf.update_nodes_and_redraw()
 
         # deal with highlight changed, e.g., pick, copy hi dismiss because of
         # paste
-        cur_buf.refresh_outdated_highlight()
+        cur_buf.redraw_if_highlight_outdated()
 
         # ensure pwd is correct
         if Vim.Var('NETRAutochdir'):
@@ -1395,11 +1379,11 @@ class Netranger(object):
         Vim.command(f'{existed_bufnum}b')
         self.set_buf_option()
         buf = self._bufs[existed_bufnum]
-        self.refresh_curbuf()
+        self.update_curbuf()
 
         # Check window width in case the window was closed in a different
         # width
-        buf.refresh_highlight_if_winwidth_changed()
+        buf.redraw_if_winwidth_changed()
 
         if ori_bufnum not in self._bufs:
             # wipe out the [No Name] temporary buffer
@@ -1557,11 +1541,11 @@ class Netranger(object):
                     if 'E325' not in err_msg:
                         Vim.ErrorMsg(err_msg)
 
-    def NETRefresh(self):
-        """ Force refreshing the current buffer. """
+    def NETRedraw(self):
+        """ Force redraw the current buffer. """
         cur_buf = self.cur_buf
-        cur_buf.refresh_nodes(force_refreh=True)
-        cur_buf.refresh_highlight_if_winwidth_changed()
+        cur_buf.update_nodes_and_redraw(force_redraw=True)
+        cur_buf.redraw_if_winwidth_changed()
 
     def NETRTabOpen(self):
         """ Open the current node in a new tab """
@@ -1685,7 +1669,7 @@ class Netranger(object):
         elif opt == 'f':
             name = Vim.UserInput('New file name')
             cur_buf.fs.touch(os.path.join(cur_buf.last_vim_pwd, name))
-        self.cur_buf.refresh_nodes()
+        self.cur_buf.update_nodes_and_redraw()
 
     def NETREdit(self):
         """ Enter edit mode. """
@@ -1710,8 +1694,7 @@ class Netranger(object):
     def NETRToggleShowHidden(self):
         """
         Change ignore pattern and mark all existing netranger buffers to be
-        content_outdated so that their content will be updated in
-        refresh_existing_buf.
+        content_outdated so that they will be redraw.
         """
         ignore_pat = Vim.Var('NETRIgnore')
         if '.*' in ignore_pat:
@@ -1730,7 +1713,7 @@ class Netranger(object):
         self.ignore_pattern = re.compile('|'.join(ignore_pat))
         for buf in self._bufs.values():
             buf.content_outdated = True
-        self.cur_buf.refresh_nodes(force_refreh=True)
+        self.cur_buf.update_nodes_and_redraw(force_redraw=True)
 
     def NETRToggleSudo(self):
         """ Toggle sudo for paste/rm operations. """
@@ -1799,7 +1782,8 @@ class Netranger(object):
         if Vim.current.buffer.number in self._bufs:
             cur_buf = self.cur_buf
             if not cur_buf.fs_busy(echo=False):
-                cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
+                cur_buf.update_nodes_and_redraw(force_redraw=True,
+                                                cheap_remote_ls=True)
                 # If cursor changed, we need to reest the preview.
                 if self._is_previewing:
                     cur_buf.preview_on()
@@ -1821,7 +1805,7 @@ class Netranger(object):
 
     def NETRCancelPickCutCopy(self):
         self._reset_pick_cut_copy()
-        self.cur_buf.refresh_outdated_highlight()
+        self.cur_buf.redraw_if_highlight_outdated()
 
     def NETRTogglePick(self):
         """Funciton to Add or remove cur_node to/from picked_nodes.
@@ -1837,7 +1821,7 @@ class Netranger(object):
             self._picked_nodes[cur_buf].add(cur_node)
         elif res == Node.ToggleOpRes.OFF:
             self._picked_nodes[cur_buf].remove(cur_node)
-        self.cur_buf.refresh_cur_line_hi()
+        self.cur_buf.redraw_cur_line()
 
     def NETRTogglePickVisual(self):
         cur_buf = self.cur_buf
@@ -1854,7 +1838,7 @@ class Netranger(object):
                 self._picked_nodes[cur_buf].add(node)
             else:
                 self._picked_nodes[cur_buf].remove(node)
-        cur_buf.refresh_lines_highlight([i for i in range(beg, end)])
+        cur_buf.redraw_lines([i for i in range(beg, end)])
 
     def NETRCut(self):
         """Move picked_nodes to cut_nodes.
@@ -1867,7 +1851,7 @@ class Netranger(object):
             buf.cut(nodes)
             self._cut_nodes[buf].update(nodes)
         self._picked_nodes = defaultdict(set)
-        self.cur_buf.refresh_outdated_highlight()
+        self.cur_buf.redraw_if_highlight_outdated()
 
     def NETRCutSingle(self):
         cur_buf = self.cur_buf
@@ -1876,7 +1860,7 @@ class Netranger(object):
         cur_node = self.cur_node
         cur_node.cut()
         self._cut_nodes[cur_buf].add(cur_node)
-        cur_buf.refresh_cur_line_hi()
+        cur_buf.redraw_cur_line()
 
     def NETRCopy(self):
         """Move picked_nodes to copied_nodes.
@@ -1888,7 +1872,7 @@ class Netranger(object):
             buf.copy(nodes)
             self._copied_nodes[buf].update(nodes)
         self._picked_nodes = defaultdict(set)
-        self.cur_buf.refresh_outdated_highlight()
+        self.cur_buf.redraw_if_highlight_outdated()
 
     def NETRCopySingle(self):
         """ Store the current node to copied_nodes. """
@@ -1898,13 +1882,13 @@ class Netranger(object):
         cur_node = self.cur_node
         cur_node.copy()
         self._copied_nodes[cur_buf].add(cur_node)
-        cur_buf.refresh_cur_line_hi()
+        cur_buf.redraw_cur_line()
 
     def _NETRPaste_cut_nodes(self, busy_bufs):
         """ Perform mv for cut_nodes.
 
-        For each source buffer, we reset the highlight of the cut nodes so
-        that the highlight will be updated by refresh_existing_buf.
+        For each source buffer, we reset the highlight of the cut nodes so that
+        the soure buffer will be redrawed.
         """
         cwd = Vim.eval('getcwd()')
         fsfilter = FSTarget(cwd)
@@ -1942,7 +1926,7 @@ class Netranger(object):
         """ Perform cp for copied_nodes.
 
         For each source buffer, we reset the highlight of the copied nodes so
-        that the highlight will be updated by refresh_existing_buf.
+        that the source buffer will be redrawed.
         """
         cwd = Vim.eval('getcwd()')
         fsfilter = FSTarget(cwd)
@@ -2052,7 +2036,8 @@ class Netranger(object):
             Vim.ErrorMsg('Not a remote directory')
         else:
             Rclone.sync(cur_buf.wd, Rclone.SyncDirection.DOWN)
-        cur_buf.refresh_nodes(force_refreh=True, cheap_remote_ls=True)
+        cur_buf.update_nodes_and_redraw(force_redraw=True,
+                                        cheap_remote_ls=True)
 
     def NETRemotePush(self):
         """ Sync remote so that the remote content of the current directory will

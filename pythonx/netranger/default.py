@@ -49,7 +49,7 @@ keymap = {
     'NETRSort':
     (['S'], 'Sort contnet in current directory, pending for ui selection.'),
     'NETRHelp': (['<F1>'], "Show help message"),
-    'NETRefresh':
+    'NETRedraw':
     (['r'],
      "Force refresh netranger buffer to be the same as the file system"),
     'NETRTogglePreview': (["P"], "Toggle open preview window."),

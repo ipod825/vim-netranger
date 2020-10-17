@@ -176,7 +176,7 @@ S          Sort contnet in current directory, pending for ui selection
                                         *NETRHelp* *g:NETRHelp*
 <F1>       Show current mappings.
 
-                                        *NETRefresh* *g:NETRefresh*
+                                        *NETRedraw* *g:NETRedraw*
 r          Force refresh netranger buffer to be the same as the file system.
            This is only needed when your file system is not really a local
            file system such that vim-netranger fails to detect change on file
