@@ -620,6 +620,19 @@ class TestAutoCmd(NetrangerLocalTest):
         self.assertEqual(nvim.current.window.width,
                          len(self.clineinfo.visible_text))
 
+    def test_on_winenter_cursor_stay_the_same_pos(self):
+        nvim.input('j')
+        left_panel_line_no = nvim.eval("line('.')")
+        nvim.command('vsplit')
+        nvim.command('wincmd w')
+        self.assertEqual(left_panel_line_no, nvim.eval("line('.')"))
+        nvim.input('j')
+        right_panel_line_no = nvim.eval("line('.')")
+        nvim.command('wincmd w')
+        self.assertEqual(left_panel_line_no, nvim.eval("line('.')"))
+        nvim.command('wincmd w')
+        self.assertEqual(right_panel_line_no, nvim.eval("line('.')"))
+
 
 class TestSetOption(NetrangerLocalTest):
     def test_opt_Autochdir(self):
