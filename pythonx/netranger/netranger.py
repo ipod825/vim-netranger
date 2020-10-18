@@ -1304,16 +1304,6 @@ class Netranger(object):
 
             self.cur_buf.redraw_if_winwidth_changed()
 
-    def _manual_on_bufenter(self):
-        """ Calls on_bufenter manually.
-            In some cases, due to some unknown bug, opening a new directory
-            buffer within netranger's function (such as NETRParentDir) does not
-            trigger range.on_bufenter. In such case, we call ranger on_bufenter
-            manually.
-        """
-        if Vim.current.buffer.number not in self._bufs:
-            self.on_bufenter(Vim.current.buffer.number)
-
     def on_bufenter(self, bufnum):
         """ Handle for BufferError autocmd.
 
@@ -1515,7 +1505,6 @@ class Netranger(object):
             else:
                 with self.KeepPreviewState():
                     Vim.command(f'silent {open_cmd} {fullpath}')
-                    self._manual_on_bufenter()
         else:
             self.cur_buf.ensure_remote_downloaded()
 
@@ -1616,9 +1605,13 @@ class Netranger(object):
         pdir = LocalFS.parent_dir(cdir)
         if pdir == cdir:
             return
+
+        # On neovim, the command py3 vim.command('/') doesn't work.
+        if pdir == '/':
+            pdir += '..'
+
         with self.KeepPreviewState():
             Vim.command(f'silent edit {pdir}')
-            self._manual_on_bufenter()
             self.cur_buf.set_clineno_by_path(cdir)
 
     def NETRGoPrevSibling(self):
