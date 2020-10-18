@@ -99,6 +99,7 @@ class LocalFS(object):
     # Putting fs_server.py in the pythonx directory fail to import shutil
     # so put it in the upper directory
     ServerCmd = util.GenNetRangerScriptCmd('fs_server')
+    is_remote = False
 
     acl_tbl = {
         '7': ['r', 'w', 'x'],
@@ -135,6 +136,10 @@ class LocalFS(object):
         'o2': 'c',
         'o1': 'p',
     }
+
+    @classmethod
+    def ensure_remote_downloaded(cls):
+        pass
 
     @classmethod
     def ls(self, dirname, cheap_remote_ls=False):
@@ -249,6 +254,7 @@ class LocalFS(object):
 
 class Rclone(LocalFS):
     ServerCmd = util.GenNetRangerScriptCmd('rclone_server')
+    is_remote = True
     SyncDirection = Enum('SyncDirection', 'DOWN, UP')
 
     @classmethod
@@ -300,6 +306,7 @@ class Rclone(LocalFS):
                 name for name in Shell.run(f'ls -p "{dirname}"').split('\n')
                 if len(name) > 0
             ])
+
             remote_files = set([
                 name for name in Shell.run(
                     f'rclone {self._flags} lsf "{self.rpath(dirname)}"').split(
@@ -319,7 +326,7 @@ class Rclone(LocalFS):
         return super(Rclone, self).ls(dirname)
 
     @classmethod
-    def ensure_downloaded(self, lpath):
+    def ensure_remote_downloaded(self, lpath):
         if os.stat(lpath).st_size == 0:
             src, dst = self.sync_src_dst(lpath, Rclone.SyncDirection.DOWN)
             Shell.run(

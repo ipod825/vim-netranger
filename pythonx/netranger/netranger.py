@@ -332,6 +332,13 @@ class NetRangerBuf(object):
     def cur_node(self):
         return self.nodes[self.clineno]
 
+    @property
+    def is_remote(self):
+        return self.fs.is_remote
+
+    def ensure_remote_downloaded(self):
+        self.fs.ensure_remote_downloaded(self.cur_node.fullpath)
+
     def nodes_plus_header_footer(self, nodes):
         return [self._header_node] + nodes + [self._footer_node]
 
@@ -1116,10 +1123,6 @@ class Netranger(object):
         return self._bufs[Vim.current.buffer.number]
 
     @property
-    def cur_buf_is_remote(self):
-        return self.cur_buf.fs is Rclone
-
-    @property
     def cur_node(self):
         return self.cur_buf.cur_node
 
@@ -1521,8 +1524,7 @@ class Netranger(object):
                     Vim.command(f'silent {open_cmd} {fullpath}')
                     self._manual_on_bufenter()  # case 2
         else:
-            if self.cur_buf_is_remote:
-                Rclone.ensure_downloaded(fullpath)
+            self.cur_buf.ensure_remote_downloaded()
 
             if rifle_cmd is None:
                 rifle_cmd = self._rifle.decide_open_cmd(fullpath)
@@ -2032,7 +2034,7 @@ class Netranger(object):
             Vim.ErrorMsg('Not a netranger buffer')
             return
 
-        if not self.cur_buf_is_remote:
+        if not self.cur_buf.is_remote:
             Vim.ErrorMsg('Not a remote directory')
         else:
             Rclone.sync(cur_buf.wd, Rclone.SyncDirection.DOWN)
@@ -2048,7 +2050,7 @@ class Netranger(object):
             Vim.ErrorMsg('Not a netranger buffer')
             return
 
-        if not self.cur_buf_is_remote:
+        if not self.cur_buf.is_remote:
             Vim.ErrorMsg('Not a remote directory')
         else:
             Rclone.sync(cur_buf.wd, Rclone.SyncDirection.UP)
