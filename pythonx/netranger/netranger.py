@@ -1306,12 +1306,10 @@ class Netranger(object):
 
     def _manual_on_bufenter(self):
         """ Calls on_bufenter manually.
-            Vim's autocmd does not nest. In some of netranger's handle for
-            BufEnter, it opens a new netranger buffer.  Somehow in most cases,
-            this (mysteriously) triggers another BufEnter event that will
-            trigger ranger.on_bufenter (so the autocmd does nest). But in some
-            rare cases, it does not. This fuction is to ensure
-            ranger.on_bufenter is called in such cases.
+            In some cases, due to some unknown bug, opening a new directory
+            buffer within netranger's function (such as NETRParentDir) does not
+            trigger range.on_bufenter. In such case, we call ranger on_bufenter
+            manually.
         """
         if Vim.current.buffer.number not in self._bufs:
             self.on_bufenter(Vim.current.buffer.number)
