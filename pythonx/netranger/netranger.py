@@ -1313,7 +1313,7 @@ class Netranger(object):
             (nested) BufEnter event that will not trigger ranger.on_bufenter
             due to the aformentioned reason. In such case, we call ranger
             on_bufenter manually.
-        Usage case 2:
+        Usage case 2 (commented now for remote performance issue):
             In some old vim/python version (see issue #6), due to some unknown
             bug, :edit does not trigger range.on_bufenter. In such case, we
             call ranger on_bufenter manually. The overhead for calling
@@ -1522,7 +1522,7 @@ class Netranger(object):
             else:
                 with self.KeepPreviewState():
                     Vim.command(f'silent {open_cmd} {fullpath}')
-                    self._manual_on_bufenter()  # case 2
+                    # self._manual_on_bufenter()  # case 2
         else:
             self.cur_buf.ensure_remote_downloaded()
 
@@ -1625,7 +1625,7 @@ class Netranger(object):
             return
         with self.KeepPreviewState():
             Vim.command(f'silent edit {pdir}')
-            self._manual_on_bufenter()  # case 2
+            # self._manual_on_bufenter()  # case 2
             self.cur_buf.set_clineno_by_path(cdir)
 
     def NETRGoPrevSibling(self):
