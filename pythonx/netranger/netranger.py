@@ -733,7 +733,7 @@ class NetRangerBuf(object):
 
         # Avoid rerender if the current vim buffer is not the same as
         # self._vim_buf_handle.
-        if self._vim_buf_handle.number != self._vim_buf_handle.number\
+        if self._vim_buf_handle.number != Vim.current.buffer.number\
                 or self.is_editing:
             return
 
