@@ -1306,20 +1306,15 @@ class Netranger(object):
 
     def _manual_on_bufenter(self):
         """ Calls on_bufenter manually.
-        Usage case 1:
-            Vim's autocmd does not nested by default and the ++nestd option has
-            bugs on some old vim version. Since sometimes when ranger is
-            handling a BufEnter command, it calls :edit , triggering another
-            (nested) BufEnter event that will not trigger ranger.on_bufenter
-            due to the aformentioned reason. In such case, we call ranger
-            on_bufenter manually.
-        Usage case 2 (commented now for remote performance issue):
-            In some old vim/python version (see issue #6), due to some unknown
-            bug, :edit does not trigger range.on_bufenter. In such case, we
-            call ranger on_bufenter manually. The overhead for calling
-            on_bufenter two times is light as most things are cached.
+            Vim's autocmd does not nest. In some of netranger's handle for
+            BufEnter, it opens a new netranger buffer.  Somehow in most cases,
+            this (mysteriously) triggers another BufEnter event that will
+            trigger ranger.on_bufenter (so the autocmd does nest). But in some
+            rare cases, it does not. This fuction is to ensure
+            ranger.on_bufenter is called in such cases.
         """
-        self.on_bufenter(Vim.current.buffer.number)
+        if Vim.current.buffer.number not in self._bufs:
+            self.on_bufenter(Vim.current.buffer.number)
 
     def on_bufenter(self, bufnum):
         """ Handle for BufferError autocmd.
@@ -1522,7 +1517,7 @@ class Netranger(object):
             else:
                 with self.KeepPreviewState():
                     Vim.command(f'silent {open_cmd} {fullpath}')
-                    # self._manual_on_bufenter()  # case 2
+                    self._manual_on_bufenter()
         else:
             self.cur_buf.ensure_remote_downloaded()
 
@@ -1625,7 +1620,7 @@ class Netranger(object):
             return
         with self.KeepPreviewState():
             Vim.command(f'silent edit {pdir}')
-            # self._manual_on_bufenter()  # case 2
+            self._manual_on_bufenter()
             self.cur_buf.set_clineno_by_path(cdir)
 
     def NETRGoPrevSibling(self):
