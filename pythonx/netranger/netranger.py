@@ -797,30 +797,10 @@ class NetRangerBuf(object):
                 if i < sz:
                     self._vim_buf_handle[i] = self.nodes[i].highlight_content
 
-    @classmethod
-    def ManualRedrawOnWidthChange(cls):
-        """ Context for disabling redraw on WinEnter event.
-        Useful to save unnecessary redraw_if_winwidth_changed call.
-        """
-        class C(object):
-            def __enter__(self):
-                cls._manual_redraw_on_width_change = True
-                return self
-
-            def __exit__(self, type, value, traceback):
-                cls._manual_redraw_on_width_change = False
-
-        return C()
-
-    @classmethod
-    def init_class_variables(cls):
-        cls._manual_redraw_on_width_change = False
-
     def redraw_if_winwidth_changed(self, force=False):
         """ Redraw the buffer highlight if the window widhth changed. """
 
-        if not force and (self.is_editing
-                          or NetRangerBuf._manual_redraw_on_width_change):
+        if self.is_editing and not force:
             return
 
         winwidth = Vim.CurWinWidth()
@@ -911,7 +891,7 @@ class NetRangerBuf(object):
             self.redraw_if_winwidth_changed()
             return
         elif cur_node.is_DIR:
-            with self.ManualRedrawOnWidthChange():
+            with self._controler.DisableOnWinEnter():
                 if not os.access(cur_node.fullpath, os.X_OK):
                     Vim.ErrorMsg(f'Permission Denied: {cur_node.name}')
                     return
@@ -920,12 +900,12 @@ class NetRangerBuf(object):
                 )
             self._controler.cur_buf.redraw_if_winwidth_changed(force=True)
         else:
-            with self.ManualRedrawOnWidthChange():
+            with self._controler.DisableOnWinEnter():
                 Vim.command(f'rightbelow vert {preview_width} new')
             preview_close_on_tableave = self._controler.preview(
                 cur_node.fullpath, total_width, preview_width)
 
-        with self.ManualRedrawOnWidthChange():
+        with self._controler.DisableOnWinEnter():
             Vim.current.window.vars['netranger_is_previewee'] = True
             previewee_bufnr = Vim.eval('bufnr()')
             previewee_winid = Vim.eval('win_getid()')
@@ -942,7 +922,7 @@ class NetRangerBuf(object):
             self._record_previewee(previewee_bufnr, previewee_winid)
 
         # Update the previewer window width. Note that it is not done above as
-        # ManualRedrawOnWidthChange prevent this from happening through
+        # DisableOnWinEnter prevent this from happening through
         # autocmd.
         self.redraw_if_winwidth_changed()
         cur_width = Vim.CurWinWidth()
@@ -1149,6 +1129,7 @@ class Netranger(object):
         self._NetRangerBuf_init_winwidth = -1
         self._is_previewing = Vim.Var("NETRPreviewDefaultOn")
         self.preview = preview.Previewer()
+        self._disable_on_winenter = False
 
         Rclone.init(Vim.Var('NETRemoteCacheDir'), Vim.Var('NETRemoteRoots'))
         Shell.mkdir(default.variables['NETRRootDir'])
@@ -1163,8 +1144,6 @@ class Netranger(object):
 
         Vim.vars['NETRemoteCacheDir'] = os.path.expanduser(
             Vim.Var('NETRemoteCacheDir'))
-
-        NetRangerBuf.init_class_variables()
 
     def init_vim_variables(self):
         for k, v in default.variables.items():
@@ -1297,11 +1276,25 @@ class Netranger(object):
                              key, fn.__name__, self.key2fn[key].__name__))
         self.key2fn[key] = fn
 
+    def DisableOnWinEnter(self):
+        """ Context for disabling on_winenter handler.
+        Useful to save unnecessary redraw_if_winwidth_changed call.
+        """
+        class C(object):
+            def __enter__(c):
+                self._disable_on_winenter = True
+                return c
+
+            def __exit__(c, type, value, traceback):
+                self._disable_on_winenter = False
+
+        return C()
+
     def on_winenter(self, bufnum):
         """ Handle for WinEnter autocmd. """
-
+        if self._disable_on_winenter:
+            return
         if bufnum in self._bufs:
-
             self.cur_buf.redraw_if_winwidth_changed()
 
     def on_bufenter(self, bufnum):
