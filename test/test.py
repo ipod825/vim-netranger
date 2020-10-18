@@ -10,9 +10,8 @@ from neovim import attach
 
 from netranger import default
 from netranger.colortbl import colorname2ind
-from netranger.config import (file_sz_display_wid, rclone_rcd_port, test_dir,
-                              test_local_dir, test_remote_cache_dir,
-                              test_remote_dir)
+from netranger.config import (file_sz_display_wid, test_dir, test_local_dir,
+                              test_remote_cache_dir, test_remote_dir)
 from tshell import Shell
 
 
@@ -815,11 +814,3 @@ if __name__ == '__main__':
     sys.argv[1:] = args.unittest_args
     unittest.main()
     nvim.close()
-
-try:
-    # Force down rclone server down
-    subprocess.check_output(
-        f'rclone rc core/quit --rc-addr=localhost:{rclone_rcd_port}',
-        shell=True)
-except Exception:
-    pass

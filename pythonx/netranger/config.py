@@ -11,4 +11,5 @@ test_local_dir = os.path.join(test_dir, 'local')
 test_remote_dir = os.path.join(test_dir, 'remote')
 file_sz_display_wid = 6
 rclone_rcd_port = 13579
+rclone_rcd_test_port = 13578
 elipsis_note = '…'

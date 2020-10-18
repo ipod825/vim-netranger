@@ -107,6 +107,7 @@ variables = {
     'NETRPreviewDelay': 200,
     'NETRLazyLoadStat': False,
     'NETRPreviewDefaultOn': True,
+    'NETRcloneRcdPort': 13579,
 }
 
 internal_variables = {

@@ -9,7 +9,7 @@ import tempfile
 import time
 
 from netranger import Vim, util
-from netranger.config import file_sz_display_wid, rclone_rcd_port
+from netranger.config import file_sz_display_wid
 from netranger.enum import Enum
 from netranger.shell import Shell
 
@@ -268,6 +268,7 @@ class Rclone(LocalFS):
     @classmethod
     def init(self, root_dir, remote_remap):
         self._flags = Vim.Var("_NETRRcloneFlags", default="")
+        self.rclone_rcd_port = Vim.Var('NETRcloneRcdPort')
         if root_dir[-1] == '/':
             root_dir = root_dir[:-1]
 
@@ -387,7 +388,7 @@ class Rclone(LocalFS):
     def run_cmd(self, cmd):
         if not self.rcd_started:
             Vim.AsyncRun(
-                f'rclone {self._flags} rcd --rc-no-auth --rc-addr=localhost:{rclone_rcd_port}'
+                f'rclone {self._flags} rcd --rc-no-auth --rc-addr=localhost:{self.rclone_rcd_port}'
             )
             self.rcd_started = True
             # Ensure the server running before executing the next command.
@@ -395,7 +396,7 @@ class Rclone(LocalFS):
 
         return json.loads(
             Shell.run(
-                f'rclone {self._flags} rc --rc-addr=localhost:{rclone_rcd_port} {cmd}'
+                f'rclone {self._flags} rc --rc-addr=localhost:{self.rclone_rcd_port} {cmd}'
             ))
 
     @classmethod

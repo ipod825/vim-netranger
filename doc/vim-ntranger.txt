@@ -408,6 +408,11 @@ g:NETRemoteCacheDir     string (default "$HOME/.netranger/remote")
     Path to the remote cache directory. See |vim-netranger-rclone| for more
     information.
 
+                                        *g:NETRcloneRcdPort*
+g:NETRcloneRcdPort      Number (default 13579)
+    The port for rclone service to listen on, passed as `--rc-addr` argument to
+    rclone.
+
                                         *g:NETRemoteRoots*
 g:NETRemoteRoots        dictionary (default {})
     Mapping from remote to a directory name. This enables one to open the home
