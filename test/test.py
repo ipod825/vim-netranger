@@ -21,7 +21,6 @@ class NetrangerTest(unittest.TestCase):
     def tearDown(self):
         while nvim.eval('&ft') == 'netranger':
             nvim.command('bwipeout')
-        os.chdir(self.saved_cwd)
 
     def prepare_test_dir(self, dirname):
         Shell.mkdir(dirname)
@@ -169,7 +168,6 @@ class NetrangerTest(unittest.TestCase):
 
 class NetrangerLocalTest(NetrangerTest):
     def setUp(self):
-        self.saved_cwd = os.getcwd()
         Shell.run('rm -rf {}'.format(test_dir))
         self.prepare_test_dir(test_local_dir)
         nvim.command('silent tabe {}'.format(test_local_dir))
@@ -180,7 +178,6 @@ class NetrangerLocalTest(NetrangerTest):
 
 class NetrangerRemoteTest(NetrangerTest):
     def setUp(self):
-        self.saved_cwd = os.getcwd()
 
         Shell.run('rm -rf {}'.format(test_dir))
         self.prepare_test_dir(test_local_dir)
@@ -237,7 +234,7 @@ class TestBuilitInFunctions(NetrangerLocalTest):
 
     def test_NETRVimCD(self):
         nvim.input('L')
-        self.assertEqual('dir', os.path.basename(nvim.command_output('pwd')))
+        self.assertEqual('dir', os.path.basename(nvim.call('getcwd')))
 
     def test_NETRDelete(self):
         nvim.input('zajvjjvD')
@@ -452,8 +449,7 @@ class TestDisplay(NetrangerLocalTest):
         self.assertEqual('1 K', self.clineinfo.size_str)
 
     def test_abbrev_cwd(self):
-
-        cwd = os.getcwd()
+        cwd = nvim.call('getcwd')
         nvim.command('vsplit')
         nvim.input('gg')
 
@@ -527,9 +523,9 @@ class TestApi(NetrangerLocalTest):
 class TestApiRemote(NetrangerRemoteTest):
     def test_api_cp_remote(self):
         nvim.input('za')
-        vimcwd = nvim.call('getcwd')
-        nvim.call('netranger#api#cp', f'{vimcwd}/dir/subdir', vimcwd)
-        nvim.call('netranger#api#cp', f'{vimcwd}/dir/a', vimcwd)
+        cwd = nvim.call('getcwd')
+        nvim.call('netranger#api#cp', f'{cwd}/dir/subdir', cwd)
+        nvim.call('netranger#api#cp', f'{cwd}/dir/a', cwd)
         self.wait_for_fs_free()
         self.assert_content('subdir', ind=5, hi='dir')
         self.assert_content('a', ind=6, hi='file')
@@ -538,9 +534,9 @@ class TestApiRemote(NetrangerRemoteTest):
 
     def test_api_mv_remote(self):
         nvim.input('za')
-        vimcwd = nvim.call('getcwd')
-        nvim.call('netranger#api#mv', f'{vimcwd}/dir/subdir', vimcwd)
-        nvim.call('netranger#api#mv', f'{vimcwd}/dir/a', vimcwd)
+        cwd = nvim.call('getcwd')
+        nvim.call('netranger#api#mv', f'{cwd}/dir/subdir', cwd)
+        nvim.call('netranger#api#mv', f'{cwd}/dir/a', cwd)
         self.wait_for_fs_free()
         self.assert_content('subdir', ind=3, hi='dir')
         self.assert_content('a', ind=4, hi='file')
@@ -551,9 +547,9 @@ class TestApiRemote(NetrangerRemoteTest):
 
     def test_api_rm_remote(self):
         nvim.input('za')
-        vimcwd = nvim.call('getcwd')
-        nvim.call('netranger#api#rm', f'{vimcwd}/dir/subdir')
-        nvim.call('netranger#api#rm', f'{vimcwd}/dir/a')
+        cwd = nvim.call('getcwd')
+        nvim.call('netranger#api#rm', f'{cwd}/dir/subdir')
+        nvim.call('netranger#api#rm', f'{cwd}/dir/a')
         self.wait_for_fs_free()
         self.assert_content('subdir2', ind=1, hi='dir', level=1)
         self.assert_content('dir2', ind=2, hi='dir')
@@ -625,15 +621,17 @@ class TestSetOption(NetrangerLocalTest):
     def test_opt_Autochdir(self):
         default_value = nvim.vars['NETRAutochdir']
 
-        pwd = nvim.eval('getcwd()')
         nvim.vars['NETRAutochdir'] = True
         nvim.input('l')
-        self.assertNotEqual(pwd, nvim.eval('getcwd()'))
+        self.assertNotEqual(test_local_dir, nvim.call('getcwd'))
         nvim.input('h')
+        self.assertEqual(test_local_dir, nvim.call('getcwd'))
 
         nvim.vars['NETRAutochdir'] = False
         nvim.input('l')
-        self.assertEqual(pwd, nvim.eval('getcwd()'))
+        self.assertEqual(test_local_dir, nvim.call('getcwd'))
+        nvim.input('h')
+        self.assertEqual(test_local_dir, nvim.call('getcwd'))
 
         nvim.vars['NETRAutochdir'] = default_value
 
