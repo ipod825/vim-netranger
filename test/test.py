@@ -40,10 +40,10 @@ class NetrangerTest(unittest.TestCase):
 
     def ensure_buf_no_expand(self):
         nvim.input('2G')
-        m2 = re.search(r'\[48;5;[0-9]+mdir.*', nvim.eval('getline(2)'))
+        m2 = re.search(r'\[48;5;[0-9]+mdir.*', nvim.call('getline', 2))
         assert m2, "Assumes line2 is dir"
 
-        m3 = re.search(r'\[38;5;[0-9]+mdir2.*', nvim.eval('getline(3)'))
+        m3 = re.search(r'\[38;5;[0-9]+mdir2.*', nvim.call('getline', 3))
         if not m3:
             nvim.input('za')
 
@@ -77,7 +77,7 @@ class NetrangerTest(unittest.TestCase):
         ve = nvim.options['virtualedit']
         nvim.options['virtualedit'] = 'all'
         nvim.command('noautocmd norm! g$')
-        res = int(nvim.eval('virtcol(".")'))
+        res = nvim.call('virtcol', '.')
         nvim.command('noautocmd norm! g0')
         nvim.options['virtualedit'] = ve
         return res
@@ -150,7 +150,7 @@ class NetrangerTest(unittest.TestCase):
             expect_hi = self.color_str(hi)
             self.assertEqual(expect_hi, lc.hi)
 
-        cLineNo = nvim.eval("line('.')") - 1
+        cLineNo = nvim.call('line', '.') - 1
         if ind is None or ind == cLineNo:
             self.assertTrue(
                 lc.is_foreground,
@@ -605,16 +605,16 @@ class TestAutoCmd(NetrangerLocalTest):
 
     def test_on_winenter_cursor_stay_the_same_pos(self):
         nvim.input('j')
-        left_panel_line_no = nvim.eval("line('.')")
+        left_panel_line_no = nvim.call('line', '.')
         nvim.command('vsplit')
         nvim.command('wincmd w')
-        self.assertEqual(left_panel_line_no, nvim.eval("line('.')"))
+        self.assertEqual(left_panel_line_no, nvim.call('line', '.'))
         nvim.input('j')
-        right_panel_line_no = nvim.eval("line('.')")
+        right_panel_line_no = nvim.call('line', '.')
         nvim.command('wincmd w')
-        self.assertEqual(left_panel_line_no, nvim.eval("line('.')"))
+        self.assertEqual(left_panel_line_no, nvim.call('line', '.'))
         nvim.command('wincmd w')
-        self.assertEqual(right_panel_line_no, nvim.eval("line('.')"))
+        self.assertEqual(right_panel_line_no, nvim.call('line', '.'))
 
 
 class TestSetOption(NetrangerLocalTest):
