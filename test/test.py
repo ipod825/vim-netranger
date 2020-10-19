@@ -1,7 +1,6 @@
 import argparse
 import os
 import re
-import subprocess
 import sys
 import time
 import unittest
@@ -93,30 +92,19 @@ class NetrangerTest(unittest.TestCase):
     def lock_fs(self):
         nvim.command('python3 ranger.cur_buf._num_fs_op=1')
 
-    def assert_fs(self, d, expect, root=None):
+    def assert_fs(self, d, expect, root=test_local_dir):
         """
-        Test whether 'expect' exists in directory cwd/d, where cwd is
-        /tmp/netrtest/local when testing local functions and cwd is
-        /tmp/netrtest/remote when testing remote functions (set in
-        prepare_test_dir). However, do not use this method directly when
-        testing remote functions for consistency, use assert_fs_remote instead.
+        Test whether 'expect' exists in directory root/d.
         """
-
-        if root:
-            old_cwd = os.getcwd()
-            os.chdir(root)
-
         real = None
         for i in range(10):
-            real = Shell.run('ls --group-directories-first ' + d).split()
+            real = Shell.run(
+                f'ls --group-directories-first {root}/{d}').split()
             if real == expect:
                 return
             time.sleep(0.05)
 
         self.assertEqual(expect, real)
-
-        if root:
-            os.chdir(old_cwd)
 
     def assert_fs_cache(self, d, expect):
         """ Test whether 'expect' exists in directory cwd/d, where cwd is
@@ -767,8 +755,10 @@ class TestBuilitInFunctionsRemote(NetrangerRemoteTest):
         self.assert_content('ysubdir', ind=3, level=1, hi='dir')
         self.assert_content('wa', ind=4, level=1, hi='file')
 
-        self.assert_fs('', ['dir2', 'zdir'])
-        self.assert_fs('zdir', ['xsubdir2', 'ysubdir', 'wa'])
+        self.assert_fs_cache('', ['dir2', 'zdir'])
+        self.assert_fs_cache('zdir', ['xsubdir2', 'ysubdir', 'wa'])
+        self.assert_fs_remote('', ['dir2', 'zdir'])
+        self.assert_fs_remote('zdir', ['xsubdir2', 'ysubdir', 'wa'])
 
     def test_NETRDelete_remote(self):
         nvim.input('zajvjjvD')
