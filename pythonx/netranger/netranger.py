@@ -1417,6 +1417,8 @@ class Netranger(object):
         Vim.command('setlocal nowrap')
         Vim.command('setlocal foldmethod=manual')
         Vim.command('setlocal foldcolumn=0')
+        Vim.command('setlocal scrolloff=0')
+        Vim.command('setlocal sidescrolloff=0')
         Vim.command('setlocal nofoldenable')
         Vim.command('setlocal nobuflisted')
         Vim.command('setlocal nospell')
