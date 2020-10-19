@@ -194,10 +194,14 @@ class NetrangerRemoteTest(NetrangerTest):
 
 
 class TestBuilitInFunctions(NetrangerLocalTest):
-    def test_NETROpen(self):
+    def test_NETROpen_dir(self):
         nvim.input('l')
         self.assert_content('subdir', ind=0, hi='dir')
         self.assert_content('subdir2', ind=1, hi='dir')
+
+    def test_NETROpen_file(self):
+        nvim.input('lGl')
+        self.assertEqual('a', nvim.call('expand', '%:t'))
 
     def test_NETRParent(self):
         nvim.input('h')
