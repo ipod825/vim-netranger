@@ -138,7 +138,7 @@ class LocalFS(object):
     }
 
     @classmethod
-    def ensure_remote_downloaded(cls):
+    def ensure_remote_downloaded(cls, _):
         pass
 
     @classmethod
