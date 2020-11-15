@@ -40,15 +40,14 @@ else:
 
 if vim.eval('has("timers")') == "1" and not vim.vars.get("_NETRDebug", False):
 
-    def Timer(delay, fn, pyfn, *args):
-        if len(args):
-            vim.command(
-                f'call timer_start({delay}, function("{fn}", {list(args)}))')
-        else:
-            vim.command(f'call timer_start({delay}, "{fn}")')
+    def Timer(delay, pyfn, pyfn_str, *args):
+        fn_args = ','.join([vim.eval(str(arg)) for arg in args])
+        vim.command(
+            f'call timer_start({delay}, {{->execute("python3 {pyfn_str}({fn_args})")}})'
+        )
 else:
 
-    def Timer(delay, fn, pyfn, *args):
+    def Timer(delay, pyfn, pyfn_str, *args):
         pyfn(*args)
 
 

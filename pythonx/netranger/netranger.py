@@ -1440,8 +1440,8 @@ class Netranger(object):
             if Vim.eval('mode()') == 'V':
                 return
             self._bufs[bufnum].on_cursormoved()
-            Vim.Timer(Vim.Var('NETRPreviewDelay'), '_NETROnCursorMovedPost',
-                      self.on_cursormoved_post, bufnum)
+            Vim.Timer(Vim.Var('NETRPreviewDelay'), self.on_cursormoved_post,
+                      'ranger.on_cursormoved_post', bufnum)
 
     def on_cursormoved_post(self, bufnum):
         """ Perform heavy-duty tasks for CursorMoved autocmd.

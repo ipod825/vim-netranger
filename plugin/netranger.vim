@@ -29,10 +29,6 @@ function NetrangerInit()
     exec g:_NETRPY.'from netranger.api import NETRApi'
     exec g:_NETRPY.'NETRApi.init(ranger)'
 
-    func! _NETROnCursorMovedPost(bufnum, timerid)
-        exec g:_NETRPY.'ranger.on_cursormoved_post('.a:bufnum.')'
-    endfunc
-
     command! NETRemotePull exec g:_NETRPY.'ranger.NETRemotePull()'
     command! NETRemotePush exec g:_NETRPY.'ranger.NETRemotePush()'
     command! -nargs=1 -complete=file NETRTabdrop exec g:_NETRPY.'ranger._tabdrop("'.<q-args>.'")'
