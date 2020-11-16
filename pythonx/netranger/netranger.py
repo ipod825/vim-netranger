@@ -1130,6 +1130,8 @@ class Netranger(object):
         self._is_previewing = Vim.Var("NETRPreviewDefaultOn")
         self.preview = preview.Previewer()
         self._disable_on_winenter = False
+        self._cur_search_buf = None
+        self._last_search_pattern = None
 
         Rclone.init(Vim.Var('NETRemoteCacheDir'), Vim.Var('NETRemoteRoots'))
         Shell.mkdir(default.variables['NETRRootDir'])
@@ -2005,6 +2007,84 @@ class Netranger(object):
     def NETRForceDeleteSingle(self):
         """ Force delete the current node. """
         self.NETRDeleteSingle(force=True)
+
+    def _NETRSearchUpdate(self):
+        if not Vim.current.buffer.options['filetype'] == 'netranger_search':
+            return
+
+        pattern = Vim.eval('getcmdline()')
+        if pattern == self._last_search_pattern:
+            Vim.command('redraw')
+            return Vim.Timer(Vim.Var('NETRPromptDelay'),
+                             self._NETRSearchUpdate,
+                             'ranger._NETRSearchUpdate')
+        self._last_search_pattern = pattern
+
+        filtered_nodes = self._cur_search_buf.nodes[0:-1]
+        if pattern and pattern:
+            pattern = re.compile('.*' + pattern)
+            filtered_nodes = [
+                n for n in filtered_nodes if pattern.match(n.name)
+            ]
+
+        Vim.current.buffer[:] = [n.name for n in filtered_nodes]
+
+        Vim.command('call clearmatches()')
+        for i, node in enumerate(filtered_nodes):
+            Vim.command(f'call matchaddpos("{node.vim_hi_group}", [{i+1}])')
+        Vim.command(
+            f'call matchadd("IncSearch", "{self._last_search_pattern}")')
+        Vim.command('redraw')
+        Vim.Timer(Vim.Var('NETRPromptDelay'), self._NETRSearchUpdate,
+                  'ranger._NETRSearchUpdate')
+
+    def _NETRSearchStop(self, accept):
+        accept = accept and len(Vim.current.buffer[0])
+        if accept:
+            accept_line_nr = [n.name for n in self._cur_search_buf.nodes
+                              ].index(Vim.current.line) + 1
+        Vim.command(f'{self._buf_num_before_search}b')
+        Vim.command('call clearmatches()')
+        if accept:
+            Vim.command(f'execute {accept_line_nr}')
+        self._cur_search_buf = None
+        self._last_search_pattern = None
+        with self.cur_buf.SetBufferApiGuard():
+            self.cur_buf.redraw_pedueo_header_footer()
+        Vim.current.window.options['wrap'] = False
+        Vim.current.window.options['cursorline'] = False
+        # clear command line
+        Vim.command('echo')
+
+    def _NETRSearchMove(self, binding):
+        if binding[0] == '<':
+            binding = f'\{binding}>'
+        Vim.command(f'execute "normal! {binding}"')
+
+    def _NETRSearchMap(self):
+        stop_template = 'cnoremap <buffer> {} <cmd>python3 ranger._NETRSearchStop({})<cr><cr>'
+        move_template = 'cnoremap <buffer><nowait> {} <cmd>python3 ranger._NETRSearchMove("{}")<cr>'
+        Vim.command(stop_template.format('<cr>', True))
+        Vim.command(stop_template.format('<esc>', False))
+        Vim.command(stop_template.format('<c-c>', False))
+        Vim.command(move_template.format('<c-j>', '<down'))
+        Vim.command(move_template.format('<c-k>', '<up'))
+        Vim.command(move_template.format('<down>', '<down'))
+        Vim.command(move_template.format('<up>', '<up'))
+
+    def NETRSearch(self):
+        self._cur_search_buf = self.cur_buf
+        self._buf_num_before_search = Vim.current.buffer.number
+        Vim.command(f'edit netranger_search{self.cur_buf.wd}')
+        search_vim_buf = Vim.current.buffer
+        search_vim_buf.options['buftype'] = 'nofile'
+        search_vim_buf.options['bufhidden'] = 'wipe'
+        search_vim_buf.options['filetype'] = 'netranger_search'
+        Vim.current.window.options['cursorline'] = True
+        Vim.current.window.options['wrap'] = True
+        self._NETRSearchMap()
+        self._NETRSearchUpdate()
+        Vim.command('call timer_start(0, {->input("/")})')
 
     def NETRemotePull(self):
         """Sync local so that the local content of the current directory will

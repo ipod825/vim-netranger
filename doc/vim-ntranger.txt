@@ -74,6 +74,15 @@ l,<right>  Change directory/open file under cursor. If the file can be open by
                                         *NETRParentDir* *g:NETRParentDir*
 h,<left>   Change to parent directory.
 
+                                        *NETRSearch* *g:NETRSearch*
+/          Search for pattern. This brings you into |cmdline|. The buffer
+           content is filtered by the command line pattern. All your |cmdline|
+           mapping still applies except for the following:
+            Confirm and Jump    <Cr>
+            Cancel              <Esc>, <C-c>
+            Cursor Down         <C-j>, <Down>
+            Cursor Up           <C-k>, <Up>
+
                                         *NETRGoPrevSibling* *g:NETRGoPrevSibling*
 {          Move the cursor to the previous node with less or equal indent.
 

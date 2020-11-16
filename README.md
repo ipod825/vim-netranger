@@ -1,7 +1,7 @@
 vim-netranger
 =============
 [![Build Status](https://travis-ci.org/ipod825/vim-netranger.svg?branch=master)](https://travis-ci.org/ipod825/vim-netranger)
-![Screenshot](https://user-images.githubusercontent.com/1246394/85383868-5c7e7500-b4f5-11ea-8902-76e496ec7f52.png)
+![Screenshot](https://user-images.githubusercontent.com/1246394/99349292-7af05e80-2850-11eb-9b38-2b6e2bfc322f.gif)
 
 
 ## Recent Update
@@ -93,3 +93,7 @@ $ cd test
 $ bash test.sh  # test with visualization, xterm required
 $ python test.py # test without visualization
 ~~~
+
+## Acknowledgements
+### Inspiration/codesnippet from other projects
+* `NETRSearch` filter in place inspired by [fin.vim](https://github.com/lambdalisue/fin.vim)

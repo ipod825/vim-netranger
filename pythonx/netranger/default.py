@@ -53,6 +53,7 @@ keymap = {
     (['r'],
      "Force refresh netranger buffer to be the same as the file system"),
     'NETRTogglePreview': (["P"], "Toggle open preview window."),
+    'NETRSearch': (['/'], 'Filter/Search content as you type'),
 }
 
 visual_keymap = {
@@ -112,4 +113,5 @@ variables = {
 
 internal_variables = {
     'NETRRegister': [],
+    'NETRPromptDelay': 20,
 }

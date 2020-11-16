@@ -20,3 +20,9 @@ function! netranger#async#term_callback(job_id, data, event, cmd_win_id)
    endif
    exec g:_NETRPY.'netranger.Vim.VimAsyncCallBack("'.a:job_id.'","'.a:event.'","[]")'
 endfunction
+
+function! netranger#async#search()
+    set modifiable
+    call setline(1, getcmdline())
+    call timer_start(1000, {->netranger#async#search()})
+endfunction
