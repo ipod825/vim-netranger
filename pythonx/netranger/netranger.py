@@ -2056,8 +2056,6 @@ class Netranger(object):
         self._last_search_pattern = None
         with self.cur_buf.SetBufferApiGuard():
             self.cur_buf.redraw_pedueo_header_footer()
-        Vim.current.window.options['wrap'] = False
-        Vim.current.window.options['cursorline'] = False
         # clear command line
         Vim.command('echo')
 
