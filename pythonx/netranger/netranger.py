@@ -761,9 +761,13 @@ class NetRangerBuf(object):
     def set_clineno_by_node(self, node, ori_clineno=0):
         """ Set cursor line by node reference. """
         if node in self.nodes:
-            self._move_vim_cursor(self.nodes.index(node))
+            index = self.nodes.index(node)
+            self._move_vim_cursor(index)
+            self.clineno = index
         else:
+            ori_clineno = min(ori_clineno, len(Vim.current.buffer) - 1)
             self._move_vim_cursor(ori_clineno)
+            self.clineno = ori_clineno
 
     def SetBufferApiGuard(self):
         """ Context for setting buffer content.
@@ -783,6 +787,7 @@ class NetRangerBuf(object):
 
             def __exit__(g, type, value, traceback):
                 for w, c in g.win_cursor:
+                    c[0] = min(c[0], len(self._vim_buf_handle) - 1)
                     w.cursor = c
                 self._vim_buf_handle.options['modifiable'] = False
 
