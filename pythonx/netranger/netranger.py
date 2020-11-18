@@ -2026,11 +2026,15 @@ class Netranger(object):
         self._last_search_pattern = pattern
 
         filtered_nodes = self._cur_search_buf.nodes[0:-1]
+
+        ignore_case = False
         if pattern and pattern:
-            if Vim.options['smartcase'] and re.match('[A-Z]', pattern):
+            if (Vim.options['smartcase'] and re.match(
+                    '[A-Z]', pattern)) or not Vim.options['ignorecase']:
                 pattern = re.compile('.*' + pattern)
             else:
                 pattern = re.compile('.*' + pattern, re.IGNORECASE)
+                ignore_case = True
             filtered_nodes = [
                 n for n in filtered_nodes if pattern.match(n.name)
             ]
@@ -2042,6 +2046,14 @@ class Netranger(object):
             Vim.command(f'call matchaddpos("{node.vim_hi_group}", [{i+1}])')
         Vim.command(
             f'call matchadd("IncSearch", "{self._last_search_pattern}")')
+        if ignore_case:
+            # Do our best here
+            Vim.command(
+                f'call matchadd("IncSearch", "{self._last_search_pattern.lower()}")'
+            )
+            Vim.command(
+                f'call matchadd("IncSearch", "{self._last_search_pattern.upper()}")'
+            )
         Vim.command('redraw')
         Vim.Timer(Vim.Var('NETRPromptDelay'), self._NETRSearchUpdate,
                   'ranger._NETRSearchUpdate')
