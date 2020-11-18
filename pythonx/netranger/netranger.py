@@ -2027,7 +2027,10 @@ class Netranger(object):
 
         filtered_nodes = self._cur_search_buf.nodes[0:-1]
         if pattern and pattern:
-            pattern = re.compile('.*' + pattern)
+            if Vim.options['smartcase'] and re.match('[A-Z]', pattern):
+                pattern = re.compile('.*' + pattern)
+            else:
+                pattern = re.compile('.*' + pattern, re.IGNORECASE)
             filtered_nodes = [
                 n for n in filtered_nodes if pattern.match(n.name)
             ]
