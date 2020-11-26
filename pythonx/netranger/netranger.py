@@ -477,10 +477,10 @@ class NetRangerBuf(object):
             self._pseudo_footer_lineno = None
 
     def create_nodes(self, wd, level=0):
-        nodes = self.create_nodes_with_file_names(self.fs.ls(wd), wd, level)
+        nodes = self._create_nodes_with_file_names(self.fs.ls(wd), wd, level)
         return self.sort_nodes(nodes)
 
-    def create_nodes_with_file_names(self, files, dirpath, level):
+    def _create_nodes_with_file_names(self, files, dirpath, level):
         """ Return the nodes for given filenames. """
         files = [f for f in files if not self._controler.should_ignore(f)]
         return [self.create_node(dirpath, f, level) for f in files]
@@ -493,10 +493,10 @@ class NetRangerBuf(object):
         else:
             return EntryNode(fullpath, basename, level=level, buf=self)
 
-    def create_nodes_if_not_exist(self, nodes, dirpath, level,
-                                  cheap_remote_ls):
+    def _create_nodes_if_not_exist(self, nodes, dirpath, level,
+                                   cheap_remote_ls):
         """ Return missing nodes in dirpath that is not in input nodes. """
-        old_paths = set([node.fullpath for node in nodes if not node.is_INFO])
+        old_paths = set([node.fullpath for node in nodes])
         new_paths = set([
             os.path.join(dirpath, name)
             for name in self.fs.ls(dirpath, cheap_remote_ls)
@@ -504,8 +504,39 @@ class NetRangerBuf(object):
         file_names = [
             os.path.basename(path) for path in new_paths.difference(old_paths)
         ]
-        return self.create_nodes_with_file_names(file_names, dirpath,
-                                                 level + 1)
+        return self._create_nodes_with_file_names(file_names, dirpath, level)
+
+    def _sync_nodes_from_fs(self, wd, nodes, level, cheap_remote_ls):
+        res = self._create_nodes_if_not_exist(self.nodes, wd, level,
+                                              cheap_remote_ls)
+
+        fs_files = set(self.fs.ls(wd, cheap_remote_ls))
+        ind = 0
+        sz = len(nodes)
+        while ind < sz:
+            cur_node = nodes[ind]
+
+            # The children of an invalid node will all be invalid
+            # Hence, we will start with the next valid node
+            if self._controler.should_ignore(
+                    cur_node.name) or cur_node.name not in fs_files:
+                ind = self.next_lesseq_level_ind(ind, nodes=nodes)
+                continue
+
+            res.append(cur_node)
+            # Recursively update expanded subnodes
+            if cur_node.is_DIR and cur_node.expanded:
+                next_ind = self.find_next_ind(
+                    nodes, ind + 1, lambda beg, new: new.level < beg.level)
+                res += self._sync_nodes_from_fs(cur_node.fullpath,
+                                                nodes[ind + 1:next_ind],
+                                                level + 1, cheap_remote_ls)
+                ind = next_ind
+                continue
+
+            ind += 1
+
+        return res
 
     def update_nodes_and_redraw(self,
                                 force_redraw=False,
@@ -536,47 +567,8 @@ class NetRangerBuf(object):
 
         self.content_outdated = False
 
-        # create nodes corresponding to new files
-        new_nodes = self.create_nodes_if_not_exist(self.nodes, self.wd, -1,
-                                                   cheap_remote_ls)
-        fs_files = [set(self.fs.ls(self.wd, cheap_remote_ls))]
-        next_valid_ind = -1
-        for i in range(len(self.nodes)):
-            if i < next_valid_ind:
-                continue
-
-            cur_node = self.nodes[i]
-            if cur_node.is_INFO:
-                new_nodes.append(cur_node)
-                continue
-
-            # When the first child of a parent node (directory) is
-            # encountered, we push the "context" including the list
-            # of existing  files in the parent directory.
-            # When cur_node is no more a decendent of prev_node,
-            # We should reset the "context" to the corresponding parent
-            # node.
-            prev_node = self.nodes[i - 1]
-            if cur_node.level > prev_node.level and os.path:
-                fs_files.append(
-                    set(self.fs.ls(prev_node.fullpath, cheap_remote_ls)))
-            else:
-                fs_files = fs_files[:cur_node.level + 1]
-
-            # The children of an invalid node will all be invalid
-            # Hence, we will start with the next valid node
-            if self._controler.should_ignore(
-                    cur_node.name) or cur_node.name not in fs_files[-1]:
-                next_valid_ind = self.next_lesseq_level_ind(i)
-                continue
-
-            # create nodes corresponding to new files in expanded directories
-            new_nodes.append(cur_node)
-            if cur_node.is_DIR and cur_node.expanded:
-                next_ind = self.next_lesseq_level_ind(i)
-                new_nodes += self.create_nodes_if_not_exist(
-                    self.nodes[i + 1:next_ind + 1], cur_node.fullpath,
-                    cur_node.level, cheap_remote_ls)
+        new_nodes = self._sync_nodes_from_fs(self.wd, self.nodes[1:-1], 0,
+                                             cheap_remote_ls)
 
         ori_node = self.cur_node
         ori_clineno = self.clineno
@@ -1064,7 +1056,7 @@ class NetRangerBuf(object):
         """ Return the index of first next node that satisfies pred. """
         beg_node = nodes[ind]
         ind += 1
-        sz = len(self.nodes)
+        sz = len(nodes)
         while ind < sz:
             if pred(beg_node, nodes[ind]):
                 break
