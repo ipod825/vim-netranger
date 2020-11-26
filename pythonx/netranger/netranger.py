@@ -333,6 +333,10 @@ class NetRangerBuf(object):
         return self.nodes[self.clineno]
 
     @property
+    def non_info_nodes(self):
+        return self.nodes[1:-1]
+
+    @property
     def is_remote(self):
         return self.fs.is_remote
 
@@ -567,7 +571,7 @@ class NetRangerBuf(object):
 
         self.content_outdated = False
 
-        new_nodes = self._sync_nodes_from_fs(self.wd, self.nodes[1:-1], 0,
+        new_nodes = self._sync_nodes_from_fs(self.wd, self.non_info_nodes, 0,
                                              cheap_remote_ls)
 
         ori_node = self.cur_node
@@ -608,7 +612,8 @@ class NetRangerBuf(object):
         self._sort_outdated = False
         for node in self.nodes:
             node.re_stat()
-        self.nodes = self.nodes_plus_header_footer(self.sort_nodes(self.nodes))
+        self.nodes = self.nodes_plus_header_footer(
+            self.sort_nodes(self.non_info_nodes))
         self._redraw()
         self.set_clineno_by_node(self._last_node_id)
 
@@ -629,8 +634,6 @@ class NetRangerBuf(object):
         prefix_end_ind = [0]
         for i in range(len(nodes)):
             cur_node = nodes[i]
-            if cur_node.is_INFO:
-                continue
 
             prev_node = nodes[i - 1]
             if cur_node.level > prev_node.level:
@@ -1033,7 +1036,8 @@ class NetRangerBuf(object):
         for oripath, fullpath in change.items():
             self.fs.rename(oripath, fullpath)
 
-        self.nodes = self.nodes_plus_header_footer(self.sort_nodes(self.nodes))
+        self.nodes = self.nodes_plus_header_footer(
+            self.sort_nodes(self.non_info_nodes))
         self._redraw()
         self.set_clineno_by_node(ori_node)
         Vim.command('setlocal nomodifiable')
