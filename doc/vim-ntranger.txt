@@ -117,7 +117,8 @@ za         Toggle expand current directory under cursor. See |za|.
 
 
                                         *NETRToggleExpandRec* *g:NETRToggleExpandRec*
-zA         Recursively toggle expand current directory under cursor. See |zA|.
+zA         Recursively toggle expand current directory under cursor. See |zA|,
+           The maximum number of expansion is |foldnestmax|.
 
                                         *NETRVimCD* *g:NETRVimCD*
 L          Changing vim's pwd to the directory of the entry under cursor

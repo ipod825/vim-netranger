@@ -74,13 +74,22 @@ class NetrangerTest(unittest.TestCase):
 
     def editable_win_width(self):
         # This function takes gutter into consideration.
-        ve = nvim.options['virtualedit']
-        nvim.options['virtualedit'] = 'all'
+        ve = self.set_vim_option('virtualedit', 'all')
         nvim.command('noautocmd norm! g$')
         res = nvim.call('virtcol', '.')
         nvim.command('noautocmd norm! g0')
-        nvim.options['virtualedit'] = ve
+        self.set_vim_option('virtualedit', ve)
         return res
+
+    def set_vim_option(self, opt, value):
+        ori = nvim.options[opt]
+        nvim.options[opt] = value
+        return ori
+
+    def set_vim_window_option(self, opt, value):
+        ori = nvim.current.window.options[opt]
+        nvim.current.window.options[opt] = value
+        return ori
 
     def unlock_fs(self):
         # nvim.input is asynchronous, we need make sure there's enough time for it
@@ -222,20 +231,6 @@ class TestBuilitInFunctions(NetrangerLocalTest):
         nvim.input('{')
         self.assert_content('dir', hi='dir')
 
-    def test_NETRToggleExpandRec(self):
-        nvim.input('zA')
-        self.assert_content('dir', ind=0, hi='dir')
-        self.assert_content('subdir', level=1, ind=1, hi='dir')
-        self.assert_content('subsubdir', level=2, ind=2, hi='dir')
-        self.assert_content('placeholder', level=3, ind=3, hi='file')
-        self.assert_content('subdir2', level=1, ind=4, hi='dir')
-        self.assert_content('placeholder', level=2, ind=5, hi='file')
-        self.assert_content('a', level=1, ind=6, hi='file')
-        self.assert_content('dir2', level=0, ind=7, hi='dir')
-        nvim.input('zA')
-        self.assert_content('dir', ind=0, hi='dir')
-        self.assert_content('dir2', ind=1, hi='dir')
-
     def test_NETRVimCD(self):
         nvim.input('L')
         self.assertEqual('dir', os.path.basename(nvim.call('getcwd')))
@@ -371,6 +366,20 @@ class TestBuilitInFunctions(NetrangerLocalTest):
         self.assert_content('a', ind=3, level=1, hi='file')
         self.assert_content('dir2', ind=4, hi='dir')
         nvim.input('za')
+        self.assert_content('dir', ind=0, hi='dir')
+        self.assert_content('dir2', ind=1, hi='dir')
+
+    def test_NETRToggleExpandRec(self):
+        nvim.input('zA')
+        self.assert_content('dir', ind=0, hi='dir')
+        self.assert_content('subdir', level=1, ind=1, hi='dir')
+        self.assert_content('subsubdir', level=2, ind=2, hi='dir')
+        self.assert_content('placeholder', level=3, ind=3, hi='file')
+        self.assert_content('subdir2', level=1, ind=4, hi='dir')
+        self.assert_content('placeholder', level=2, ind=5, hi='file')
+        self.assert_content('a', level=1, ind=6, hi='file')
+        self.assert_content('dir2', level=0, ind=7, hi='dir')
+        nvim.input('zA')
         self.assert_content('dir', ind=0, hi='dir')
         self.assert_content('dir2', ind=1, hi='dir')
 
@@ -645,6 +654,20 @@ class TestSetOption(NetrangerLocalTest):
         self.assertEqual(test_local_dir, nvim.call('getcwd'))
 
         nvim.vars['NETRAutochdir'] = default_value
+
+    def test_NETRToggleExpandRec(self):
+        # Set foldnestmax=1 should behave exactly the same as NETRToggleExpand
+        fdn = self.set_vim_window_option('foldnestmax', 1)
+        nvim.input('zA')
+        self.assert_content('dir', ind=0, hi='dir')
+        self.assert_content('subdir', level=1, ind=1, hi='dir')
+        self.assert_content('subdir2', ind=2, level=1, hi='dir')
+        self.assert_content('a', ind=3, level=1, hi='file')
+        self.assert_content('dir2', ind=4, hi='dir')
+        nvim.input('zA')
+        self.assert_content('dir', ind=0, hi='dir')
+        self.assert_content('dir2', ind=1, hi='dir')
+        self.set_vim_window_option('foldnestmax', fdn)
 
 
 class TestBuilitInFunctionsRemote(NetrangerRemoteTest):

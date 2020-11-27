@@ -934,7 +934,25 @@ class NetRangerBuf(object):
         self._close_last_previewee()
         self.redraw_if_winwidth_changed()
 
-    def toggle_expand(self, rec=False):
+    def _expand_node(self, node, level):
+        if not node.is_DIR:
+            return []
+
+        try:
+            node.expanded = True
+            self._expanded_nodes.add(node)
+            if level == 1:
+                return self.create_nodes(node.fullpath, node.level + 1)
+            else:
+                res = []
+                for n in self.create_nodes(node.fullpath, node.level + 1):
+                    res += [n] + self._expand_node(n, level - 1)
+                return res
+        except PermissionError:
+            Vim.ErrorMsg(f'Permission Denied. Not Expanding: {node.name}')
+            return []
+
+    def toggle_expand(self, maxlevel=1):
         """Create subnodes for the target directory.
 
         Also record the mtime of the target directory so that we can
@@ -951,34 +969,8 @@ class NetRangerBuf(object):
             del self.nodes[self.clineno + 1:end_ind]
             cur_node.expanded = False
         else:
-            try:
-                new_nodes = self.create_nodes(self.cur_node.fullpath,
-                                              cur_node.level + 1)
-                cur_node.expanded = True
-                self._expanded_nodes.add(cur_node)
-            except PermissionError:
-                Vim.ErrorMsg(
-                    f'Permission Denied. Not Expanding: {cur_node.name}')
-                return
-
-            if rec:
-                ind = 0
-                while ind < len(new_nodes):
-                    iter_node = new_nodes[ind]
-                    if iter_node.is_DIR:
-                        try:
-                            new_nodes[ind + 1:ind + 1] = self.create_nodes(
-                                iter_node.fullpath, iter_node.level + 1)
-                            iter_node.expanded = True
-                            self._expanded_nodes.add(iter_node)
-                        except PermissionError:
-                            Vim.ErrorMsg(
-                                f'Permission Denied. Not Expanding: {iter_node.name}'
-                            )
-                    ind += 1
-
-            if len(new_nodes) > 0:
-                self.nodes[self.clineno + 1:self.clineno + 1] = new_nodes
+            self.nodes[self.clineno + 1:self.clineno + 1] = self._expand_node(
+                self.cur_node, maxlevel)
         self._redraw()
 
     def edit(self):
@@ -1634,7 +1626,8 @@ class Netranger(object):
 
     def NETRToggleExpandRec(self):
         """ Expand the current node recursively. """
-        self.cur_buf.toggle_expand(rec=True)
+        self.cur_buf.toggle_expand(
+            maxlevel=Vim.current.window.options['foldnestmax'])
 
     def NETRNew(self):
         """ Show the NewUI. """
