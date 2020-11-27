@@ -368,9 +368,8 @@ class NetRangerBuf(object):
 
         self.clineno = 1
         self.nodes[self.clineno].cursor_on()
-        # In update_nodes_and_redraw we need to check the mtime of all expanded nodes to
-        # see if any content in the buffer is changed. Adding the header_node
-        # simply means we check the mtime of the wd everytime.
+        # For lazy redraw in update_nodes_and_redraw, we detect the mtime
+        # change of the working directory and all expanded subdirectories.
         self._expanded_nodes = set([self._header_node])
         self._pseudo_header_lineno = None
         self._pseudo_footer_lineno = None

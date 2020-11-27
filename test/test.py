@@ -596,6 +596,13 @@ class TestAutoCmd(NetrangerLocalTest):
         nvim.input('lh')
         self.assert_num_content_line(9)
 
+    def test_on_bufenter_fs_change_with_expanded_nodes(self):
+        nvim.input('za')
+        nvim.command('split new')
+        Shell.touch('dir/b')
+        nvim.command('quit')
+        self.assert_num_content_line(6)
+
     def test_on_bufenter_cursor_stay_the_same_pos(self):
         nvim.input('ljhl')
         self.assert_content('subdir', ind=0, hi='dir')
