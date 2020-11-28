@@ -966,6 +966,8 @@ class NetRangerBuf(object):
             for i in range(self.clineno, end_ind):
                 if self.nodes[i].is_DIR and self.nodes[i].expanded:
                     self._expanded_nodes.remove(self.nodes[i])
+            self._controler.remove_pick_cut_copy(
+                self, self.nodes[self.clineno + 1:end_ind])
             del self.nodes[self.clineno + 1:end_ind]
             cur_node.expanded = False
         else:
@@ -1622,10 +1624,14 @@ class Netranger(object):
 
     def NETRToggleExpand(self):
         """ Expand the current node. """
+        if self.cur_buf.fs_busy():
+            return
         self.cur_buf.toggle_expand()
 
     def NETRToggleExpandRec(self):
         """ Expand the current node recursively. """
+        if self.cur_buf.fs_busy():
+            return
         self.cur_buf.toggle_expand(
             maxlevel=Vim.current.window.options['foldnestmax'])
 
@@ -1780,6 +1786,12 @@ class Netranger(object):
         self._picked_nodes = defaultdict(set)
         self._cut_nodes = defaultdict(set)
         self._copied_nodes = defaultdict(set)
+
+    def remove_pick_cut_copy(self, buf, nodes):
+        nodes = set(nodes)
+        self._picked_nodes[buf].difference_update(nodes)
+        self._cut_nodes[buf].difference_update(nodes)
+        self._copied_nodes[buf].difference_update(nodes)
 
     def NETRCancelPickCutCopy(self):
         self._reset_pick_cut_copy()

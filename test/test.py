@@ -323,7 +323,7 @@ class TestBuilitInFunctions(NetrangerLocalTest):
         self.assert_content('dir2', ind=1, hi='copy')
 
     def test_NETRPaste_by_cut(self):
-        nvim.input('zajddjjddkkkzajlp')
+        nvim.input('zajddjjddjlp')
         self.wait_for_fs_free()
         self.assert_content('subdir', ind=0, hi='dir')
         self.assert_content('a', ind=1, hi='file')
@@ -331,7 +331,7 @@ class TestBuilitInFunctions(NetrangerLocalTest):
         self.assert_fs('dir2', ['subdir', 'a'])
 
     def test_NETRPaste_by_copy(self):
-        nvim.input('zajyyjjyykkkzajlp')
+        nvim.input('zajyyjjyyjlp')
         self.wait_for_fs_free()
         self.assert_content('subdir', ind=0, hi='dir')
         self.assert_content('a', ind=1, hi='file')
@@ -339,7 +339,7 @@ class TestBuilitInFunctions(NetrangerLocalTest):
         self.assert_fs('dir2', ['subdir', 'a'])
 
     def test_NETRPaste_sided_by_side(self):
-        nvim.input('zajyyjjddkkkza')
+        nvim.input('zajyyjjdd')
         nvim.command('vsplit')
         nvim.input('jlp')
         self.wait_for_fs_free()
@@ -357,6 +357,14 @@ class TestBuilitInFunctions(NetrangerLocalTest):
         nvim.input('<CR>odzd<CR>')
         nvim.input('ofzf<CR>')
         self.assert_fs('dir', ['subdir', 'subdir2', 'zd', 'a', 'zf'])
+
+    def test_NETRToggleExpand_resets_pick_cut_copy(self):
+        nvim.input('zajyyjjddkkkzazajjjjlph')
+        self.wait_for_fs_free()
+        self.assert_content('subdir', ind=1, hi='dir')
+        self.assert_content('a', ind=3, hi='file')
+        self.assert_fs('dir', ['subdir', 'subdir2', 'a'])
+        self.assert_fs('dir2', [])
 
     def test_NETRToggleExpand(self):
         nvim.input('za')
