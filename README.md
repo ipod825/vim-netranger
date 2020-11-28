@@ -19,6 +19,10 @@ vim-netranger
 ![rifle](https://raw.githubusercontent.com/ipod825/vim-netranger/master/screenshots/rifle/rifle.gif)
 * Image preview
 ![image](https://raw.githubusercontent.com/ipod825/vim-netranger/master/screenshots/image/image.gif)
+* Inline Search
+![search](https://raw.githubusercontent.com/ipod825/vim-netranger/master/screenshots/search/search.gif)
+* Integration with built-in fold (`zf`)
+![fold](https://raw.githubusercontent.com/ipod825/vim-netranger/master/screenshots/fold/fold.gif)
 
 
 ## Recent Update
