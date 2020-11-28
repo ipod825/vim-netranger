@@ -1626,7 +1626,10 @@ class Netranger(object):
         """ Expand the current node. """
         if self.cur_buf.fs_busy():
             return
-        self.cur_buf.toggle_expand()
+        if int(Vim.eval('foldclosed(".")')) > -1:
+            Vim.command('normal! za')
+        else:
+            self.cur_buf.toggle_expand()
 
     def NETRToggleExpandRec(self):
         """ Expand the current node recursively. """

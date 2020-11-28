@@ -40,6 +40,7 @@ function NetrangerInit()
         autocmd Filetype netranger autocmd WinEnter <buffer> exec g:_NETRPY.'ranger.on_winenter('.expand("<abuf>").')'
         autocmd Filetype netranger autocmd CursorMoved <buffer> exec g:_NETRPY.'ranger.on_cursormoved('.expand("<abuf>").')'
         autocmd Filetype netranger autocmd BufWriteCmd <buffer> exec g:_NETRPY.'ranger.NETRSave()'
+        autocmd Filetype netranger setlocal foldtext=netranger#fold#foldtext()
         autocmd ColorScheme * call netranger#syntax#define()
     augroup END
     silent doautocmd USER NETRInit
