@@ -1,14 +1,31 @@
 vim-netranger
 =============
 [![Build Status](https://travis-ci.org/ipod825/vim-netranger.svg?branch=master)](https://travis-ci.org/ipod825/vim-netranger)
-![Screenshot](https://user-images.githubusercontent.com/1246394/99349292-7af05e80-2850-11eb-9b38-2b6e2bfc322f.gif)
+
+## Screen Shot
+* Copy/Cut/Paste in multiple windows
+![copy/cut/paste](https://raw.githubusercontent.com/ipod825/vim-netranger/master/screenshots/copy-cut-paste/ccp.gif)
+* Preview/Panel mode
+![preview](https://raw.githubusercontent.com/ipod825/vim-netranger/master/screenshots/preview/preview.gif)
+* Inline Rename
+![rename](https://raw.githubusercontent.com/ipod825/vim-netranger/master/screenshots/rename/rename.gif)
+* Batch Pick (visual mode) for Delete (or copy/cut)
+![pick](https://raw.githubusercontent.com/ipod825/vim-netranger/master/screenshots/pick/pick.gif)
+* New File/Directory
+![new](https://raw.githubusercontent.com/ipod825/vim-netranger/master/screenshots/new/new.gif)
+* Sort
+![sort](https://raw.githubusercontent.com/ipod825/vim-netranger/master/screenshots/sort/sort.gif)
+* Open file with external programs (rifle)
+![rifle](https://raw.githubusercontent.com/ipod825/vim-netranger/master/screenshots/rifle/rifle.gif)
+* Image preview
+![image](https://raw.githubusercontent.com/ipod825/vim-netranger/master/screenshots/image/image.gif)
 
 
 ## Recent Update
 * Image preview is supported (Linux, X11). Please install ueberzug: `pip install ueberzug`
 * Bookmark functions are deprecated. Please use thirdparty plugins such as [ipod825/vim-bookmark](https://github.com/ipod825/vim-bookmark).
 * The setting `g:NETROpenCmd` is now set to `NETRNewTabdrop`, which close the netranger buffer. If you prefer the old behavior, you can have `let g:NETROpenCmd=NETRTabdrop`.
-* Preview window is on now by default. To turn it off, set `g:NETRPreviewDefaultOn=v:false`.**
+* Preview window is on now by default. To turn it off, set `g:NETRPreviewDefaultOn=v:false`.
 
 Vim-netranger is a ranger-like system/cloud storage explorer for Vim/Neovim. It brings together the best of Vim, [ranger](https://github.com/ranger/ranger), and [rclone](https://rclone.org/):
 
