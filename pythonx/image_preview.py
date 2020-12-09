@@ -12,10 +12,8 @@ if __name__ == '__main__':
         total_width = int(sys.argv[2])
         preview_width = int(sys.argv[3])
 
-        ratio = preview_width / total_width
-
-        beg = (total_width - preview_width) * ratio
-        width = preview_width * ratio
+        beg = (total_width - preview_width)
+        width = preview_width
         canvas = c.create_placement('',
                                     x=beg,
                                     y=0,
