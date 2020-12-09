@@ -781,8 +781,7 @@ class NetRangerBuf(object):
 
             def __exit__(g, type, value, traceback):
                 for w, c in g.win_cursor:
-                    c[0] = min(c[0], len(self._vim_buf_handle) - 1)
-                    w.cursor = c
+                    w.cursor = (min(c[0], len(self._vim_buf_handle) - 1), c[1])
                 self._vim_buf_handle.options['modifiable'] = False
 
         return G()
