@@ -13,6 +13,10 @@ endif
 
 let g:loaded_netrwPlugin = 0
 let g:loaded_netrw = 0
+augroup NETRANGER_DISABLE_NETRW
+    autocmd!
+    silent! autocmd! FileExplorer *
+augroup END
 let g:_NETRPY = 'python3 '
 
 let s:inited = v:false
