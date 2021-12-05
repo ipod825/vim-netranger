@@ -859,16 +859,16 @@ class NetRangerBuf(object):
             return
 
         if is_DIR:
-            Vim.command(f'{win_nr}hide')
+            Vim.command(f'silent! {win_nr}hide')
         else:
             if Vim.eval(f'getbufvar({bufnr}, "&buftype")') == 'terminal':
-                Vim.command(f'bwipeout! {bufnr}')
+                Vim.command(f'silent! bwipeout! {bufnr}')
             elif Vim.eval(f'getbufvar({bufnr}, "&modified")') == '1':
-                Vim.command(f'{win_nr}hide')
+                Vim.command(f'silent! {win_nr}hide')
             elif len(Vim.eval(f'win_findbuf({bufnr})')) > 1:
-                Vim.command(f'{win_nr}hide')
+                Vim.command(f'silent! {win_nr}hide')
             else:
-                Vim.command(f'bwipeout! {bufnr}')
+                Vim.command(f'silent! bwipeout! {bufnr}')
 
     def preview_on(self):
         """ Turn preview panel on. """
