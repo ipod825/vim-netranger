@@ -420,6 +420,7 @@ class NetRangerBuf(object):
                 return '/'.join(sp).ljust(width)
             else:
                 total += len(sp[i]) - 1
+        return res[-1 * width:]
 
     def redraw_header_content(self):
         self._header_node.name = self.abbrev_cwd(self.winwidth).strip()
