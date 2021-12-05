@@ -1091,9 +1091,33 @@ class Netranger(object):
     1. BufEnter: on_bufenter. create/update NetRangerBuf.
     2. CursorMoved: on_cursormoved. update node highlighting and some othe stuff.
     """
+    def generate_and_ret_buf(self):
+        bufname = Vim.current.buffer.name
+        if len(bufname) > 0 and bufname[-1] == '~':
+            bufname = os.path.expanduser('~')
+        if not os.path.isdir(bufname):
+            return
+        if os.path.islink(bufname):
+            bufname = os.path.join(os.path.dirname(bufname),
+                                   os.readlink(bufname))
+        bufname = os.path.abspath(bufname)
+
+        # if self.buf_existed(bufname):
+            # self._bufs[Vim.current.buffer.number] =  self._wd2bufnum[bufname]
+        # else:
+        self.gen_new_buf(bufname)
+
+        return self._bufs[Vim.current.buffer.number]
+
+
+        
+
     @property
     def cur_buf(self):
-        return self._bufs[Vim.current.buffer.number]
+        if Vim.current.buffer.number in self._bufs:
+            return self._bufs[Vim.current.buffer.number]
+        else:
+            return self.generate_and_ret_buf()
 
     @property
     def cur_node(self):
