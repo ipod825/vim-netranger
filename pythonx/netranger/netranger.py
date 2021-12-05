@@ -406,6 +406,8 @@ class NetRangerBuf(object):
         if len(res) <= width:
             return res.ljust(width)
 
+        res=res.replace('\\','/') #windows 
+        
         sp = res.split('/')
         szm1 = len(sp) - 1
         total = 2 * (szm1) + len(sp[-1])
@@ -418,6 +420,7 @@ class NetRangerBuf(object):
                 return '/'.join(sp).ljust(width)
             else:
                 total += len(sp[i]) - 1
+        return res[-1 * width:]
 
     def redraw_header_content(self):
         self._header_node.name = self.abbrev_cwd(self.winwidth).strip()
@@ -856,16 +859,16 @@ class NetRangerBuf(object):
             return
 
         if is_DIR:
-            Vim.command(f'{win_nr}hide')
+            Vim.command(f'silent! {win_nr}hide')
         else:
             if Vim.eval(f'getbufvar({bufnr}, "&buftype")') == 'terminal':
-                Vim.command(f'bwipeout! {bufnr}')
+                Vim.command(f'silent! bwipeout! {bufnr}')
             elif Vim.eval(f'getbufvar({bufnr}, "&modified")') == '1':
-                Vim.command(f'{win_nr}hide')
+                Vim.command(f'silent! {win_nr}hide')
             elif len(Vim.eval(f'win_findbuf({bufnr})')) > 1:
-                Vim.command(f'{win_nr}hide')
+                Vim.command(f'silent! {win_nr}hide')
             else:
-                Vim.command(f'bwipeout! {bufnr}')
+                Vim.command(f'silent! bwipeout! {bufnr}')
 
     def preview_on(self):
         """ Turn preview panel on. """
@@ -1091,9 +1094,33 @@ class Netranger(object):
     1. BufEnter: on_bufenter. create/update NetRangerBuf.
     2. CursorMoved: on_cursormoved. update node highlighting and some othe stuff.
     """
+    def generate_and_ret_buf(self):
+        bufname = Vim.current.buffer.name
+        if len(bufname) > 0 and bufname[-1] == '~':
+            bufname = os.path.expanduser('~')
+        if not os.path.isdir(bufname):
+            return
+        if os.path.islink(bufname):
+            bufname = os.path.join(os.path.dirname(bufname),
+                                   os.readlink(bufname))
+        bufname = os.path.abspath(bufname)
+
+        # if self.buf_existed(bufname):
+            # self._bufs[Vim.current.buffer.number] =  self._wd2bufnum[bufname]
+        # else:
+        self.gen_new_buf(bufname)
+
+        return self._bufs[Vim.current.buffer.number]
+
+
+        
+
     @property
     def cur_buf(self):
-        return self._bufs[Vim.current.buffer.number]
+        if Vim.current.buffer.number in self._bufs:
+            return self._bufs[Vim.current.buffer.number]
+        else:
+            return self.generate_and_ret_buf()
 
     @property
     def cur_node(self):

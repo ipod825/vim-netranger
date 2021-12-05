@@ -178,11 +178,11 @@ class LocalFS(object):
             pickle.dump(arguments, f)
 
         if sudo:
-            Vim.AsyncRun('sudo {} {} {}'.format(self.ServerCmd, cmd, fname),
+            Vim.AsyncRun('sudo {} {} {}'.format(self.ServerCmd, cmd, fname).replace('\\','\\\\'),
                          on_exit=on_exit,
                          term=True)
         else:
-            Vim.AsyncRun('{} {} {}'.format(self.ServerCmd, cmd, fname),
+            Vim.AsyncRun('{} {} {}'.format(self.ServerCmd, cmd, fname).replace('\\','\\\\'),
                          on_stderr=on_stderr,
                          on_exit=on_exit)
 
@@ -197,6 +197,7 @@ class LocalFS(object):
 
     @classmethod
     def cp(self, src_arr, dst, sudo=False, on_exit=None):
+        print("uuu",src_arr,dst)
         self.exec_server_cmd('cp',
                              on_exit, {
                                  'src': src_arr,
