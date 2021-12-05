@@ -406,6 +406,8 @@ class NetRangerBuf(object):
         if len(res) <= width:
             return res.ljust(width)
 
+        res=res.replace('\\','/') #windows 
+        
         sp = res.split('/')
         szm1 = len(sp) - 1
         total = 2 * (szm1) + len(sp[-1])
