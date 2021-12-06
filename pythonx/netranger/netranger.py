@@ -2078,18 +2078,24 @@ class Netranger(object):
         # clear command line
         Vim.command('echo')
 
-    def _NETRSearchGTNext(self):
-        accept_line_nr = [n.name for n in self._cur_search_buf.nodes
-                          ].index(Vim.current.line) + 1
+    def _NETRSearchGTNext(self,forward):
+        if forward:
+            accept_line_nr = [n.name for n in self._cur_search_buf.nodes
+                              ].index(Vim.current.line) + 1
         
         self._NETRSearchStop(True)
-        nod=self.cur_buf.nodes[accept_line_nr-1]
-        print('zz',nod.name)
-        self.cur_buf.set_clineno_by_node(nod)
-        if nod.is_DIR:
-            self.NETRBufOpen()
-            # Vim.command("norm kztjj")
+        if forward:
+            nod=self.cur_buf.nodes[accept_line_nr-1]
+            self.cur_buf._redraw()
+            self.cur_buf.set_clineno_by_node(nod)
+            # self.cur_buf.update_nodes_and_redraw(force_redraw=True)
+            if nod.is_DIR:
+                self.NETRBufOpen()
+                self.NETRSearch()
+        else:
+            self.NETRParentDir()
             self.NETRSearch()
+
         Vim.command('echo')
 
     def _NETRSearchMove(self, binding):
@@ -2100,7 +2106,7 @@ class Netranger(object):
     def _NETRSearchMap(self):
         stop_template = 'cnoremap <buffer> {} <cmd>python3 ranger._NETRSearchStop({})<cr><cr>'
         move_template = 'cnoremap <buffer><nowait> {} <cmd>python3 ranger._NETRSearchMove("{}")<cr>'
-        gt_template = 'cnoremap <buffer><nowait> {} <cmd>python3 ranger._NETRSearchGTNext()<cr>'
+        gt_template = 'cnoremap <buffer><nowait> {} <cmd>python3 ranger._NETRSearchGTNext({})<cr>'
         Vim.command(stop_template.format('<cr>', True))
         Vim.command(stop_template.format('<esc>', False))
         Vim.command(stop_template.format('<c-c>', False))
@@ -2108,7 +2114,8 @@ class Netranger(object):
         Vim.command(move_template.format('<c-k>', '<up'))
         Vim.command(move_template.format('<down>', '<down'))
         Vim.command(move_template.format('<up>', '<up'))
-        Vim.command(gt_template.format('<c-/>'))
+        Vim.command(gt_template.format('<c-/>',True))
+        Vim.command(gt_template.format('<M-/>',False))
 
     def NETRSearch(self):
         self._cur_search_buf = self.cur_buf
