@@ -1,4 +1,4 @@
-**This repo is deprecated in favor of ** [ranger.nvim](https://github.com/ipod825/ranger.nvim).
+**This repo is deprecated in favor of** [ranger.nvim](https://github.com/ipod825/ranger.nvim).
 
 vim-netranger
 =============
