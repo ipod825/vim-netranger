@@ -1,3 +1,5 @@
+**This repo is deprecated in favor of ** [ranger.nvim](https://github.com/ipod825/ranger.nvim).
+
 vim-netranger
 =============
 [![Build Status](https://travis-ci.org/ipod825/vim-netranger.svg?branch=master)](https://travis-ci.org/ipod825/vim-netranger)
