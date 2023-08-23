@@ -206,11 +206,11 @@ def debug(*msg):
 def WarningMsg(msg):
     vim.command(
         'unsilent echohl WarningMsg | unsilent echo "{}" | echohl None '.
-        format(msg.replace('"', '\\"')))
+        format(msg.replace('"', '\\"').replace('\\','\\\\')))
 
 
 def Echo(msg):
-    vim.command(f'unsilent echo "{msg}"')
+    vim.command('unsilent echo "%s"' % (msg.replace("\\","\\\\"),))
 
 
 def UserInput(hint, default=''):
